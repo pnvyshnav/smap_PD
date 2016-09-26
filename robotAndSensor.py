@@ -68,12 +68,20 @@ class PixelSensor:
         deterministicRange = np.linalg.norm(causeVoxel.center - position)
         if noise is True:
             tg = TruncatedGaussian(deterministicRange,Par.sensor_noise_std,0.,Par.sensor_range)
-            stochasticRange = tg.sample()
+            stochasticRange = tg.sample() # obtains a single sample
             return stochasticRange
         else:
             return deterministicRange
 
+
     def likelihoodGivenCause(self, measurement, position, cause_geom):
+        '''
+        Computes likelihood of a measurement given position and cause.
+        :param measurement: Scalar
+        :param position: 2d coordinates
+        :param cause_geom: can be voxel or str "hole"/"spurious"
+        :return: Likelihood
+        '''
         if type(cause_geom) is not str:
             if measurement == 'hole':
                 return 0.
@@ -100,6 +108,8 @@ class PixelSensor:
         ray_global['endPoint'] = np.array(rayEnd_global.T)[0] # This is correct, but very very error-prone line
         return ray_global
 
+    # Cause probability: p(c|b) = Pr(B,R|b) = Pr(R|B,b)Pr(B|b)
+    # computed for each voxel c along ray xv
     def InverseCauseModel(self, measurement, mapBelief, sensorPosition, sensorRotation):
         rayGlobal = self.getRayGlobal(sensorPosition, sensorRotation)
         cause_global_ids = mapBelief.grid.voxelsOnRayOrdered(rayGlobal)

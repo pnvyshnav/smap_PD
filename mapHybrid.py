@@ -1,6 +1,6 @@
 import numpy as np
 from mapBeliefBase import *
-
+import matplotlib.pyplot as plt
 
 class VoxelBeliefParicleBased(VoxelBelief):
     num_particles = Par.numParticles
@@ -32,6 +32,11 @@ class VoxelBeliefParicleBased(VoxelBelief):
         affineLikelihoodFunction = a*x+b
         unNormalizedPosterior = affineLikelihoodFunction*self.pdf
         self.pdf = unNormalizedPosterior/np.sum(unNormalizedPosterior)
+
+        #plt.ion()
+        #plt.figure(13)
+        #plt.plot(self.pdf)
+        #plt.show()
         assert self.is_beliefValid()
         self.needRefresh = 1
 
@@ -41,14 +46,55 @@ class MapHybrid(BeliefMapBase):
     def __init__(self):
         BeliefMapBase.__init__(self)
         n = VoxelBeliefParicleBased.num_particles
-        coeff1 = (4.*n-2.-6.*(n-1)*Par.priorMean)/(n*n+n)
-        coeff2 = -coeff1+2./n
-        initial_belief = coeff2-(coeff2-coeff1)*VoxelBeliefParicleBased.particle_supports
+
+        def prior_belief(prior):
+            coeff1 = (4.*n-2.-6.*(n-1)*prior)/(n*n+n)
+            coeff2 = -coeff1+2./n
+            return coeff2-(coeff2-coeff1)*VoxelBeliefParicleBased.particle_supports
+
+        def min_rect_distance(center):
+            def dist(rect):
+                r = {
+                    "xMin": rect["xMin"] + Par.voxelSize,
+                    "xMax": rect["xMax"] - Par.voxelSize,
+                    "yMin": rect["yMin"] + Par.voxelSize,
+                    "yMax": rect["yMax"] - Par.voxelSize
+                }
+                if r["xMin"] <= center[0] <= r["xMax"]:
+                    # inside
+                    if r["yMin"] <= center[1] <= r["yMax"]:
+                        return 0
+
+                    if center[1] < r["yMin"]:
+                        return abs(center[1] - r["yMin"])
+                    if center[1] > r["yMax"]:
+                        return abs(center[1] - r["yMax"])
+                if r["yMin"] <= center[1] <= r["yMax"]:
+                    if center[0] < r["xMin"]:
+                        return abs(center[0] - r["xMin"])
+                    if center[0] > r["xMax"]:
+                        return abs(center[0] - r["xMax"])
+                elif center[0] < r["xMin"] and center[1] < r["yMin"]:
+                    return np.sqrt((center[0] - r["xMin"])**2 + (center[1] - r["yMin"])**2)
+                elif center[0] > r["xMax"] and center[1] < r["yMin"]:
+                    return np.sqrt((center[0] - r["xMax"])**2 + (center[1] - r["yMin"])**2)
+                elif center[0] < r["xMin"] and center[1] > r["yMax"]:
+                    return np.sqrt((center[0] - r["xMin"])**2 + (center[1] - r["yMax"])**2)
+                elif center[0] > r["xMax"] and center[1] > r["yMax"]:
+                    return np.sqrt((center[0] - r["xMax"])**2 + (center[1] - r["yMax"])**2)
+
+            return min(map(dist, self.obstacles))
+
         self.voxels = []
         for voxGeom in self.grid.voxelsGeom:
-            currentVox = VoxelBeliefParicleBased(voxGeom.id, voxGeom.center, initial_belief)
+            #prior = min_rect_distance(voxGeom.center) * 3.0
+            #if prior >= 1:
+            #    prior = 1 - 1E-8
+            #elif prior <= 0:
+            #    prior = 1E-8
+            currentVox = VoxelBeliefParicleBased(voxGeom.id, voxGeom.center, prior_belief(.5))
             self.voxels.append(currentVox)
-        assert self.voxels[0].is_beliefValid() # check validity of the initial belief
+        #assert self.voxels[0].is_beliefValid() # check validity of the initial belief
 
     def update(self, measurement, sensorBelief):
         sensorRotationBel = SO2.rotationMatrix(sensorBelief.orientation)

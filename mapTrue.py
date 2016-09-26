@@ -4,15 +4,26 @@ from mapBase import *
 class TrueMap(BaseMap):
     def __init__(self):
         BaseMap.__init__(self)
-        trueDensity = np.round(np.random.uniform(0,1,self.grid.numCells))
+
+        def in_rect(center):
+            for rect in self.obstacles:
+                if rect["xMin"] <= center[0] <= rect["xMax"] and rect["yMin"] <= center[1] <= rect["yMax"]:
+                    return True
+            return False
+
         self.voxels = []
         for voxGeom in self.grid.voxelsGeom:
-            if voxGeom.center[0]>4*voxGeom.size or voxGeom.center[0]<-4*voxGeom.size or voxGeom.center[1]>4*voxGeom.size or voxGeom.center[1]<-4*voxGeom.size:
-                currentVox = Voxel(trueDensity[voxGeom.id], voxGeom.id, voxGeom.center) # note that voxel id's start from 0
-            else:
-                currentVox = Voxel(0., voxGeom.id, voxGeom.center)
+            currentVox = Voxel(int(in_rect(voxGeom.center)), voxGeom.id, voxGeom.center)
             self.voxels.append(currentVox)
 
     def draw(self):
+        plt.figure("TrueMap")
         for vox in self.voxels:
             vox.draw()
+
+        BaseMap.draw_point(self.start, "#0066FF")
+        BaseMap.draw_point(self.goal, "#FF6600")
+
+        for p in self.paths:
+            x, y = zip(*p["interpolated"])
+            plt.plot(x, y, 'o-', color=p["color"])

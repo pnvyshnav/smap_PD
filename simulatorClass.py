@@ -18,7 +18,7 @@ class Simulator:
         axis = plt.gca()
         self.trueMap.draw()
         axis.set_aspect(1)
-        self.robotSensor.draw(axis)
+        #self.robotSensor.draw(axis)
         if Par.liveDrawing:
             plt.pause(1e-6)
 

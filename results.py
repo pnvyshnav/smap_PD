@@ -12,12 +12,10 @@ class Results:
         self.fig.suptitle('step = %d' % self.frameNumber)
         self.trueDensities = np.array([vox.density for vox in mapTrue.voxels])
         self.axisHybrid = fh.add_subplot(211)
-        self.axis_logOdds = fh.add_subplot(212)
         self.fig_fullError = plt.figure('FullError')
         self.axis_fullError = self.fig_fullError.add_subplot(111)
         self.fig_zoomedInconsistency = plt.figure('zoomedOnInconsistencies')
         self.axisHybridLargeErrors = self.fig_zoomedInconsistency.add_subplot(211)
-        self.axisLogoddsLargeErrors = self.fig_zoomedInconsistency.add_subplot(212)
 
         self.mag = Par.varianceMagnification
 
@@ -34,27 +32,21 @@ class Results:
 
     def draw(self, mapHybrid, mapLogOdds, timeStep, saveLogFlag):
         meanVectorHybrid = np.array([vox.meanDensity() for vox in mapHybrid.voxels])
-        meanVectorLogOdds = np.array([vox.meanDensity() for vox in mapLogOdds.voxels])
 
         stdVectorHybrid = np.array([np.sqrt(vox.varDensity()) for vox in mapHybrid.voxels])
-        stdVectorLogOdds = np.array([np.sqrt(vox.varDensity()) for vox in mapLogOdds.voxels])
 
         errorHybrid = meanVectorHybrid - self.trueDensities
-        errorLogOdds = meanVectorLogOdds - self.trueDensities
 
         self.ErrorOverFullMapHybrid.append(np.sum(np.abs(errorHybrid)))
-        self.ErrorOverFullMapLogOdds.append(np.sum(np.abs(errorLogOdds)))
 
         thresh = Par.largeErrorThreshold
-        ind_large = np.nonzero((abs(errorHybrid)>thresh) | (abs(errorLogOdds)>thresh))
+        ind_large = np.nonzero((abs(errorHybrid)>thresh))
         largeErrorsHybrid = errorHybrid[ind_large]
-        largeErrorsLogodds = errorLogOdds[ind_large]
         largeErrVarianceHybrid = stdVectorHybrid[ind_large]
-        largeErrVarianceLogodds = stdVectorLogOdds[ind_large]
 
         if saveLogFlag:
-            logOutput = (meanVectorHybrid, meanVectorLogOdds, self.trueDensities,
-                         stdVectorHybrid, stdVectorLogOdds,
+            logOutput = (meanVectorHybrid, self.trueDensities,
+                         stdVectorHybrid,
                          self.ErrorOverFullMapHybrid, self.ErrorOverFullMapLogOdds)
             np.save(Par.fullFileAddress, logOutput)
 
@@ -65,30 +57,15 @@ class Results:
             plt.plot(-stdVectorHybrid*self.mag, 'r')
             plt.plot(stdVectorHybrid*self.mag, 'r')
 
-            plt.sca(self.axis_logOdds)
-            plt.cla()
-            plt.plot(errorLogOdds)
-            plt.plot(-stdVectorLogOdds*self.mag, 'r')
-            plt.plot(stdVectorLogOdds*self.mag, 'r')
-            plt.pause(1e-6)
-
             plt.sca(self.axisHybridLargeErrors)
             plt.cla()
             plt.plot(largeErrorsHybrid)
             plt.plot(-largeErrVarianceHybrid*self.mag,'r')
             plt.plot(largeErrVarianceHybrid*self.mag,'r')
 
-            plt.sca(self.axisLogoddsLargeErrors)
-            plt.cla()
-            plt.plot(largeErrorsLogodds)
-            plt.plot(-largeErrVarianceLogodds*self.mag,'r')
-            plt.plot(largeErrVarianceLogodds*self.mag,'r')
-            plt.pause(1e-6)
-
             plt.sca(self.axis_fullError)
             plt.cla()
             plt.plot(self.ErrorOverFullMapHybrid ,'bo')
-            plt.plot(self.ErrorOverFullMapLogOdds, 'r*')
             plt.pause(1e-6)
 
         if Par.video:

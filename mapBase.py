@@ -1,7 +1,10 @@
 import numpy as np
+import scipy as sp
 
 from paramList import *
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp2d
+from scipy.interpolate import splprep, splev
 
 class VoxelGeometry:
     size = Par.voxelSize
@@ -13,6 +16,10 @@ class VoxelGeometry:
         self.vertices_x = self.center[0] + np.array(VoxelGeometry.baseVoxelVertices_x)
         self.vertices_y = self.center[1] + np.array(VoxelGeometry.baseVoxelVertices_y)
 
+    def contains(self, px, py):
+        return (self.center[0]-Par.voxelSize/2 <= px <= self.center[0]+Par.voxelSize/2)\
+               and (self.center[1] - Par.voxelSize / 2 <= py <= self.center[1] + Par.voxelSize / 2)
+
 
 class Voxel(VoxelGeometry):
     def __init__(self, density_inp, id_inp, center_inp):
@@ -22,7 +29,7 @@ class Voxel(VoxelGeometry):
     def draw(self):
         # plt.text(self.center[0], self.center[1], self.id)
         color_intensity = 1.-0.5*self.density
-        rgb_val = [color_intensity, color_intensity, color_intensity]
+        rgb_val = [color_intensity] * 3
         plt.fill(self.vertices_x, self.vertices_y, color = rgb_val)
 
 
@@ -107,5 +114,58 @@ class BaseMap:
     def __init__(self):
         self.grid = GridClass()
         self.grid.drawGrid()
+        self.start = [-self.grid.voxelSize * 1., self.grid.yMin + self.grid.voxelSize / 2.]
+        self.goal = [self.grid.xMax - self.grid.voxelSize / 2., 0]
+        self.obstacles = [
+            {
+                # top right
+                "xMin": self.grid.xMax - 10 * self.grid.voxelSize,
+                "xMax": self.grid.xMax,
+                "yMin": self.grid.yMax - 9 * self.grid.voxelSize,
+                "yMax": self.grid.yMax
+            },
+            {
+                # bottom right
+                "xMin": self.grid.xMax - 10 * self.grid.voxelSize,
+                "xMax": self.grid.xMax,
+                "yMin": self.grid.yMin,
+                "yMax": self.grid.yMin + 9 * self.grid.voxelSize
+            }
+        ]
+        self.paths = [
+            {
+                "vertices": [self.start, (self.start[0], self.goal[1]), self.goal],
+                "k": 1,
+                "color": "red"
+            },
+            {
+                "vertices": [
+                    self.start,
+                    (self.start[0] - Par.voxelSize * 4., self.goal[1]),
+                    (self.start[0] + Par.voxelSize * 3., self.goal[1]),
+                    self.goal],
+                "k": 2,
+                "color": "blue"
+            },
+            {
+                "vertices": [
+                    self.start,
+                    (self.start[0] - Par.voxelSize * 5., self.goal[1] + Par.voxelSize * 5),
+                    (self.start[0] - Par.voxelSize * 7., self.goal[1]),
+                    (self.start[0], self.goal[1]),
+                    self.goal],
+                "k": 2,
+                "color": "green"
+            }
+        ]
 
+        for path in self.paths:
+            pts = np.array(map(lambda x: [x[0], x[1]], path["vertices"]))
+            tck, u = splprep(pts.T, u=None, s=0.0, per=0, k=path["k"])
+            u_new = np.linspace(u.min(), u.max(), 100)
+            x_new, y_new = splev(u_new, tck, der=0)
+            path["interpolated"] = zip(x_new, y_new)
 
+    @staticmethod
+    def draw_point(point, color, size=14):
+        plt.plot(point[0], point[1], marker='o', color=color, markersize=size)

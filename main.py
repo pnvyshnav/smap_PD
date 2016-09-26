@@ -1,8 +1,8 @@
 from simulatorClass import *
 from mapHybrid import *
+
 from planner import *
 from results import *
-from mapLogOdds import *
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,42 +19,41 @@ sim.draw()
 map = MapHybrid()
 map.draw()
 
-mapLogOdds = MapLogOdds()
-mapLogOdds.draw()
+trueMap = TrueMap()
 
-robotSensorBelief = RobotSensor(Par.initialPoseGlobal[0:1+1],Par.initialPoseGlobal[2])
-robotSensorBelief.draw(map.plot_h['axis'])
+
+measurePositions = [Par.initialPoseGlobal]
 
 planner = Planner()
-results = Results(sim.trueMap)
+results = Results(trueMap)
 
-# main loop
-for k in range(Par.numSteps+1):
-    print(k)
-    z = sim.getObservation()
-    sim.robotSensor.draw(sim.trueMap.grid.plot_h['axis'])
+for mp in measurePositions:
+    robotSensorBelief = RobotSensor(mp[0:1+1],mp[2])
+    robotSensorBelief.draw(map.plot_h['axis'])
 
-    map.update(z, robotSensorBelief.sensor)
-    map.draw()
-    # robotSensorBelief.draw(map.plot_h['axis'])
+    # main loop
+    for k in range(Par.numSteps+1):
+        print(k)
+        z = sim.getObservation()
+        sim.robotSensor.draw(sim.trueMap.grid.plot_h['axis'])
 
-    mapLogOdds.update(z, robotSensorBelief.sensor)
-    mapLogOdds.draw()
-    # robotSensorBelief.robot.robotNeedRefresh = True
-    # robotSensorBelief.sensor.sensorNeedRefresh = True
-    # robotSensorBelief.draw(mapLogOdds.plot_h['axis'])
+        map.update(z, robotSensorBelief.sensor)
+        map.draw()
+        robotSensorBelief.draw(map.plot_h['axis'])
+        robotSensorBelief.robot.robotNeedRefresh = True
+        robotSensorBelief.sensor.sensorNeedRefresh = True
 
-    # update robot pose
-    (action, execution_time) = planner.pureRotation()
-    sim.robotSensor.move(action, execution_time)
-    robotSensorBelief.move(action, execution_time)
+        # update robot pose
+        (action, execution_time) = planner.pureRotation()
+        sim.robotSensor.move(action, execution_time)
+        robotSensorBelief.move(action, execution_time)
 
-    if k == Par.numSteps:
-        saveFlag = False
-    else:
-        saveFlag = False
+        if k == Par.numSteps:
+            saveFlag = False
+        else:
+            saveFlag = False
 
-    results.draw(map, mapLogOdds, k, saveFlag)
+        results.draw(map, None, k, saveFlag)
 
 plt.show()
 print "end of main"
