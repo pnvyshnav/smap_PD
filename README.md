@@ -9,6 +9,7 @@ The following plot shows the full map error evolution over time for the 3 differ
 Each path is curently evaluated on a fresh belief map with prior belief of 0.5. Measurements are taken along the path, starting at the start node and continuing with 3 more, equidistant points on the path.
 
 Currently, the following statistics are computed:
+
 |                | Reachability     | Variance     |
 | -------------- | ----------------:| ------------:|
 | Path 1 (red)   |       **39.60%** |     0.001038 |
