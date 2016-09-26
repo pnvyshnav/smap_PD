@@ -65,28 +65,38 @@ class BeliefMapBase(BaseMap):
         BaseMap.draw_point(self.start, "#0066FF")
         BaseMap.draw_point(self.goal, "#FF6600")
 
-        for i, path in enumerate(self.paths):
-            reachability = 1.
-            for vox in path["voxels"]:
-                reachability *= (1. - vox.meanDensity())
-            print("path %i (%s) has a reachability of %.2f%%" % (i+1, path["color"], reachability*100.))
-
-        for i, path in enumerate(self.paths):
-            # hack: normalized sum of individual voxel variances (variance of sum of independent random variables)
-            variance = sum(map(lambda vox: vox.varDensity(), path["voxels"])) / len(path["voxels"])
-            #first = 1.
-            #second = 1.
-            #for vox in path["voxels"]:
-            #    var = vox.varDensity()
-            #    mean = vox.meanDensity()
-            #    first *= var + mean ** 2.
-            #    second *= mean ** 2.
-            #variance = first - second
-            print("path %i (%s) has a variance of %.6f" % (i+1, path["color"], variance))
-
         for p in self.paths:
             x, y = zip(*p["interpolated"])
             plt.plot(x, y, '-', color=p["color"])
 
         if Par.liveDrawing:
             plt.pause(1e-6)
+
+    def evaluate_path(self, pathId = None):
+        def evaluate(id):
+            path = self.paths[id]
+            reachability = 1.
+            for vox in path["voxels"]:
+                reachability *= (1. - vox.meanDensity())
+            print("Path %i (%s) has a reachability of %.2f%%." % (id + 1, path["color"], reachability * 100.))
+
+            # hack: normalized sum of individual voxel variances (variance of sum of independent random variables)
+            variance = sum(map(lambda vox: vox.varDensity(), path["voxels"])) / len(path["voxels"])
+
+            # The following compute would compute the variance of a product of independent random variables.
+            # Since mean & variance are << 0, the resulting product variance also approaches 0.
+            #   first = 1.
+            #   second = 1.
+            #   for vox in path["voxels"]:
+            #       var = vox.varDensity()
+            #       mean = vox.meanDensity()
+            #       first *= var + mean ** 2.
+            #       second *= mean ** 2.
+            #   variance = first - second
+
+            print("Path %i (%s) has a variance of %.6f." % (id + 1, path["color"], variance))
+
+        if pathId is None:
+            map(evaluate, range(len(self.paths)))
+        else:
+            evaluate(pathId)

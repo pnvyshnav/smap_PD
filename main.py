@@ -7,6 +7,8 @@ from results import *
 import numpy as np
 import matplotlib.pyplot as plt
 
+import sys
+
 print('start the program')
 plt.close("all")
 
@@ -21,39 +23,60 @@ map.draw()
 
 trueMap = TrueMap()
 
-
-measurePositions = [Par.initialPoseGlobal]
-
 planner = Planner()
 results = Results(trueMap)
 
-for mp in measurePositions:
-    robotSensorBelief = RobotSensor(mp[0:1+1],mp[2])
-    robotSensorBelief.draw(map.plot_h['axis'])
+for pathId, path in enumerate(map.paths):
+    print("\nEvaluating path %i (%s)" % (pathId+1, path["color"]))
 
-    # main loop
-    for k in range(Par.numSteps+1):
-        print(k)
-        z = sim.getObservation()
-        sim.robotSensor.draw(sim.trueMap.grid.plot_h['axis'])
+    sim = Simulator()
 
-        map.update(z, robotSensorBelief.sensor)
-        map.draw()
+    map = MapHybrid()
+    map.draw()
+
+    measurePositions = path["interpolated"][::30]
+    totalSteps = len(measurePositions) * (Par.numSteps+1)
+    stepCounter = 0.
+    for mp in measurePositions:
+        pose = np.array(list(mp) + [Par.initialPoseGlobal[2]])
+        sim.setRobot(pose)
+        sim.draw()
+        robotSensorBelief = RobotSensor(pose[0:1+1], Par.initialPoseGlobal[2])
         robotSensorBelief.draw(map.plot_h['axis'])
-        robotSensorBelief.robot.robotNeedRefresh = True
-        robotSensorBelief.sensor.sensorNeedRefresh = True
 
-        # update robot pose
-        (action, execution_time) = planner.pureRotation()
-        sim.robotSensor.move(action, execution_time)
-        robotSensorBelief.move(action, execution_time)
+        # main loop
+        for k in range(Par.numSteps+1):
+            stepCounter += 1
 
-        if k == Par.numSteps:
-            saveFlag = False
-        else:
-            saveFlag = False
+            sys.stdout.write("\r\tEvaluated %.2f%%\t\t" % (stepCounter*100./totalSteps))
+            sys.stdout.flush()
 
-        results.draw(map, None, k, saveFlag)
+            z = sim.getObservation()
+            sim.robotSensor.draw(sim.trueMap.grid.plot_h['axis'])
+
+            map.update(z, robotSensorBelief.sensor)
+            map.draw()
+            robotSensorBelief.draw(map.plot_h['axis'])
+            robotSensorBelief.robot.robotNeedRefresh = True
+            robotSensorBelief.sensor.sensorNeedRefresh = True
+
+            # update robot pose
+            (action, execution_time) = planner.pureRotation()
+            sim.robotSensor.move(action, execution_time)
+            robotSensorBelief.move(action, execution_time)
+
+            if k == Par.numSteps:
+                saveFlag = False
+            else:
+                saveFlag = False
+
+            results.draw(map, None, k, saveFlag)
+
+        del robotSensorBelief
+
+    sys.stdout.write("\r\t\t\t\t\t\t\t\t\t\n")
+    sys.stdout.flush()
+    map.evaluate_path(pathId)
 
 plt.show()
 print "end of main"
