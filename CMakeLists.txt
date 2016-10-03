@@ -138,7 +138,7 @@ file(GLOB smap_SRC
 # add_dependencies(smap ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(smap_node src/main.cpp src/parameters.hpp src/BeliefTreeNode.cpp)
+add_executable(smap_node src/main.cpp src/parameters.hpp src/BeliefVoxel.cpp src/BeliefMap.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

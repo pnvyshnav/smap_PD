@@ -21,9 +21,13 @@ public:
 
     bool isBeliefValid() const;
 
+    void updateBelief(Parameters::NumType a, Parameters::NumType b);
+
+    bool operator== (const Belief& rhs) const;
+
 private:
     Particles pdf;
     static Particles generateParticles();
 };
 
-typedef octomap::OcTreeDataNode<Belief> BeliefTreeNode;
+typedef octomap::OcTreeDataNode<Belief> BeliefVoxel;

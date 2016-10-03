@@ -34,7 +34,8 @@
 #include <octomap/octomap.h>
 #include <octomap/OcTree.h>
 
-#include "BeliefTreeNode.h"
+#include "BeliefVoxel.h"
+#include "BeliefMap.h"
 
 using namespace std;
 using namespace octomap;
@@ -48,7 +49,17 @@ void print_query_info(point3d query, OcTreeNode* node) {
     cout << "occupancy probability at " << query << ":\t is unknown" << endl;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
+    cout << endl;
+    cout << "generating example map" << endl;
+    BeliefMap map;
+    cout << map.calcNumNodes() << std::endl;
+
+    return 0;
+}
+
+int main2(int argc, char** argv) {
 
   cout << endl;
   cout << "generating example map" << endl;
