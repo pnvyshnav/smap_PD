@@ -67,7 +67,7 @@ int main2(int argc, char** argv) {
   OcTree tree (0.1);  // create empty tree with resolution 0.1
 
 
-  // insert some measurements of occupied cells
+  // insert some _measurements of occupied cells
 
   for (int x=-20; x<20; x++) {
     for (int y=-20; y<20; y++) {
@@ -78,7 +78,7 @@ int main2(int argc, char** argv) {
     }
   }
 
-  // insert some measurements of free cells
+  // insert some _measurements of free cells
 
   for (int x=-30; x<30; x++) {
     for (int y=-30; y<30; y++) {

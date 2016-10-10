@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+FIND_PACKAGE(Eigen3 REQUIRED)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -138,7 +139,7 @@ file(GLOB smap_SRC
 # add_dependencies(smap ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(smap_node src/main.cpp src/parameters.hpp src/BeliefVoxel.cpp src/BeliefMap.cpp)
+add_executable(smap_node src/main.cpp src/parameters.hpp src/BeliefVoxel.cpp src/BeliefMap.cpp src/RobotSensor.cpp src/RobotSensor.h src/PixelSensor.cpp src/PixelSensor.h)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

@@ -1,10 +1,13 @@
 #pragma once
 
 #include <cmath>
+#include <eigen3/Eigen/Core>
 
 class Parameters {
 public:
     typedef float NumType;
+    typedef Eigen::Vector3f Vec3Type;
+
 
     static constexpr NumType equalityThreshold = 1e-16;
 
