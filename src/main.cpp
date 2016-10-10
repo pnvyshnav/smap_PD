@@ -37,6 +37,8 @@
 #include "BeliefVoxel.h"
 #include "BeliefMap.h"
 
+ #include "TruncatedGaussian.hpp"
+
 using namespace std;
 using namespace octomap;
 
@@ -55,6 +57,17 @@ int main(int argc, char **argv)
     cout << "generating example map" << endl;
     BeliefMap map;
     cout << map.calcNumNodes() << std::endl;
+
+    TruncatedGaussian g(3, 5, -100, 100);
+    cout << "g = TruncatedGaussian(3, 5, -100, 100)" << endl;
+    cout << "g.cdfValue(4) .. 0.5" << endl;
+    cout << g.cdfValue(4) << endl;
+    cout << "g.pdfValue(4) .. 0.079788456080286549" << endl;
+    cout << g.pdfValue(4) << endl;
+    for (int i = 0; i < 15; ++i)
+    {
+      cout << "g.sample():  " << g.sample() << endl;
+    }
 
     return 0;
 }

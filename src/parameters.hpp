@@ -22,4 +22,7 @@ public:
     static constexpr NumType yMax = 1. + voxelSize/2.;
     static constexpr unsigned int maxDepth = (int)std::ceil((double)std::log2((xMax - xMin) / voxelSize));
     static constexpr unsigned int voxelsPerDimension = (xMax - xMin) / voxelSize;
+
+    static const bool sensorTruncatedGaussianNoise = false;
+    static constexpr NumType sensorRange = 1.;
 };

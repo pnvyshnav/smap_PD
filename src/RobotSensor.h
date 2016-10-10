@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <octomap/OccupancyOcTreeBase.h>
+#include <octomap/OcTree.h>
 
 #include "parameters.hpp"
 
@@ -15,9 +15,9 @@ private:
     std::vector<Parameters::NumType> _measurements;
 };
 
-virtual class RangeSensor {
+class RangeSensor {
 public:
-    virtual Observation observe(const octomap::OccupancyOcTreeBase &trueMap) const = 0;
+    virtual Observation observe(const octomap::OcTree &trueMap) const = 0;
 
     const Parameters::Vec3Type &position() const;
     void setPosition(const Parameters::Vec3Type &_position);
@@ -40,7 +40,7 @@ public:
     const Parameters::Vec3Type &orientation() const;
     void setOrientation(const Parameters::Vec3Type &_orientation);
 
-    Observation observe(const octomap::OccupancyOcTreeBase &trueMap) const;
+    Observation observe(const octomap::OcTree &trueMap) const;
 
 private:
     Parameters::Vec3Type _position;

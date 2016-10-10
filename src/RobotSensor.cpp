@@ -24,7 +24,7 @@ void RobotSensor::setOrientation(const Parameters::Vec3Type &_orientation) {
 RobotSensor::RobotSensor(const Parameters::Vec3Type &_position, const Parameters::Vec3Type &_orientation,
                          RangeSensor *_sensor) : _position(_position), _orientation(_orientation), _sensor(_sensor) {}
 
-Observation RobotSensor::observe(const octomap::OccupancyOcTreeBase &trueMap) const {
+Observation RobotSensor::observe(const octomap::OcTree &trueMap) const {
     return Observation(std::vector<Parameters::NumType>());
 }
 
