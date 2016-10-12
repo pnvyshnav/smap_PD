@@ -36,8 +36,9 @@
 
 #include "BeliefVoxel.h"
 #include "BeliefMap.h"
+#include "TrueMap.h"
 
- #include "TruncatedGaussian.hpp"
+#include "TruncatedGaussian.hpp"
 
 using namespace std;
 using namespace octomap;
@@ -55,8 +56,8 @@ int main(int argc, char **argv)
 {
     cout << endl;
     cout << "generating example map" << endl;
-    BeliefMap map;
-    cout << map.calcNumNodes() << std::endl;
+    BeliefMap beliefMap;
+    cout << beliefMap.calcNumNodes() << std::endl;
 
     TruncatedGaussian g(3, 5, -100, 100);
     cout << "g = TruncatedGaussian(3, 5, -100, 100)" << endl;
@@ -68,6 +69,9 @@ int main(int argc, char **argv)
     {
       cout << "g.sample():  " << g.sample() << endl;
     }
+
+    TrueMap trueMap = TrueMap::generate();
+    trueMap.writeBinary("simple_tree.bt");
 
     return 0;
 }

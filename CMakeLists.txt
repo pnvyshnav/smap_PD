@@ -141,7 +141,7 @@ file(GLOB smap_SRC
 # add_dependencies(smap ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(smap src/main.cpp src/parameters.hpp src/BeliefVoxel.cpp src/BeliefMap.cpp src/RobotSensor.cpp src/RobotSensor.h src/PixelSensor.cpp src/PixelSensor.h src/TruncatedGaussian.hpp)
+add_executable(smap src/main.cpp src/parameters.hpp src/BeliefVoxel.cpp src/BeliefMap.cpp src/RobotSensor.cpp src/RobotSensor.h src/PixelSensor.cpp src/PixelSensor.h src/TruncatedGaussian.hpp src/TrueMap.h src/TrueMap.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
