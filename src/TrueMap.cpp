@@ -6,7 +6,7 @@
 #include <cmath>
 #include <sstream>
 
-#include "parameters.hpp"
+#include "Parameters.hpp"
 
 TrueMap::TrueMap() : octomap::OcTree(Parameters::voxelSize)
 {

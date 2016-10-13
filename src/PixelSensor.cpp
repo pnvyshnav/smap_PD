@@ -15,18 +15,18 @@ void PixelSensor::setDirection(Parameters::Vec3Type direction)
 }
 
 
-Parameters::Vec3Type position() const
+Parameters::Vec3Type PixelSensor::position() const
 {
 	return _position;
 }
 
-void setPosition(Parameters::Vec3Type position)
+void PixelSensor::setPosition(Parameters::Vec3Type position)
 {
 	_position = position;
 }
 
 
-Parameters::NumType observe(const TrueMap &trueMap)
+Parameters::NumType PixelSensor::observe(const TrueMap &trueMap) const
 {
 	if (Parameters::deterministicSensorMeasurements)
 	{
@@ -39,6 +39,6 @@ Parameters::NumType observe(const TrueMap &trueMap)
 		return _position.distance(hitpoint);
 	}
 
-	///TODO implement non-deterministic case (add noise).
+	//TODO implement non-deterministic case (add noise).
 	return -1;
 }

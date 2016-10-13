@@ -32,7 +32,7 @@ public:
      * @param trueMap The true occupancy map.
      * @return Scalar representing the simulated distance measurent.
      */
-    Parameters::NumType observe(const TrueMap &trueMap);
+    Parameters::NumType observe(const TrueMap &trueMap) const;
 
 private:
     Parameters::Vec3Type _direction;

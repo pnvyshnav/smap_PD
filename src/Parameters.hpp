@@ -27,7 +27,6 @@ public:
     static constexpr NumType xCenter = (xMax + xMin) / 2.0;
     static constexpr NumType yCenter = (yMax + yMin) / 2.0;
     static constexpr NumType zCenter = (zMax + zMin) / 2.0;
-    static constexpr NumType zCenter = (zMax + zMin) / 2.0;
     static constexpr unsigned int maxDepth = (int)std::ceil((double)std::log2((xMax - xMin) / voxelSize));
     static constexpr unsigned int voxelsPerDimension = (xMax - xMin) / voxelSize;
     static constexpr NumType freeRadiusAroundCenter = .8;

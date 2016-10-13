@@ -7,7 +7,7 @@
 #include <boost/random.hpp>
 #include <boost/math/distributions/normal.hpp>
 
-#include "parameters.hpp"
+#include "Parameters.hpp"
 
 
 class TruncatedGaussian {

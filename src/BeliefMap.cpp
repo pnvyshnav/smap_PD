@@ -5,7 +5,10 @@
 #include <cmath>
 #include <sstream>
 
-#include "parameters.hpp"
+#include "Parameters.hpp"
+#include <octomap/AbstractOcTree.h>
+
+class registerTreeType;
 
 std::string keyToStr(octomap::OcTreeKey key)
 {

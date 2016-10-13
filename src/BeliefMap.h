@@ -7,7 +7,7 @@
 #include <octomap/OcTreeDataNode.h>
 #include <octomap/OcTreeBase.h>
 
-#include "parameters.hpp"
+#include "Parameters.hpp"
 #include "BeliefVoxel.h"
 
 class BeliefMap : public octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractOcTree>
