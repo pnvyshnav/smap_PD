@@ -6,8 +6,13 @@ StereoCameraSensor::StereoCameraSensor(Parameters::Vec3Type &position, Parameter
 
 Observation StereoCameraSensor::observe(TrueMap &trueMap) const
 {
-    std::vector<Parameters::NumType> measurements;
+    std::vector<Measurement> measurements;
     for (auto &sensor : _pixelSensors)
         measurements.push_back(sensor.observe(trueMap));
     return Observation(measurements);
+}
+
+std::vector<PixelSensor> StereoCameraSensor::pixels() const
+{
+    return _pixelSensors;
 }
