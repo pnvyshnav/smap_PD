@@ -8,17 +8,20 @@
 #include <boost/math/distributions/normal.hpp>
 
 #include "Parameters.hpp"
+#include "UniformDistribution.hpp"
 
 
-class TruncatedGaussian {
+class TruncatedGaussianDistribution
+{
 public:
-	TruncatedGaussian(
+	TruncatedGaussianDistribution(
 		Parameters::NumType mean,
 		Parameters::NumType std,
 		Parameters::NumType lowerBound,
-		Parameters::NumType upperBound) : _mean(mean), _std(std)
+		Parameters::NumType upperBound,
+		bool truncated = Parameters::sensorTruncatedGaussianNoise) : _mean(mean), _std(std)
 	{
-		if (!Parameters::sensorTruncatedGaussianNoise)
+		if (!truncated)
 		{
 			// we have to be able to express (negative) infinite numbers
 			static_assert(std::numeric_limits<Parameters::NumType>::is_iec559, "IEEE 754 required");
@@ -31,32 +34,29 @@ public:
 			_upperBound = upperBound;
 		}
 
-    	_normal = boost::math::normal_distribution<Parameters::NumType>(0, 1);
-		_area = boost::math::cdf(_normal, (_upperBound - _mean)/_std) - boost::math::cdf(_normal, (_lowerBound - _mean)/_std);
-	
-		std::random_device rd;
-	    _generator = std::mt19937(rd());
-	    _uniform = std::uniform_real_distribution<Parameters::NumType>(0, 1);
+		_area = boost::math::cdf(_normal, (_upperBound - _mean)/_std)
+				- boost::math::cdf(_normal, (_lowerBound - _mean)/_std);
 	}
 		
 	Parameters::NumType pdfValue(Parameters::NumType x) const
 	{
-		return (1. / (_std * _area)) * boost::math::pdf(_normal, (x - _mean)/_std);
+		return (Parameters::NumType) ((1. / (_std * _area)) * boost::math::pdf(_normal, (x - _mean) / _std));
 	}
 
 	Parameters::NumType cdfValue(Parameters::NumType x) const
 	{
-		return (1. / _area) * (boost::math::cdf(_normal, (x - _mean)/_std) - boost::math::cdf(_normal, (_lowerBound - _mean)/_std));
+		return (Parameters::NumType) ((1. / _area) * (boost::math::cdf(_normal, (x - _mean) / _std)
+													  - boost::math::cdf(_normal, (_lowerBound - _mean) / _std)));
 	}
 
 	Parameters::NumType sample()
 	{
 		// Wikipedia says below algorithm is slow and not very accurate... see wiki for better sampling methods
-		Parameters::NumType u = _uniform(_generator);
+		Parameters::NumType u = UniformDistribution::sample();
 		Parameters::NumType cdf_tmp = boost::math::cdf(_normal, (_lowerBound - _mean)/_std);
 		Parameters::NumType quantile_tmp = boost::math::quantile(_normal, _area*u + cdf_tmp);
 		return _mean + _std * quantile_tmp;
-	}	
+	}
 
 private:
 	const Parameters::NumType _mean;
@@ -66,7 +66,8 @@ private:
 	Parameters::NumType _upperBound;
 	Parameters::NumType _area;
 
-	boost::math::normal_distribution<Parameters::NumType> _normal;
-	std::uniform_real_distribution<Parameters::NumType> _uniform;
-	std::mt19937 _generator;
+    __attribute__((weak))
+	static boost::math::normal_distribution<Parameters::NumType> _normal;
 };
+
+boost::math::normal_distribution<Parameters::NumType> TruncatedGaussianDistribution::_normal = boost::math::normal_distribution<Parameters::NumType>(0, 1);

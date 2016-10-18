@@ -13,7 +13,7 @@ public:
     Sensor(Parameters::Vec3Type &position,
            Parameters::Vec3Type &orientation);
 
-    virtual Observation observe(const TrueMap &trueMap) const = 0;
+    virtual Observation observe(TrueMap &trueMap) const = 0;
 
     Parameters::Vec3Type position() const;
     void setPosition(const Parameters::Vec3Type &position);

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <sstream>
+#include <ros/console.h>
 
 #include "../include/Parameters.hpp"
 
@@ -28,7 +29,9 @@ TrueMap TrueMap::generate(unsigned int seed)
                 if (center.distance(point) <= Parameters::freeRadiusAroundCenter)
                 {
                     map.updateNode(point, false);
-                } else {
+                }
+                else
+                {
                     bool occupied = rand() % 3 == 1; // 1/3 occupied
                     map.updateNode(point, occupied);
                 }
@@ -36,4 +39,15 @@ TrueMap TrueMap::generate(unsigned int seed)
         }
     }
     return map;
+}
+
+TrueVoxel TrueMap::query(octomap::point3d &position) const
+{
+    octomap::OcTreeNode *node = search(position);
+    if (!node)
+    {
+        ROS_WARN_STREAM("Voxel could not be found at position" << position);
+        return TrueVoxel(-1., position, false);
+    }
+    return TrueVoxel(node->getOccupancy(), position, true);
 }

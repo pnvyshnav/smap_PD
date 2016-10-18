@@ -39,7 +39,7 @@
 #include "../include/TrueMap.h"
 #include "../include/Robot.hpp"
 
-#include "../include/TruncatedGaussian.hpp"
+#include "../include/TruncatedGaussianDistribution.hpp"
 
 using namespace std;
 using namespace octomap;
@@ -62,8 +62,8 @@ int main(int argc, char **argv)
     BeliefMap beliefMap;
     cout << beliefMap.calcNumNodes() << std::endl;
 
-    TruncatedGaussian g(3, 5, -100, 100);
-    cout << "g = TruncatedGaussian(3, 5, -100, 100)" << endl;
+    TruncatedGaussianDistribution g(3, 5, -100, 100);
+    cout << "g = TruncatedGaussianDistribution(3, 5, -100, 100)" << endl;
     cout << "g.cdfValue(4) .. 0.5" << endl;
     cout << g.cdfValue(4) << endl;
     cout << "g.pdfValue(4) .. 0.079788456080286549" << endl;

@@ -45,7 +45,7 @@ public:
         _sensor.setOrientation(orientation);
     }
 
-    Observation observe(const TrueMap &trueMap) const
+    Observation observe(TrueMap &trueMap) const
     {
         return _sensor.observe(trueMap);
     }

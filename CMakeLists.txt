@@ -148,19 +148,19 @@ add_executable(smap src/main.cpp
         include/Robot.hpp
         src/PixelSensor.cpp
         include/PixelSensor.h
-        include/TruncatedGaussian.hpp
+        include/TruncatedGaussianDistribution.hpp
         include/TrueMap.h
         src/TrueMap.cpp
-        src/StereoCameraSensor.cpp include/Sensor.cpp include/Sensor.h)
+        src/StereoCameraSensor.cpp include/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(smap_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(smap_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(smap
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##

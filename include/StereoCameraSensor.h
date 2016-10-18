@@ -14,7 +14,7 @@ public:
     StereoCameraSensor(Parameters::Vec3Type &position,
                        Parameters::Vec3Type &orientation);
 
-    virtual Observation observe(const TrueMap &trueMap) const;
+    virtual Observation observe(TrueMap &trueMap) const;
 
 private:
 	std::vector<PixelSensor> _pixelSensors;

@@ -4,8 +4,12 @@
 //#include <eigen3/Eigen/Core>
 #include <octomap/OcTree.h>
 
-class Parameters {
+class Parameters
+{
 public:
+
+    // TODO make configurable via ROS config
+
     typedef float NumType;
     typedef octomap::point3d Vec3Type;
 
@@ -33,6 +37,7 @@ public:
 
     static const bool sensorTruncatedGaussianNoise = false;
     static constexpr NumType sensorRange = 1.;
+    static constexpr NumType sensorNoiseStd = sensorRange / 20.;
 
     /**
      * Sensor measurements without noise (deterministic case)
