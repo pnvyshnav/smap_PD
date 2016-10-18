@@ -1,4 +1,4 @@
-#include "BeliefVoxel.h"
+#include "../include/BeliefVoxel.h"
 
 #include <array>
 #include <algorithm>
@@ -6,7 +6,7 @@
 
 #include <octomap/OcTreeDataNode.h>
 
-#include "Parameters.hpp"
+#include "../include/Parameters.hpp"
 
 const Belief::Particles Belief::particles = Belief::generateParticles();
 

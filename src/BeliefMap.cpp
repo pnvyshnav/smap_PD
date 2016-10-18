@@ -1,11 +1,11 @@
-#include "BeliefMap.h"
+#include "../include/BeliefMap.h"
 
 #include <array>
 #include <algorithm>
 #include <cmath>
 #include <sstream>
 
-#include "Parameters.hpp"
+#include "../include/Parameters.hpp"
 #include <octomap/AbstractOcTree.h>
 
 class registerTreeType;

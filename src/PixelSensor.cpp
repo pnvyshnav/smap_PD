@@ -1,4 +1,4 @@
-#include "PixelSensor.h"
+#include "../include/PixelSensor.h"
 
 PixelSensor::PixelSensor(Parameters::Vec3Type direction, Parameters::Vec3Type position)
 	: _position(position), _direction(direction) {}

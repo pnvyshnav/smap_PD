@@ -1,4 +1,4 @@
-#include "TrueMap.h"
+#include "../include/TrueMap.h"
 
 #include <stdlib.h> 
 #include <array>
@@ -6,7 +6,7 @@
 #include <cmath>
 #include <sstream>
 
-#include "Parameters.hpp"
+#include "../include/Parameters.hpp"
 
 TrueMap::TrueMap() : octomap::OcTree(Parameters::voxelSize)
 {

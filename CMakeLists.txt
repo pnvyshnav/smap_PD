@@ -142,16 +142,16 @@ file(GLOB smap_SRC
 
 ## Declare a C++ executable
 add_executable(smap src/main.cpp
-        src/Parameters.hpp
+        include/Parameters.hpp
         src/BeliefVoxel.cpp
         src/BeliefMap.cpp
-        src/Robot.hpp
+        include/Robot.hpp
         src/PixelSensor.cpp
-        src/PixelSensor.h
-        src/TruncatedGaussian.hpp
-        src/TrueMap.h
+        include/PixelSensor.h
+        include/TruncatedGaussian.hpp
+        include/TrueMap.h
         src/TrueMap.cpp
-        src/StereoCameraSensor.cpp)
+        src/StereoCameraSensor.cpp include/Sensor.cpp include/Sensor.h)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

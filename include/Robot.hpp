@@ -9,15 +9,17 @@
 #include "TrueMap.h"
 
 
-class value;
-
-template <class SENSOR>
+/**
+ * Representation of a robot in a given pose and having a sensor.
+ * Provided SENSOR template has to behave like {@see Sensor}.
+ */
+template <class SENSOR = StereoCameraSensor>
 class Robot
 {
-    static_assert(std::is_base_of<Sensor, SENSOR>::value, "SENSOR must inherit from Sensor");
 public:
-    Robot(Parameters::Vec3Type &position,
-          Parameters::Vec3Type &orientation)
+
+    Robot(Parameters::Vec3Type position,
+          Parameters::Vec3Type orientation)
             : _position(position), _orientation(orientation),
               _sensor(position, orientation) {}
 
