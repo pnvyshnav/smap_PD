@@ -4,9 +4,11 @@
 #include <algorithm>
 #include <cmath>
 #include <sstream>
+#include <cassert>
 
 #include "../include/Parameters.hpp"
 #include <octomap/AbstractOcTree.h>
+#include <memory>
 
 class registerTreeType;
 
@@ -18,16 +20,17 @@ std::string keyToStr(octomap::OcTreeKey key)
 }
 
 BeliefMap::BeliefMap() : octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractOcTree>(
-                             Parameters::voxelSize, Parameters::maxDepth, Parameters::voxelsPerDimension)
+                             Parameters::voxelSize, Parameters::maxDepth, Parameters::voxelsPerDimension),
+                         QVoxelMap(this)
 {
     init();
     //tree_center = octomap::point3d(3, 2, 1);
     Belief b;
     root = new BeliefVoxel();
-    root->setValue(b);
+    root->setValue(std::make_shared<Belief>(b));
     root->expandNode();
     this->expand();
-    AbstractOcTree::registerTreeType(this);
+    octomap::AbstractOcTree::registerTreeType(this);
 
     calcMinMax();
 
@@ -56,4 +59,39 @@ std::string BeliefMap::getTreeType() const
 BeliefMap *BeliefMap::create() const
 {
     return new BeliefMap();
+}
+
+Belief *BeliefMap::belief(const octomap::OcTreeKey &key) const
+{
+    BeliefVoxel *voxel = search(key);
+    if (voxel != NULL)
+        return voxel->getValue().get();
+    return NULL;
+}
+
+std::valarray<Parameters::NumType> BeliefMap::bouncingProbabilitiesOnRay(const octomap::KeyRay &ray) const
+{
+    std::valarray<Parameters::NumType> bouncingProbabilities(ray.ray.size());
+    for (unsigned int i = 0; i < ray.ray.size(); ++i)
+    {
+        auto *b = belief(ray.ray[i]);
+        if (b == NULL)
+            bouncingProbabilities[i] = 0; // correct error handling?
+        else
+            bouncingProbabilities[i] = b->mean();
+    }
+    return bouncingProbabilities;
+}
+
+std::valarray<Parameters::NumType> BeliefMap::reachingProbabilitiesOnRay(const octomap::KeyRay &ray,
+                                                                         const std::valarray<Parameters::NumType> &bouncingProbabilities) const
+{
+    assert(ray.ray.size() == bouncingProbabilities.size());
+    std::valarray<Parameters::NumType> reachingProbabilities(ray.ray.size());
+    reachingProbabilities[0] = (Parameters::NumType) (1. - Parameters::spuriousMeasurementProbability);
+    for (unsigned int i = 1; i < ray.ray.size(); ++i)
+    {
+        reachingProbabilities[i] = (Parameters::NumType) (reachingProbabilities[i - 1] * (1. - bouncingProbabilities[i - 1]));
+    }
+    return reachingProbabilities;
 }

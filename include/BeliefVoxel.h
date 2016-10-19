@@ -1,7 +1,8 @@
 #pragma once
 
-#include <array>
+#include <valarray>
 #include <algorithm>
+#include <memory>
 #include <cmath>
 
 #include <octomap/OcTreeDataNode.h>
@@ -11,7 +12,8 @@
 class Belief
 {
 public:
-    typedef std::array<Parameters::NumType, Parameters::numParticles> Particles;
+    typedef std::valarray<Parameters::NumType> Particles;
+
     static const Particles particles;
 
     Belief();
@@ -30,4 +32,6 @@ private:
     static Particles generateParticles();
 };
 
-typedef octomap::OcTreeDataNode<Belief> BeliefVoxel;
+// The problem: OcTreeDataNode does not provide a virtual destructor.
+// To avoid memory leaks, we use a smart pointer here.
+typedef octomap::OcTreeDataNode<std::shared_ptr<Belief> > BeliefVoxel;

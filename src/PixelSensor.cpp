@@ -2,6 +2,7 @@
 #include "../include/TruncatedGaussianDistribution.hpp"
 
 #include <ros/console.h>
+#include <cassert>
 
 PixelSensor::PixelSensor(Parameters::Vec3Type direction, Parameters::Vec3Type position)
 	: _position(position), _direction(direction)

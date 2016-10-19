@@ -8,6 +8,7 @@
 #include "Observation.hpp"
 #include "BeliefVoxel.h"
 #include "TrueMap.h"
+#include "BeliefMap.h"
 
 class StereoCameraSensor : public Sensor
 {
@@ -19,8 +20,14 @@ public:
 
     std::vector<PixelSensor> pixels() const;
 
-    // TODO update signature and implement!
-    void InverseCauseModel(Measurement measurement, BeliefVoxel beliefVoxel);
+    struct InverseCauseModel
+    {
+        std::vector<Parameters::NumType> posteriorOnRay;
+        std::vector<Parameters::NumType> posteriorInfinity;
+        std::vector<octomap::OcTreeKey> voxelKeys;
+    };
+
+    InverseCauseModel computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap);
 
 private:
 	std::vector<PixelSensor> _pixelSensors;

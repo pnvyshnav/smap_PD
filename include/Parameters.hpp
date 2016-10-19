@@ -39,6 +39,8 @@ public:
     static constexpr NumType sensorRange = 1.;
     static constexpr NumType sensorNoiseStd = sensorRange / 20.;
 
+    static constexpr NumType spuriousMeasurementProbability = 0; // cannot be > 0 for now
+
     /**
      * Sensor measurements without noise (deterministic case)
      */

@@ -7,7 +7,7 @@
 
 #include "../include/TrueMap.h"
 
-TrueMap::TrueMap() : octomap::OcTree(Parameters::voxelSize)
+TrueMap::TrueMap() : octomap::OcTree(Parameters::voxelSize), QVoxelMap(this)
 {
 }
 
@@ -37,28 +37,4 @@ TrueMap TrueMap::generate(unsigned int seed)
         }
     }
     return map;
-}
-
-QVoxel TrueMap::query(octomap::point3d &position) const
-{
-    octomap::OcTreeNode *node = search(position);
-    if (!node)
-    {
-        ROS_WARN_STREAM("Voxel could not be found at position" << position);
-        return QVoxel::hole();
-    }
-    octomap::OcTreeKey key = coordToKey(position);
-    return QVoxel::voxel((Parameters::NumType) node->getOccupancy(), position, key);
-}
-
-QVoxel TrueMap::query(octomap::OcTreeKey key) const
-{
-    octomap::OcTreeNode *node = search(key);
-    octomap::point3d position = keyToCoord(key);
-    if (!node)
-    {
-        ROS_WARN_STREAM("Voxel could not be found at position" << position);
-        return QVoxel::hole();
-    }
-    return QVoxel::voxel((Parameters::NumType) node->getOccupancy(), position, key);
 }
