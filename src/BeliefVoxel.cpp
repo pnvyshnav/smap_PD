@@ -1,6 +1,6 @@
 #include "../include/BeliefVoxel.h"
 
-#include <array>
+#include <valarray>
 #include <algorithm>
 #include <cmath>
 #include <cassert>
@@ -14,7 +14,10 @@ const Belief::Particles Belief::particles = Belief::generateParticles();
 
 Belief::Belief()
 {
-    //TODO initialize pdf
+    unsigned int n = Parameters::numParticles;
+    Parameters::NumType c1 = (Parameters::NumType) ((4. * n - 2. - 6. * (n - 1) * Parameters::priorMean) / (n * n + n));
+    Parameters::NumType c2 = (Parameters::NumType) (-c1 + 2. / n);
+    pdf = c2-(c2-c1)*particles;
 }
 
 Parameters::NumType Belief::mean() const

@@ -1,39 +1,29 @@
 #pragma once
 
+#include <valarray>
+
 #include "Parameters.hpp"
 #include "TrueMap.h"
 #include "Observation.hpp"
+#include "BeliefMap.h"
+#include "Sensor.h"
 
 
 /**
  * @brief Represents a range sensor that only computes a single ray.
  */
-class PixelSensor
+class PixelSensor : public Sensor
 {
 public:
-    PixelSensor(Parameters::Vec3Type direction, Parameters::Vec3Type position);
-
-    /**
-     * @brief Normalized vector describing the orientation of the pixel sensor.
-     */
-    Parameters::Vec3Type direction() const;
-    void setDirection(Parameters::Vec3Type direction);
-
-
-    /**
-     * @brief Global position of the pixel sensor.
-     */
-    Parameters::Vec3Type position() const;
-    void setPosition(Parameters::Vec3Type position);
-
+    PixelSensor(Parameters::Vec3Type position, Parameters::Vec3Type orientation);
 
     /**
      * @brief Simulates a range sensor measurement given the true map. 
      * 
      * @param trueMap The true occupancy map.
-     * @return @see Measurement.
+     * @return @see Observation.
      */
-    Measurement observe(TrueMap &trueMap) const;
+    Observation observe(TrueMap &trueMap) const;
 
     /**
      * @brief Computes the likelihood of the measurement given the true voxel that caused the measurement.
@@ -41,18 +31,15 @@ public:
      * @param causeVoxel The true cause voxel.
      * @return Likelihood between 0 and 1.
      */
-    Parameters::NumType likelihoodGivenCause(Measurement measurement, QVoxel &causeVoxel) const;
+    Parameters::NumType likelihoodGivenCause(Measurement measurement, QTrueVoxel causeVoxel) const;
 
 private:
-    Parameters::Vec3Type _direction;
-    Parameters::Vec3Type _position;
-
     /**
      * @brief Simulate observation of a voxel.
      * @param causeVoxel The voxel to be observed.
      * @param deterministic If false, the measurement becomes noisy.
      * @return Simulated observation measurement.
      */
-    Measurement _observationGivenCause(QVoxel &causeVoxel,
+    Measurement _observationGivenCause(QTrueVoxel causeVoxel,
                                        bool deterministic = Parameters::deterministicSensorMeasurements) const;
 };

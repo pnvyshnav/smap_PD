@@ -41,6 +41,8 @@ public:
 
     static constexpr NumType spuriousMeasurementProbability = 0; // cannot be > 0 for now
 
+    static constexpr NumType priorMean = .5;
+
     /**
      * Sensor measurements without noise (deterministic case)
      */

@@ -79,6 +79,8 @@ int main(int argc, char **argv)
     Robot<> robot(Parameters::Vec3Type(0, 0, 0), Parameters::Vec3Type(1, 0, 0));
     Observation o = robot.observe(trueMap);
 
+    cout << endl << "Update succeeds? " << std::boolalpha << beliefMap.update(o, trueMap) << endl;
+
     return 0;
 }
 

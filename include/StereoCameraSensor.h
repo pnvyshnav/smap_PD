@@ -20,14 +20,13 @@ public:
 
     std::vector<PixelSensor> pixels() const;
 
-    struct InverseCauseModel
-    {
-        std::vector<Parameters::NumType> posteriorOnRay;
-        std::vector<Parameters::NumType> posteriorInfinity;
-        std::vector<octomap::OcTreeKey> voxelKeys;
-    };
-
-    InverseCauseModel computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap);
+    /**
+     * @brief Computes the likelihood of the measurement given the true voxel that caused the measurement.
+     * @param measurement The measurement.
+     * @param causeVoxel The true cause voxel.
+     * @return Likelihood between 0 and 1.
+     */
+    Parameters::NumType likelihoodGivenCause(Measurement measurement, QTrueVoxel causeVoxel) const;
 
 private:
 	std::vector<PixelSensor> _pixelSensors;

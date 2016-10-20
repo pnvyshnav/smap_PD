@@ -5,6 +5,7 @@
 #include "Parameters.hpp"
 #include "TrueMap.h"
 
+class Sensor;
 struct Measurement
 {
     /**
@@ -13,28 +14,33 @@ struct Measurement
     const Parameters::NumType value;
 
     /**
+     * Sensor that produced this measurement.
+     */
+    const Sensor *sensor;
+
+    /**
      * Determines which geometry was sensed.
      */
     const GeometryType geometry;
 
-    static Measurement hole()
+    static Measurement hole(const Sensor *sensor)
     {
-        return Measurement(std::numeric_limits<Parameters::NumType>::infinity(), GEOMETRY_HOLE);
+        return Measurement(sensor, std::numeric_limits<Parameters::NumType>::infinity(), GEOMETRY_HOLE);
     }
 
-    static Measurement spurious()
+    static Measurement spurious(const Sensor *sensor)
     {
-        return Measurement(std::numeric_limits<Parameters::NumType>::infinity(), GEOMETRY_SPURIOUS);
+        return Measurement(sensor, std::numeric_limits<Parameters::NumType>::infinity(), GEOMETRY_SPURIOUS);
     }
 
-    static Measurement voxel(Parameters::NumType value)
+    static Measurement voxel(const Sensor *sensor, Parameters::NumType value)
     {
-        return Measurement(value);
+        return Measurement(sensor, value);
     }
 
 private:
-    Measurement(Parameters::NumType value, GeometryType geometry = GEOMETRY_VOXEL)
-            : value(value), geometry(geometry)
+    Measurement(const Sensor *sensor, Parameters::NumType value, GeometryType geometry = GEOMETRY_VOXEL)
+            : sensor(sensor), value(value), geometry(geometry)
     {}
 };
 
@@ -44,6 +50,15 @@ public:
     Observation(const std::vector<Measurement> &measurements)
             : _measurements(measurements)
     {}
+
+    /**
+     * Allows observation functions to return a single measurement
+     * thanks to the implicit constructor.
+     */
+    Observation(const Measurement &measurement)
+    {
+        _measurements.push_back(measurement);
+    }
 
     const std::vector<Measurement> &measurements() const
     {

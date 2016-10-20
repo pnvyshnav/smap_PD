@@ -11,8 +11,11 @@
 #include "Parameters.hpp"
 #include "BeliefVoxel.h"
 #include "QVoxel.hpp"
+#include "Observation.hpp"
 
-class BeliefMap : public octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractOcTree>, public QVoxelMap<BeliefVoxel, octomap::AbstractOcTree>
+class BeliefMap
+        : public octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractOcTree>,
+          public QVoxelMap<BeliefVoxel, octomap::AbstractOcTree>
 {
 public:
     BeliefMap();
@@ -23,11 +26,18 @@ public:
 
     Belief *belief(const octomap::OcTreeKey &key) const;
 
+    BeliefVoxel *updateNode(const octomap::point3d& position, const Belief &belief);
+    BeliefVoxel *updateNode(const octomap::OcTreeKey& key, const Belief &belief);
+
     std::valarray<Parameters::NumType> bouncingProbabilitiesOnRay(const octomap::KeyRay &ray) const;
 
     std::valarray<Parameters::NumType> reachingProbabilitiesOnRay(const octomap::KeyRay &ray,
                                                                   const std::valarray<Parameters::NumType> &bouncingProbabilities) const;
 
+    bool update(const Observation &observation, TrueMap &trueMap);
+
 private:
+    BeliefVoxel *_updateNodeRecurs(BeliefVoxel* node, bool node_just_created, const octomap::OcTreeKey& key,
+                                   unsigned int depth, const Belief &belief);
 };
 

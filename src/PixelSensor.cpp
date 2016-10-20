@@ -4,58 +4,35 @@
 #include <ros/console.h>
 #include <cassert>
 
-PixelSensor::PixelSensor(Parameters::Vec3Type direction, Parameters::Vec3Type position)
-	: _position(position), _direction(direction)
+PixelSensor::PixelSensor(Parameters::Vec3Type position, Parameters::Vec3Type orientation)
+	: Sensor(position, orientation)
 {}
 
-
-Parameters::Vec3Type PixelSensor::direction() const
-{
-	return _direction;
-}
-
-void PixelSensor::setDirection(Parameters::Vec3Type direction)
-{
-	_direction = direction.normalized();
-}
-
-
-Parameters::Vec3Type PixelSensor::position() const
-{
-	return _position;
-}
-
-void PixelSensor::setPosition(Parameters::Vec3Type position)
-{
-	_position = position;
-}
-
-
-Measurement PixelSensor::observe(TrueMap &trueMap) const
+Observation PixelSensor::observe(TrueMap &trueMap) const
 {
 	if (Parameters::deterministicSensorMeasurements)
 	{
 		octomap::point3d hitpoint;
-		if (trueMap.castRay(_position, _direction, hitpoint, false, Parameters::sensorRange))
+		if (trueMap.castRay(_position, _orientation, hitpoint, false, Parameters::sensorRange))
 		{
-            return Measurement::voxel(_position.distance(hitpoint));
+            return Measurement::voxel(this, (Parameters::NumType) _position.distance(hitpoint));
 		}
 	}
     else
     {
         std::vector<octomap::point3d> positions;
-        octomap::point3d end_ray = _position + _direction * Parameters::sensorRange;
+        octomap::point3d end_ray = _position + _orientation * Parameters::sensorRange;
         if (!trueMap.computeRay(_position, end_ray, positions) || positions.empty())
         {
             ROS_ERROR("Voxels on ray could not be computed.");
-            return Measurement::hole();
+            return Measurement::hole(this);
         }
         else
         {
             for (auto &pos : positions)
             {
-                auto voxel = trueMap.query(pos);
-                if (UniformDistribution::sample() < voxel.occupancy)
+                QTrueVoxel voxel = trueMap.query(pos);
+                if (UniformDistribution::sample() < voxel.node->getOccupancy())
                 {
                     // voxel is the cause voxel
                     return _observationGivenCause(voxel);
@@ -64,21 +41,21 @@ Measurement PixelSensor::observe(TrueMap &trueMap) const
         }
     }
 
-    return Measurement::hole();
+    return Measurement::hole(this);
 }
 
-Measurement PixelSensor::_observationGivenCause(QVoxel &causeVoxel, bool deterministic) const
+Measurement PixelSensor::_observationGivenCause(QTrueVoxel causeVoxel, bool deterministic) const
 {
     assert(causeVoxel.type == GEOMETRY_VOXEL);
 	Parameters::NumType deterministicRange = (Parameters::NumType) causeVoxel.position.distance(_position);
 	if (deterministic)
-		return Measurement::voxel(deterministicRange);
+		return Measurement::voxel(this, deterministicRange);
 	auto tg = TruncatedGaussianDistribution(deterministicRange, Parameters::sensorNoiseStd,
                                             (Parameters::NumType) 0., Parameters::sensorRange);
-	return Measurement::voxel(tg.sample());
+	return Measurement::voxel(this, tg.sample());
 }
 
-Parameters::NumType PixelSensor::likelihoodGivenCause(Measurement measurement, QVoxel &causeVoxel) const
+Parameters::NumType PixelSensor::likelihoodGivenCause(Measurement measurement, QTrueVoxel causeVoxel) const
 {
     if (causeVoxel.type == GEOMETRY_VOXEL)
     {

@@ -13,8 +13,8 @@ TrueMap::TrueMap() : octomap::OcTree(Parameters::voxelSize), QVoxelMap(this)
 
 TrueMap TrueMap::generate(unsigned int seed)
 {
+    srand((unsigned int) time(NULL));
     TrueMap map;
-    srand(seed);
     octomap::point3d center(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter);
     for (Parameters::NumType x = Parameters::xMin; x <= Parameters::xMax; x += Parameters::voxelSize)
     {
@@ -36,5 +36,11 @@ TrueMap TrueMap::generate(unsigned int seed)
             }
         }
     }
+
+    ROS_INFO("True map has %d nodes in total.", (int)map.calcNumNodes());
+    map.calcMinMax();
+    ROS_INFO("True map range: (%.2f %.2f %.2f) to (%.2f %.2f %.2f)",
+             map.min_value[0], map.min_value[1], map.min_value[2],
+             map.max_value[0], map.max_value[1], map.max_value[2]);
     return map;
 }
