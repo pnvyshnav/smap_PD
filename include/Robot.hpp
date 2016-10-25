@@ -50,6 +50,11 @@ public:
         return _sensor.observe(trueMap);
     }
 
+    SENSOR &sensor()
+    {
+        return _sensor;
+    }
+
 private:
     Parameters::Vec3Type _position;
     Parameters::Vec3Type _orientation;

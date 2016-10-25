@@ -28,6 +28,9 @@ public:
      */
     Parameters::NumType likelihoodGivenCause(Measurement measurement, QTrueVoxel causeVoxel) const;
 
+    void setPosition(const Parameters::Vec3Type &position);
+    void setOrientation(const Parameters::Vec3Type &orientation);
+
 private:
 	std::vector<PixelSensor> _pixelSensors;
 };

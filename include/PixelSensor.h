@@ -14,6 +14,7 @@
  */
 class PixelSensor : public Sensor
 {
+    friend class StereoCameraSensor;
 public:
     PixelSensor(Parameters::Vec3Type position, Parameters::Vec3Type orientation);
 

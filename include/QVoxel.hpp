@@ -24,15 +24,16 @@ public:
     const octomap::point3d position;
     const GeometryType type;
     const octomap::OcTreeKey key;
+    const size_t hash;
 
-    static QVoxel hole()
+    static QVoxel hole(const octomap::point3d &position = octomap::point3d())
     {
-        return QVoxel(NULL, octomap::point3d(), GEOMETRY_HOLE);
+        return QVoxel(NULL, position, GEOMETRY_HOLE);
     }
 
-    static QVoxel spurious()
+    static QVoxel spurious(const octomap::point3d &position = octomap::point3d())
     {
-        return QVoxel(NULL, octomap::point3d(), GEOMETRY_SPURIOUS);
+        return QVoxel(NULL, position, GEOMETRY_SPURIOUS);
     }
 
     static QVoxel voxel(NODE *node, const octomap::point3d &position, const octomap::OcTreeKey &key)
@@ -42,9 +43,14 @@ public:
 
 private:
     QVoxel(NODE *node, const octomap::point3d &position, GeometryType type, const octomap::OcTreeKey &key = octomap::OcTreeKey())
-            : node(node), position(position), type(type), key(key)
+            : node(node), position(position), type(type), key(key), hash(_hasher(key))
     {}
+
+    static const octomap::OcTreeKey::KeyHash _hasher;
 };
+
+template<class NODE>
+const octomap::OcTreeKey::KeyHash QVoxel<NODE>::_hasher = octomap::OcTreeKey::KeyHash();
 
 typedef QVoxel<octomap::OcTreeNode> QTrueVoxel;
 typedef QVoxel<BeliefVoxel> QBeliefVoxel;
@@ -56,13 +62,19 @@ template<class NODE, class I>
 class QVoxelMap
 {
 public:
-    QVoxel<NODE> query(octomap::point3d &position) const
+    QVoxel<NODE> query(Parameters::NumType x, Parameters::NumType y, Parameters::NumType z) const
+    {
+        auto p = octomap::point3d(x, y, z);
+        return query(p);
+    }
+
+    QVoxel<NODE> query(const octomap::point3d &position) const
     {
         NODE *node = _tree->search(position);
         if (!node)
         {
-            ROS_WARN_STREAM("Voxel could not be found at position" << position);
-            return QVoxel<NODE>::hole();
+            ROS_WARN_STREAM("Voxel could not be found at position " << position);
+            return QVoxel<NODE>::hole(position);
         }
         octomap::OcTreeKey key = _tree->coordToKey(position);
 
@@ -75,15 +87,15 @@ public:
         octomap::point3d position = _tree->keyToCoord(key);
         if (!node)
         {
-            ROS_WARN_STREAM("Voxel could not be found at position" << position);
-            return QVoxel<NODE>::hole();
+            ROS_WARN("Voxel could not be found at given key");
+            return QVoxel<NODE>::hole(position);
         }
 
         return QVoxel<NODE>::voxel(node, position, key);
     }
 
 protected:
-    QVoxelMap(octomap::OcTreeBaseImpl<NODE, I> *tree) : _tree(tree)
+    QVoxelMap(const octomap::OcTreeBaseImpl<NODE, I> *tree) : _tree(tree)
     {}
 
 private:

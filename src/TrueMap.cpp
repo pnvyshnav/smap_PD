@@ -13,16 +13,20 @@ TrueMap::TrueMap() : octomap::OcTree(Parameters::voxelSize), QVoxelMap(this)
 
 TrueMap TrueMap::generate(unsigned int seed)
 {
-    srand((unsigned int) time(NULL));
+    srand(seed);
     TrueMap map;
     octomap::point3d center(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter);
-    for (Parameters::NumType x = Parameters::xMin; x <= Parameters::xMax; x += Parameters::voxelSize)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
     {
-        for (Parameters::NumType y = Parameters::yMin; y <= Parameters::yMax; y += Parameters::voxelSize)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
         {
-            for (Parameters::NumType z = Parameters::zMin; z <= Parameters::zMax; z += Parameters::voxelSize)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
             {
-                octomap::point3d point(x, y, z);
+                octomap::point3d point(
+                        Parameters::xMin + x * Parameters::voxelSize,
+                        Parameters::yMin + y * Parameters::voxelSize,
+                        Parameters::zMin + z * Parameters::voxelSize);
+
                 // cells around center (where the robot is) are free
                 if (center.distance(point) <= Parameters::freeRadiusAroundCenter)
                 {
@@ -36,6 +40,8 @@ TrueMap TrueMap::generate(unsigned int seed)
             }
         }
     }
+
+    map.updateVisualization();
 
     ROS_INFO("True map has %d nodes in total.", (int)map.calcNumNodes());
     map.calcMinMax();

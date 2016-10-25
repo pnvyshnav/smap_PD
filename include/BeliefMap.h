@@ -13,9 +13,11 @@
 #include "QVoxel.hpp"
 #include "Observation.hpp"
 
+class InverseCauseModel;
 class BeliefMap
         : public octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractOcTree>,
-          public QVoxelMap<BeliefVoxel, octomap::AbstractOcTree>
+          public QVoxelMap<BeliefVoxel, octomap::AbstractOcTree>,
+          public Visualizable
 {
 public:
     BeliefMap();
@@ -36,8 +38,13 @@ public:
 
     bool update(const Observation &observation, TrueMap &trueMap);
 
+    InverseCauseModel *icm;
+
 private:
     BeliefVoxel *_updateNodeRecurs(BeliefVoxel* node, bool node_just_created, const octomap::OcTreeKey& key,
                                    unsigned int depth, const Belief &belief);
+
+    void expandNode(BeliefVoxel *node);
+    BeliefVoxel *createNodeChild(BeliefVoxel *node, unsigned int childIdx);
 };
 

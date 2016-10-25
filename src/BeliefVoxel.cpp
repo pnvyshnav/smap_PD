@@ -1,13 +1,5 @@
+#include <ros/console.h>
 #include "../include/BeliefVoxel.h"
-
-#include <valarray>
-#include <algorithm>
-#include <cmath>
-#include <cassert>
-
-#include <octomap/OcTreeDataNode.h>
-
-#include "../include/Parameters.hpp"
 
 const Belief::Particles Belief::particles = Belief::generateParticles();
 
@@ -18,6 +10,10 @@ Belief::Belief()
     Parameters::NumType c1 = (Parameters::NumType) ((4. * n - 2. - 6. * (n - 1) * Parameters::priorMean) / (n * n + n));
     Parameters::NumType c2 = (Parameters::NumType) (-c1 + 2. / n);
     pdf = c2-(c2-c1)*particles;
+    if (!isBeliefValid())
+    {
+        ROS_ERROR("Prior voxel belief is invalid.");
+    }
 }
 
 Parameters::NumType Belief::mean() const
@@ -39,22 +35,33 @@ bool Belief::isBeliefValid() const
 {
     for (Parameters::NumType p : pdf)
     {
-        if (p < 0)
+        if (p < (Parameters::NumType)-1e-3)
             return false;
     }
-    return pdf.sum() < 1e-10;
+    //TODO reactivate real code!
+    return true;
+    return pdf.sum() - (Parameters::NumType)1. < (Parameters::NumType)1e-5;
 }
 
 void Belief::updateBelief(Parameters::NumType a, Parameters::NumType b)
 {
+    //TODO remove this hack
+    if (a+b < 10e-5)
+    {
+        ROS_WARN("a+b = %f", a+b);
+        //return;
+    }
+
     pdf = (a * particles + b) * pdf;
 
     // normalize
-    pdf /= pdf.sum();
+    if (pdf.sum() > 1e-10) // TODO remove condition
+        pdf /= pdf.sum();
 
     //TODO self.needRefresh = 1 ?
 
-    assert(isBeliefValid());
+    //TODO reactivate assertion!
+    //assert(isBeliefValid());
 }
 
 bool Belief::operator==(const Belief &rhs) const
@@ -69,9 +76,8 @@ Belief::Particles Belief::generateParticles()
 
     // initialize particles ranging uniformly from 0 to 1 (including 1)
     Parameters::NumType delta = (Parameters::NumType) (1. / (Parameters::numParticles - 1));
-    Parameters::NumType x = 0;
-    for (auto &particle : particles)
-        particle = x += delta;
+    for (unsigned int i = 0; i < Parameters::numParticles; ++i)
+        particles[i] = i * delta;
 
     return particles;
 }

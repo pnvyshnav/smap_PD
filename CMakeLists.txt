@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.1)
-project(smap)
 
 set(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG")
+
+
+project(smap)
 
 find_package(octomap REQUIRED)
 include_directories(${OCTOMAP_INCLUDE_DIRS})
@@ -108,12 +112,12 @@ pkg_search_module(Eigen3 REQUIRED eigen3)
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
+#catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES smap
 #  CATKIN_DEPENDS octomap roscpp rospy std_msgs
 #  DEPENDS system_lib
-)
+#)
 
 ###########
 ## Build ##
@@ -151,7 +155,7 @@ add_executable(smap src/main.cpp
         include/TruncatedGaussianDistribution.hpp
         include/TrueMap.h
         src/TrueMap.cpp
-        src/StereoCameraSensor.cpp include/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp)
+        src/StereoCameraSensor.cpp include/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp include/Visualizer.cpp include/Visualizer.h include/Visualizable.hpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
