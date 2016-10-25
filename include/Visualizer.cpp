@@ -10,12 +10,12 @@
 void Visualizer::render()
 {
     ROS_INFO("Render");
-    ros::Rate loop_rate(10);
 
     while (ros::ok())
     {
-        ros::spinOnce();
-        loop_rate.sleep();
+        publishTrueMap(_lastTrueMap);
+        publishTrueMap2dSlice(_lastTrueMap);
+        publishBeliefMap(_lastBeliefMap);
     }
 
     ros::spin();
@@ -25,7 +25,7 @@ Visualizer::Visualizer(int argc, char **argv)
 {
     ros::init(argc, argv, "SMAP");
     nodeHandle = new ros::NodeHandle;
-    //trueMapPublisher = nodeHandle->advertise<visualization_msgs::Marker>("true_map", 1000);
+    trueMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("true_map", 1000);
     trueMap2dPublisher = nodeHandle->advertise<nav_msgs::GridCells>("true_map_2d", 0);
     beliefMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("belief_map", 1000);
     sensorPublisher = nodeHandle->advertise<visualization_msgs::Marker>("sensor", 1000);
@@ -37,162 +37,191 @@ Visualizer::~Visualizer()
     delete nodeHandle;
 }
 
-void Visualizer::publishTrueMap(const Visualizable *visualizable)
-{
-    auto trueMap = (TrueMap*) visualizable;
-    ROS_INFO("Publishing TrueMap ....");
-    ros::Rate loop_rate(10);
-    int step = 0;
+void Visualizer::publishTrueMap(const Visualizable *visualizable) {
+    if (!visualizable)
+        return;
 
-    while (ros::ok())
-    {
-        loop_rate.sleep();
+    ROS_INFO("Publishing True Map");
 
-        nav_msgs::GridCells grid;
-        grid.header.frame_id = "map";
-        grid.cell_height = Parameters::voxelSize;
-        grid.cell_width = Parameters::voxelSize;
+    auto trueMap = (TrueMap *) visualizable;
+    _lastTrueMap = trueMap;
+    ros::Rate loop_rate(100);
+    loop_rate.sleep();
 
-        for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
-        {
-            for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
-            {
-                for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
-                {
-                    auto _x = Parameters::xMin + x * Parameters::voxelSize;
-                    auto _y = Parameters::yMin + y * Parameters::voxelSize;
-                    auto _z = Parameters::zMin + z * Parameters::voxelSize;
-                    QTrueVoxel voxel = trueMap->query(_x, _y, _z);
-                    if (voxel.node->getOccupancy() < 0.5)
-                        continue;
+    visualization_msgs::MarkerArray cells;
 
-                    geometry_msgs::Point p;
-                    p.x = _x;
-                    p.y = _y;
-                    p.z = _z;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x) {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y) {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z) {
+                auto _x = Parameters::xMin + x * Parameters::voxelSize;
+                auto _y = Parameters::yMin + y * Parameters::voxelSize;
+                auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                QTrueVoxel voxel = trueMap->query(_x, _y, _z);
 
-                    grid.cells.push_back(p);
-                }
+                visualization_msgs::Marker cell;
+                cell.action = 0;
+                cell.id = (int) voxel.hash;
+                cell.type = visualization_msgs::Marker::CUBE;
+                cell.header.frame_id = "map";
+                cell.scale.x = Parameters::voxelSize;
+                cell.scale.y = Parameters::voxelSize;
+                cell.scale.z = Parameters::voxelSize;
+                cell.color.a = (int)std::round(voxel.node->getOccupancy());
+                cell.color.r = 0;
+                cell.color.g = 0;
+                cell.color.b = 0;
+                cell.pose.position.x = _x;
+                cell.pose.position.y = _y;
+                cell.pose.position.z = _z;
+                cells.markers.push_back(cell);
             }
         }
-
-
-        trueMap2dPublisher.publish(grid);
-
-        ros::spinOnce();
-        ++step;
-        if (step > 10)
-            break;
     }
+
+    trueMapPublisher.publish(cells);
+}
+
+void Visualizer::publishTrueMap2dSlice(const Visualizable *visualizable, unsigned int z)
+{
+    if (!visualizable)
+        return;
+
+    auto trueMap = (TrueMap*) visualizable;
+    _lastTrueMap = trueMap;
+    ros::Rate loop_rate(100);
+    loop_rate.sleep();
+
+    nav_msgs::GridCells grid;
+    grid.header.frame_id = "map";
+    grid.cell_height = (float) Parameters::voxelSize;
+    grid.cell_width = (float) Parameters::voxelSize;
+
+    auto _z = Parameters::zMin + (z + Parameters::voxelsPerDimensionZ/2) * Parameters::voxelSize;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            auto _x = Parameters::xMin + x * Parameters::voxelSize;
+            auto _y = Parameters::yMin + y * Parameters::voxelSize;
+            QTrueVoxel voxel = trueMap->query(_x, _y, _z);
+            if (voxel.node->getOccupancy() < 0.5)
+                continue;
+
+            geometry_msgs::Point p;
+            p.x = _x;
+            p.y = _y;
+            p.z = _z;
+
+            grid.cells.push_back(p);
+        }
+    }
+
+    trueMap2dPublisher.publish(grid);
+    ros::spinOnce();
 }
 
 void Visualizer::publishBeliefMap(const Visualizable *visualizable)
 {
+    if (!visualizable)
+        return;
+
     auto beliefMap = (BeliefMap*) visualizable;
-    ROS_INFO("Publishing BeliefMap ....");
-    ros::Rate loop_rate(10);
+    _lastBeliefMap = beliefMap;
+    ros::Rate loop_rate(100);
+    loop_rate.sleep();
 
-    int step = 0;
-    while (ros::ok())
+    visualization_msgs::MarkerArray cells;
+
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
     {
-        loop_rate.sleep();
-
-        visualization_msgs::MarkerArray cells;
-
-        for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
         {
-            for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
             {
-                for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
-                {
-                    auto _x = Parameters::xMin + x * Parameters::voxelSize;
-                    auto _y = Parameters::yMin + y * Parameters::voxelSize;
-                    auto _z = Parameters::zMin + z * Parameters::voxelSize;
-                    QBeliefVoxel voxel = beliefMap->query(_x, _y, _z);
+                auto _x = Parameters::xMin + x * Parameters::voxelSize;
+                auto _y = Parameters::yMin + y * Parameters::voxelSize;
+                auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                QBeliefVoxel voxel = beliefMap->query(_x, _y, _z);
 
-                    visualization_msgs::Marker cell;
-                    cell.action = 0;
-                    cell.id = (int) voxel.hash;
-                    cell.type = visualization_msgs::Marker::CUBE;
-                    cell.header.frame_id = "map";
-                    cell.scale.x = Parameters::voxelSize;
-                    cell.scale.y = Parameters::voxelSize;
-                    cell.scale.z = Parameters::voxelSize;
-                    cell.color.a = 0.9;
-                    float intensity = (float) (1.0 - voxel.node->getValue()->mean());
-                    cell.color.r = intensity;
-                    cell.color.g = intensity;
-                    cell.color.b = intensity;
-                    cell.pose.position.x = _x;
-                    cell.pose.position.y = _y;
-                    cell.pose.position.z = _z;
-                    cells.markers.push_back(cell);
-                }
+                visualization_msgs::Marker cell;
+                cell.action = 0;
+                cell.id = (int) voxel.hash;
+                cell.type = visualization_msgs::Marker::CUBE;
+                cell.header.frame_id = "map";
+                cell.scale.x = Parameters::voxelSize;
+                cell.scale.y = Parameters::voxelSize;
+                cell.scale.z = Parameters::voxelSize;
+                cell.color.a = 0.9;
+                float intensity = (float) (1.0 - voxel.node->getValue()->mean());
+                cell.color.r = intensity;
+                cell.color.g = intensity;
+                cell.color.b = intensity;
+                cell.pose.position.x = _x;
+                cell.pose.position.y = _y;
+                cell.pose.position.z = _z;
+                cells.markers.push_back(cell);
             }
         }
-
-        beliefMapPublisher.publish(cells);
-
-        // Publish ICM's ray voxels
-        visualization_msgs::MarkerArray rayVoxels;
-        visualization_msgs::Marker clearVoxel;
-        clearVoxel.action = 3; // clear all
-        clearVoxel.header.frame_id = "map";
-        rayVoxels.markers.push_back(clearVoxel);
-        if (beliefMap->icm != NULL)
-        {
-            unsigned int i = 0;
-            for (auto &key : beliefMap->icm->ray)
-            {
-                QBeliefVoxel beliefVoxel = beliefMap->query(key);
-
-                visualization_msgs::Marker rayVoxel;
-                rayVoxel.action = 0;
-                rayVoxel.id = (int) beliefVoxel.hash;
-                rayVoxel.type = visualization_msgs::Marker::CUBE;
-                rayVoxel.header.frame_id = "map";
-                rayVoxel.scale.x = Parameters::voxelSize;
-                rayVoxel.scale.y = Parameters::voxelSize;
-                rayVoxel.scale.z = Parameters::voxelSize;
-                rayVoxel.color.a = 0.7;
-
-                if (beliefVoxel.type != GEOMETRY_VOXEL)
-                {
-                    rayVoxel.color.r = 0.2;
-                    rayVoxel.color.g = 0.2;
-                    rayVoxel.color.b = 0.2;
-                }
-                else
-                {
-                    rayVoxel.color.r = 0.9;
-                    rayVoxel.color.g = 0.4;
-                    rayVoxel.color.b = 0.0;
-                }
-
-                rayVoxel.pose.position.x = beliefVoxel.position.x();
-                rayVoxel.pose.position.y = beliefVoxel.position.y();
-                rayVoxel.pose.position.z = beliefVoxel.position.z();
-                rayVoxels.markers.push_back(rayVoxel);
-                i += 1;
-                if (i >= beliefMap->icm->rayLength)
-                    break;
-            }
-        }
-
-        rayVoxelPublisher.publish(rayVoxels);
-
-        ros::spinOnce();
-        ++step;
-        if (step > 0)
-            break;
     }
+
+    beliefMapPublisher.publish(cells);
+
+    // Publish ICM's ray voxels
+    visualization_msgs::MarkerArray rayVoxels;
+    visualization_msgs::Marker clearVoxel;
+    clearVoxel.action = 3; // clear all
+    clearVoxel.header.frame_id = "map";
+    rayVoxels.markers.push_back(clearVoxel);
+    if (beliefMap->icm != NULL)
+    {
+        unsigned int i = 0;
+        for (auto &key : beliefMap->icm->ray)
+        {
+            QBeliefVoxel beliefVoxel = beliefMap->query(key);
+
+            visualization_msgs::Marker rayVoxel;
+            rayVoxel.action = 0;
+            rayVoxel.id = (int) beliefVoxel.hash;
+            rayVoxel.type = visualization_msgs::Marker::CUBE;
+            rayVoxel.header.frame_id = "map";
+            rayVoxel.scale.x = Parameters::voxelSize;
+            rayVoxel.scale.y = Parameters::voxelSize;
+            rayVoxel.scale.z = Parameters::voxelSize;
+            rayVoxel.color.a = 0.7;
+
+            if (beliefVoxel.type != GEOMETRY_VOXEL)
+            {
+                rayVoxel.color.r = 0.2;
+                rayVoxel.color.g = 0.2;
+                rayVoxel.color.b = 0.2;
+            }
+            else
+            {
+                rayVoxel.color.r = 0.9;
+                rayVoxel.color.g = 0.4;
+                rayVoxel.color.b = 0.0;
+            }
+
+            rayVoxel.pose.position.x = beliefVoxel.position.x();
+            rayVoxel.pose.position.y = beliefVoxel.position.y();
+            rayVoxel.pose.position.z = beliefVoxel.position.z();
+            rayVoxels.markers.push_back(rayVoxel);
+            i += 1;
+            if (i >= beliefMap->icm->rayLength)
+                break;
+        }
+    }
+
+    rayVoxelPublisher.publish(rayVoxels);
+
+    ros::spinOnce();
 }
 
 void Visualizer::publishSensor(const Visualizable *visualizable)
 {
     auto sensor = (Sensor*) visualizable;
     ROS_INFO("Publishing Sensor ....");
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(100);
     int i = 0;
 
     while (ros::ok())
@@ -238,7 +267,7 @@ void Visualizer::publishRay(TrueMap &trueMap, Sensor &sensor)
     ROS_INFO_STREAM("PUBLISHING SENSOR " << sensor.position() << " to " << (sensor.position() + sensor.orientation() * Parameters::sensorRange));
 
     ROS_INFO("Publishing SENSOR ....");
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(100);
 
     int step = 0;
     while (ros::ok())

@@ -8,6 +8,15 @@ PixelSensor::PixelSensor(Parameters::Vec3Type position, Parameters::Vec3Type ori
 	: Sensor(position, orientation)
 {}
 
+// TODO this is a hack
+Parameters::NumType scaledOccupancy(Parameters::NumType occupancy)
+{
+    // TrueMap occupancy values are either 0.4 (free) or 0.7 (occupied).
+    // The true mean is therefore 0.55.
+    auto dd = occupancy - 0.575; //TODO explain this value
+    return occupancy += dd * 1.7;
+}
+
 Observation PixelSensor::observe(TrueMap &trueMap) const
 {
 	if (Parameters::deterministicSensorMeasurements)
@@ -29,11 +38,16 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
         }
         else
         {
+            unsigned int i = 0;
             for (auto &pos : positions)
             {
+                ++i;
                 QTrueVoxel voxel = trueMap.query(pos);
-                if (UniformDistribution::sample() < voxel.node->getOccupancy())
+                auto sample = UniformDistribution::sample();
+                if (sample < scaledOccupancy(voxel.node->getOccupancy()))
                 {
+                    ROS_INFO("Cause Voxel is %d/%d.  %f < %f", i, (int)positions.size(), sample,
+                             scaledOccupancy(voxel.node->getOccupancy()));
                     // voxel is the cause voxel
                     return _observationGivenCause(voxel);
                 }
@@ -41,6 +55,7 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
         }
     }
 
+    ROS_WARN_STREAM("Sensor " << _position << " -> " << _orientation << " observed a hole.");
     return Measurement::hole(this);
 }
 
@@ -51,7 +66,7 @@ Measurement PixelSensor::_observationGivenCause(QTrueVoxel causeVoxel, bool dete
 	if (deterministic)
 		return Measurement::voxel(this, deterministicRange);
 	auto tg = TruncatedGaussianDistribution(deterministicRange, Parameters::sensorNoiseStd,
-                                            (Parameters::NumType) 0., Parameters::sensorRange);
+                                            0, Parameters::sensorRange);
 	return Measurement::voxel(this, tg.sample());
 }
 
@@ -68,7 +83,7 @@ Parameters::NumType PixelSensor::likelihoodGivenCause(Measurement measurement, Q
     }
     else if (causeVoxel.type == GEOMETRY_HOLE)
     {
-        return measurement.geometry == GEOMETRY_HOLE;
+        return (int)(measurement.geometry == GEOMETRY_HOLE);
     }
     else
     {

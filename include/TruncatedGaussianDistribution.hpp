@@ -14,6 +14,16 @@
 class TruncatedGaussianDistribution
 {
 public:
+    /**
+     * Creates a new Truncated Gaussian Distribution object given
+     * the distribution's parameters.
+     * @param mean The mean.
+     * @param std The standard deviation.
+     * @param lowerBound The lower boundary.
+     * @param upperBound The upper boundary.
+     * @param truncated Determines whether Gaussian is truncated by lower/upper bound.
+     * @return The Truncated Gaussian Distribution object.
+     */
 	TruncatedGaussianDistribution(
 		Parameters::NumType mean,
 		Parameters::NumType std,
@@ -55,7 +65,7 @@ public:
 		Parameters::NumType u = UniformDistribution::sample();
 		Parameters::NumType cdf_tmp = boost::math::cdf(_normal, (_lowerBound - _mean)/_std);
 		Parameters::NumType quantile_tmp = boost::math::quantile(_normal, _area*u + cdf_tmp);
-		return _mean + _std * quantile_tmp;
+        return _mean + _std * quantile_tmp;
 	}
 
 private:

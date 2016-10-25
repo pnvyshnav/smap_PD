@@ -10,17 +10,7 @@ BeliefMap::BeliefMap() : octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractO
 {
     octomap::AbstractOcTree::registerTreeType(this);
 
-    root = NULL;
-    tree_size = 0;
-
     init();
-
-    setResolution(Parameters::voxelSize);
-
-    calcMinMax();
-
-    ROS_INFO("Belief map range: (%.2f %.2f %.2f) to (%.2f %.2f %.2f)", min_value[0], min_value[1], min_value[2],
-             max_value[0], max_value[1], max_value[2]);
 
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
     {
@@ -59,7 +49,98 @@ Belief *BeliefMap::belief(const octomap::OcTreeKey &key) const
     BeliefVoxel *voxel = search(key);
     if (voxel != NULL)
         return voxel->getValue().get();
+
+    ROS_ERROR_STREAM("Belief voxel at " << keyToCoord(key) << " could not be found.");
     return NULL;
+}
+
+std::valarray<Parameters::NumType> BeliefMap::bouncingProbabilitiesOnRay(const octomap::KeyRay &ray) const
+{
+    std::valarray<Parameters::NumType> bouncingProbabilities(ray.size());
+    unsigned int i = 0;
+    for (auto &key : ray)
+    {
+        auto *b = belief(key);
+        if (b == NULL)
+            bouncingProbabilities[i] = 0; // TODO correct error handling?
+        else
+            bouncingProbabilities[i] = b->mean();
+        ++i;
+    }
+    return bouncingProbabilities;
+}
+
+std::valarray<Parameters::NumType> BeliefMap::reachingProbabilitiesOnRay(const octomap::KeyRay &ray,
+                                                                         const std::valarray<Parameters::NumType> &bouncingProbabilities) const
+{
+    assert(ray.size() == bouncingProbabilities.size());
+    std::valarray<Parameters::NumType> reachingProbabilities(ray.size());
+    reachingProbabilities[0] = (Parameters::NumType) (1. - Parameters::spuriousMeasurementProbability);
+    for (unsigned int i = 1; i < ray.size(); ++i)
+    {
+        reachingProbabilities[i] = (Parameters::NumType) (reachingProbabilities[i - 1] *
+                                                          (1. - bouncingProbabilities[i - 1]));
+    }
+    return reachingProbabilities;
+}
+
+bool BeliefMap::update(const Observation &observation, TrueMap &trueMap)
+{
+    for (auto &measurement : observation.measurements())
+    {
+        icm = new InverseCauseModel(
+                measurement.sensor->computeInverseCauseModel(measurement, trueMap, *this));
+        Parameters::NumType prBeforeVoxel = 0;
+        Parameters::NumType prAfterVoxel = icm->posteriorOnRay.sum();
+        Parameters::NumType prOnVoxel;
+        unsigned int i = 0;
+        for (auto &key : icm->ray)
+        {
+            prOnVoxel = icm->posteriorOnRay[i];
+
+            BeliefVoxel *beliefVoxel = search(key);
+            if (beliefVoxel == NULL)
+            {
+                ROS_WARN("Belief voxel for given voxel key on ray could not be found.");
+                break;
+            }
+
+            if (!beliefVoxel->getValue().get()->isBeliefValid())
+            {
+                ROS_ERROR("Belief voxel has invalid PDF before updating with measurement.");
+                return false;
+            }
+
+            Parameters::NumType mean = beliefVoxel->getValue().get()->mean();
+            Parameters::NumType a = (Parameters::NumType) ((1. - mean) * prOnVoxel - mean * prAfterVoxel);
+            Parameters::NumType b = (Parameters::NumType) (
+                    mean * (1. - mean) * (Parameters::spuriousMeasurementProbability + prBeforeVoxel) +
+                    mean * prAfterVoxel);
+            beliefVoxel->getValue().get()->updateBelief(a, b);
+
+            if (!beliefVoxel->getValue().get()->isBeliefValid())
+            {
+                // already asserted in Belief::updateBelief
+                ROS_ERROR("Belief voxel has invalid PDF after updating with measurement.");
+                return false;
+            }
+
+            auto meanAfter = beliefVoxel->getValue().get()->mean();
+            ROS_INFO("Voxel %d/%d updated. Mean before: %f    Mean after: %f", (int) i + 1, (int) icm->rayLength, mean,
+                     meanAfter);
+
+            prBeforeVoxel += prOnVoxel;
+            prAfterVoxel -= prOnVoxel;
+            ++i;
+            if (i >= icm->rayLength)
+                break;
+        }
+        updateVisualization();
+        delete icm;
+        icm = NULL;
+    }
+
+    return true;
 }
 
 BeliefVoxel *BeliefMap::updateNode(const octomap::point3d &position, const Belief &belief)
@@ -129,93 +210,6 @@ BeliefVoxel *BeliefMap::_updateNodeRecurs(BeliefVoxel *node, bool node_just_crea
         node->setValue(std::make_shared<Belief>(belief));
         return node;
     }
-}
-
-std::valarray<Parameters::NumType> BeliefMap::bouncingProbabilitiesOnRay(const octomap::KeyRay &ray) const
-{
-    std::valarray<Parameters::NumType> bouncingProbabilities(ray.size());
-    unsigned int i = 0;
-    for (auto &key : ray)
-    {
-        auto *b = belief(key);
-        if (b == NULL)
-            bouncingProbabilities[i] = 0; // correct error handling?
-        else
-            bouncingProbabilities[i] = b->mean();
-        ++i;
-    }
-    return bouncingProbabilities;
-}
-
-std::valarray<Parameters::NumType> BeliefMap::reachingProbabilitiesOnRay(const octomap::KeyRay &ray,
-                                                                         const std::valarray<Parameters::NumType> &bouncingProbabilities) const
-{
-    assert(ray.size() == bouncingProbabilities.size());
-    std::valarray<Parameters::NumType> reachingProbabilities(ray.size());
-    reachingProbabilities[0] = (Parameters::NumType) (1. - Parameters::spuriousMeasurementProbability);
-    for (unsigned int i = 1; i < ray.size(); ++i)
-    {
-        reachingProbabilities[i] = (Parameters::NumType) (reachingProbabilities[i - 1] *
-                                                          (1. - bouncingProbabilities[i - 1]));
-    }
-    return reachingProbabilities;
-}
-
-bool BeliefMap::update(const Observation &observation, TrueMap &trueMap)
-{
-    for (auto &measurement : observation.measurements())
-    {
-        /* auto */ icm = new InverseCauseModel(
-                measurement.sensor->computeInverseCauseModel(measurement, trueMap, *this));
-        Parameters::NumType prBeforeVoxel = 0;
-        Parameters::NumType prAfterVoxel = icm->posteriorOnRay.sum();
-        Parameters::NumType prOnVoxel;
-        unsigned int i = 0;
-        for (auto &key : icm->ray)
-        {
-            prOnVoxel = icm->posteriorOnRay[i];
-
-            BeliefVoxel *beliefVoxel = search(key);
-            if (beliefVoxel == NULL)
-            {
-                ROS_WARN("Belief voxel for given voxel key on ray could not be found.");
-                break;
-            }
-
-            if (!beliefVoxel->getValue().get()->isBeliefValid())
-            {
-                ROS_ERROR("Belief voxel has invalid PDF before updating with measurement.");
-                return false;
-            }
-
-            Parameters::NumType mean = beliefVoxel->getValue().get()->mean();
-            Parameters::NumType a = (Parameters::NumType) ((1. - mean) * prOnVoxel - mean * prAfterVoxel);
-            Parameters::NumType b = (Parameters::NumType) (
-                    mean * (1. - mean) * (Parameters::spuriousMeasurementProbability + prBeforeVoxel) +
-                    mean * prAfterVoxel);
-            beliefVoxel->getValue().get()->updateBelief(a, b);
-
-            if (!beliefVoxel->getValue().get()->isBeliefValid())
-            {
-                ROS_ERROR("Belief voxel has invalid PDF after updating with measurement.");
-                return false;
-            }
-
-            auto meanAfter = beliefVoxel->getValue().get()->mean();
-            ROS_INFO("Voxel %d/%d updated. Mean before: %f    Mean after: %f", (int) i + 1, (int) icm->rayLength, mean,
-                     meanAfter);
-
-            prBeforeVoxel += prOnVoxel;
-            prAfterVoxel -= prOnVoxel;
-            ++i;
-            if (i >= icm->rayLength)
-                break;
-        }
-        updateVisualization();
-        delete icm;
-    }
-
-    return true;
 }
 
 void BeliefMap::expandNode(BeliefVoxel *node)

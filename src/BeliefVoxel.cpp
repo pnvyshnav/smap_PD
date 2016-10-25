@@ -9,7 +9,7 @@ Belief::Belief()
     unsigned int n = Parameters::numParticles;
     Parameters::NumType c1 = (Parameters::NumType) ((4. * n - 2. - 6. * (n - 1) * Parameters::priorMean) / (n * n + n));
     Parameters::NumType c2 = (Parameters::NumType) (-c1 + 2. / n);
-    pdf = c2-(c2-c1)*particles;
+    pdf = c2 - (c2-c1) * particles;
     if (!isBeliefValid())
     {
         ROS_ERROR("Prior voxel belief is invalid.");
@@ -35,33 +35,23 @@ bool Belief::isBeliefValid() const
 {
     for (Parameters::NumType p : pdf)
     {
-        if (p < (Parameters::NumType)-1e-3)
+        if (p < -1e-10)
             return false;
     }
-    //TODO reactivate real code!
-    return true;
-    return pdf.sum() - (Parameters::NumType)1. < (Parameters::NumType)1e-5;
+    return pdf.sum() - 1. < 1e-10;
 }
 
 void Belief::updateBelief(Parameters::NumType a, Parameters::NumType b)
 {
-    //TODO remove this hack
-    if (a+b < 10e-5)
-    {
-        ROS_WARN("a+b = %f", a+b);
-        //return;
-    }
-
-    pdf = (a * particles + b) * pdf;
+    std::valarray<Parameters::NumType> new_pdf = (a * particles + b) * pdf;
 
     // normalize
-    if (pdf.sum() > 1e-10) // TODO remove condition
-        pdf /= pdf.sum();
+    if (new_pdf.sum() > 0.) // TODO remove condition
+        pdf = new_pdf / new_pdf.sum();
+    else
+        ROS_WARN("Cannot update belief. New PDF sum (%g) would be too small.", new_pdf.sum());
 
-    //TODO self.needRefresh = 1 ?
-
-    //TODO reactivate assertion!
-    //assert(isBeliefValid());
+    assert(isBeliefValid());
 }
 
 bool Belief::operator==(const Belief &rhs) const

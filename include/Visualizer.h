@@ -13,9 +13,10 @@ public:
     Visualizer(int argc, char **argv);
     ~Visualizer();
 
-    static void render();
+    void render();
 
     void publishTrueMap(const Visualizable *visualizable);
+    void publishTrueMap2dSlice(const Visualizable *visualizable, unsigned int z = 0);
     void publishBeliefMap(const Visualizable *visualizable);
     void publishSensor(const Visualizable *visualizable);
     void publishRay(TrueMap &trueMap, Sensor &sensor);
@@ -27,4 +28,7 @@ private:
     ros::Publisher beliefMapPublisher;
     ros::Publisher rayVoxelPublisher;
     ros::Publisher sensorPublisher;
+
+    TrueMap *_lastTrueMap;
+    BeliefMap *_lastBeliefMap;
 };

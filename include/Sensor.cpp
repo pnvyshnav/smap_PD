@@ -32,11 +32,8 @@ Sensor::computeInverseCauseModel(Measurement measurement, TrueMap &trueMap, Beli
     InverseCauseModel icm;
     octomap::KeyRay ray;
     beliefMap.computeRayKeys(position(), orientation() * Parameters::sensorRange + position(), ray);
-    ROS_INFO_STREAM("Computing for ray 1 " << position() << " to " << orientation());
-    ROS_INFO_STREAM("Computing for ray 2 " << position() << " to " << position() + orientation() * Parameters::sensorRange);
     octomap::KeyRay rayTrueMap;
     trueMap.computeRayKeys(position(), orientation() * Parameters::sensorRange + position(), rayTrueMap);
-    ROS_INFO("Ray belief: %d  Ray true: %d", (int)ray.size(), (int)rayTrueMap.size());
     unsigned int j = 0;
     icm.ray.reserve(ray.size());
     std::vector<QTrueVoxel> causeVoxels;
@@ -48,7 +45,6 @@ Sensor::computeInverseCauseModel(Measurement measurement, TrueMap &trueMap, Beli
         if (j >= ray.size())
             break;
     }
-    ROS_INFO_STREAM("True coord: " << trueMap.keyToCoord(rayTrueMap.ray[4]) << "  Belief coord: " << beliefMap.keyToCoord(ray.ray[4]));
     icm.rayLength = ray.size();
     auto bouncingProbabilities = beliefMap.bouncingProbabilitiesOnRay(ray);
     auto reachingProbabilities = beliefMap.reachingProbabilitiesOnRay(ray, bouncingProbabilities);
@@ -76,10 +72,17 @@ Sensor::computeInverseCauseModel(Measurement measurement, TrueMap &trueMap, Beli
    //TODO  assert(std::abs(prior.sum() + causeProbabilityFromInfinityPrior - (Parameters::NumType)1.) < (Parameters::NumType)1e-5);
 
     auto eta = icm.posteriorOnRay.sum() + icm.posteriorInfinity;
-    icm.posteriorOnRay /= eta;
-    icm.posteriorInfinity /= eta;
+    if (eta < 1e-10)
+    {
+        ROS_WARN("Inverse Cause Model: eta = %g", eta);
+    }
+    else
+    {
+        icm.posteriorOnRay /= eta;
+        icm.posteriorInfinity /= eta;
+    }
 
-   //TODO  assert(std::abs(icm.posteriorOnRay.sum() + icm.posteriorInfinity - (Parameters::NumType)1.) < (Parameters::NumType)1e-5);
+    assert(std::abs(icm.posteriorOnRay.sum() + icm.posteriorInfinity - 1.) < 1e-10);
 
     return icm;
 }

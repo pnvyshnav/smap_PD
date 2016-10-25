@@ -34,7 +34,7 @@ TrueMap TrueMap::generate(unsigned int seed)
                 }
                 else
                 {
-                    bool occupied = rand() % 3 == 1; // 1/3 occupied
+                    bool occupied = rand() % 3 == 0; // 1/3 occupied
                     map.updateNode(point, occupied);
                 }
             }
