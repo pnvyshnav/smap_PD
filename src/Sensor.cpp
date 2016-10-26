@@ -1,4 +1,4 @@
-#include "Sensor.h"
+#include "../include/Sensor.h"
 
 Sensor::Sensor(Parameters::Vec3Type &position, Parameters::Vec3Type &orientation) : _position(position),
                                                                                     _orientation(orientation)

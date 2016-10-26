@@ -155,7 +155,7 @@ add_executable(smap src/main.cpp
         include/TruncatedGaussianDistribution.hpp
         include/TrueMap.h
         src/TrueMap.cpp
-        src/StereoCameraSensor.cpp include/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp include/Visualizer.cpp include/Visualizer.h include/Visualizable.hpp)
+        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp src/Visualizer.cpp include/Visualizer.h include/Visualizable.hpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

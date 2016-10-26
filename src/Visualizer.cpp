@@ -1,7 +1,7 @@
-#include "Visualizer.h"
-#include "TrueMap.h"
-#include "BeliefMap.h"
-#include "Sensor.h"
+#include "../include/Visualizer.h"
+#include "../include/TrueMap.h"
+#include "../include/BeliefMap.h"
+#include "../include/Sensor.h"
 
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>

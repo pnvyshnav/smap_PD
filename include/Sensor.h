@@ -20,7 +20,6 @@ struct InverseCauseModel
     {
         for (auto &key : icm.ray)
             ray.push_back(octomap::OcTreeKey(key));
-        ROS_INFO("%d", rayLength);
     }
 
     std::valarray<Parameters::NumType> posteriorOnRay;

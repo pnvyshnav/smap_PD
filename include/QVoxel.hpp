@@ -56,7 +56,7 @@ typedef QVoxel<octomap::OcTreeNode> QTrueVoxel;
 typedef QVoxel<BeliefVoxel> QBeliefVoxel;
 
 /**
- * Mixin to provide inherited classes support for QVoxel querying.
+ * Mixin to provide support for QVoxel querying.
  */
 template<class NODE, class I>
 class QVoxelMap
