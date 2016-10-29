@@ -13,10 +13,8 @@ public:
     typedef double NumType;
     typedef octomap::point3d Vec3Type;
 
-
     static constexpr NumType equalityThreshold = 1e-16;
 
-    static const unsigned int numSteps = 100; // TODO currently not used
     static const unsigned int numParticles = 101;
 
     static constexpr NumType voxelSize = .1;
@@ -48,4 +46,6 @@ public:
      * Sensor measurements without noise (deterministic case)
      */
     static const bool deterministicSensorMeasurements = false;
+    static constexpr double FakeRobotAngularVelocity = 1. * M_PI / 180.;
+    static const unsigned int FakeRobotNumSteps = 10000;
 };

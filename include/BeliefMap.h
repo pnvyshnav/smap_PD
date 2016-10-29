@@ -41,6 +41,7 @@ public:
     bool update(const Observation &observation);
 
     InverseCauseModel *icm;
+    std::vector<QBeliefVoxel> lastUpdatedVoxels;
 
 private:
     BeliefVoxel *_updateNodeRecurs(BeliefVoxel* node, bool node_just_created,

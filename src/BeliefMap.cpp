@@ -93,12 +93,13 @@ bool BeliefMap::update(const Observation &observation)
         Parameters::NumType prBeforeVoxel = 0;
         Parameters::NumType prAfterVoxel = icm->posteriorOnRay.sum();
         Parameters::NumType prOnVoxel;
+        lastUpdatedVoxels.clear();
         unsigned int i = 0;
         for (auto &key : icm->ray)
         {
             prOnVoxel = icm->posteriorOnRay[i];
-
-            BeliefVoxel *beliefVoxel = search(key);
+            const QBeliefVoxel qBeliefVoxel = query(key);
+            const BeliefVoxel *beliefVoxel = qBeliefVoxel.node();
             if (beliefVoxel == NULL)
             {
                 ROS_WARN("Belief voxel for given voxel key on ray could not be found.");
@@ -125,9 +126,13 @@ bool BeliefMap::update(const Observation &observation)
                 return false;
             }
 
+#ifdef LOG_DETAILS
             auto meanAfter = beliefVoxel->getValue().get()->mean();
             ROS_INFO("Voxel %d/%d updated. Mean before: %f    Mean after: %f", (int) i + 1, (int) icm->rayLength, mean,
                      meanAfter);
+#endif
+
+            lastUpdatedVoxels.push_back(qBeliefVoxel);
 
             prBeforeVoxel += prOnVoxel;
             prAfterVoxel -= prOnVoxel;

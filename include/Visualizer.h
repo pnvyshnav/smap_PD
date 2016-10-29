@@ -18,8 +18,11 @@ public:
     void publishTrueMap(const Visualizable *visualizable);
     void publishTrueMap2dSlice(const Visualizable *visualizable, unsigned int z = 0);
     void publishBeliefMap(const Visualizable *visualizable);
+    void publishBeliefMapFull(const Visualizable *visualizable);
     void publishSensor(const Visualizable *visualizable);
     void publishRay(TrueMap &trueMap, Sensor &sensor);
+
+    static const int PaintRate = 100;
 
 private:
     ros::NodeHandle *nodeHandle;

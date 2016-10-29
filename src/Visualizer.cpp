@@ -10,12 +10,14 @@
 void Visualizer::render()
 {
     ROS_INFO("Render");
+    ros::Rate loop_rate(0.1);
 
     while (ros::ok())
     {
         publishTrueMap(_lastTrueMap);
         publishTrueMap2dSlice(_lastTrueMap);
-        publishBeliefMap(_lastBeliefMap);
+        publishBeliefMapFull(_lastBeliefMap);
+        loop_rate.sleep();
     }
 
     ros::spin();
@@ -24,11 +26,11 @@ void Visualizer::render()
 Visualizer::Visualizer()
 {
     nodeHandle = new ros::NodeHandle;
-    trueMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("true_map", 1000);
+    trueMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("true_map", 10);
     trueMap2dPublisher = nodeHandle->advertise<nav_msgs::GridCells>("true_map_2d", 0);
-    beliefMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("belief_map", 1000);
-    sensorPublisher = nodeHandle->advertise<visualization_msgs::Marker>("sensor", 1000);
-    rayVoxelPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("ray_voxels", 1000);
+    beliefMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("belief_map", 10);
+    sensorPublisher = nodeHandle->advertise<visualization_msgs::Marker>("sensor", 10);
+    rayVoxelPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("ray_voxels", 10);
 }
 
 Visualizer::~Visualizer()
@@ -44,7 +46,7 @@ void Visualizer::publishTrueMap(const Visualizable *visualizable) {
 
     auto trueMap = (TrueMap *) visualizable;
     _lastTrueMap = trueMap;
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(PaintRate);
     loop_rate.sleep();
 
     visualization_msgs::MarkerArray cells;
@@ -87,7 +89,7 @@ void Visualizer::publishTrueMap2dSlice(const Visualizable *visualizable, unsigne
 
     auto trueMap = (TrueMap*) visualizable;
     _lastTrueMap = trueMap;
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(PaintRate);
     loop_rate.sleep();
 
     nav_msgs::GridCells grid;
@@ -126,41 +128,29 @@ void Visualizer::publishBeliefMap(const Visualizable *visualizable)
 
     auto beliefMap = (BeliefMap*) visualizable;
     _lastBeliefMap = beliefMap;
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(PaintRate);
     loop_rate.sleep();
 
     visualization_msgs::MarkerArray cells;
-
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (auto &voxel : beliefMap->lastUpdatedVoxels)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
-        {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
-            {
-                auto _x = Parameters::xMin + x * Parameters::voxelSize;
-                auto _y = Parameters::yMin + y * Parameters::voxelSize;
-                auto _z = Parameters::zMin + z * Parameters::voxelSize;
-                QBeliefVoxel voxel = beliefMap->query(_x, _y, _z);
-
-                visualization_msgs::Marker cell;
-                cell.action = 0;
-                cell.id = (int) voxel.hash;
-                cell.type = visualization_msgs::Marker::CUBE;
-                cell.header.frame_id = "map";
-                cell.scale.x = Parameters::voxelSize;
-                cell.scale.y = Parameters::voxelSize;
-                cell.scale.z = Parameters::voxelSize;
-                cell.color.a = 0.9;
-                float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
-                cell.color.r = intensity;
-                cell.color.g = intensity;
-                cell.color.b = intensity;
-                cell.pose.position.x = _x;
-                cell.pose.position.y = _y;
-                cell.pose.position.z = _z;
-                cells.markers.push_back(cell);
-            }
-        }
+        visualization_msgs::Marker cell;
+        cell.action = 0;
+        cell.id = (int) voxel.hash;
+        cell.type = visualization_msgs::Marker::CUBE;
+        cell.header.frame_id = "map";
+        cell.scale.x = Parameters::voxelSize;
+        cell.scale.y = Parameters::voxelSize;
+        cell.scale.z = Parameters::voxelSize;
+        cell.color.a = 0.9;
+        float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
+        cell.color.r = intensity;
+        cell.color.g = intensity;
+        cell.color.b = intensity;
+        cell.pose.position.x = voxel.position.x();
+        cell.pose.position.y = voxel.position.y();
+        cell.pose.position.z = voxel.position.z();
+        cells.markers.push_back(cell);
     }
 
     beliefMapPublisher.publish(cells);
@@ -173,14 +163,13 @@ void Visualizer::publishBeliefMap(const Visualizable *visualizable)
     rayVoxels.markers.push_back(clearVoxel);
     if (beliefMap->icm != NULL)
     {
-        unsigned int i = 0;
         for (auto &key : beliefMap->icm->ray)
         {
             QBeliefVoxel beliefVoxel = beliefMap->query(key);
 
             visualization_msgs::Marker rayVoxel;
             rayVoxel.action = 0;
-            rayVoxel.id = (int) beliefVoxel.hash;
+            rayVoxel.id = (int) beliefVoxel.hash + 1000; // do not overwrite BeliefMap voxels
             rayVoxel.type = visualization_msgs::Marker::CUBE;
             rayVoxel.header.frame_id = "map";
             rayVoxel.scale.x = Parameters::voxelSize;
@@ -205,9 +194,6 @@ void Visualizer::publishBeliefMap(const Visualizable *visualizable)
             rayVoxel.pose.position.y = beliefVoxel.position.y();
             rayVoxel.pose.position.z = beliefVoxel.position.z();
             rayVoxels.markers.push_back(rayVoxel);
-            i += 1;
-            if (i >= beliefMap->icm->rayLength)
-                break;
         }
     }
 
@@ -216,11 +202,66 @@ void Visualizer::publishBeliefMap(const Visualizable *visualizable)
     ros::spinOnce();
 }
 
+void Visualizer::publishBeliefMapFull(const Visualizable *visualizable)
+{
+    if (!visualizable)
+        return;
+
+    auto beliefMap = (BeliefMap*) visualizable;
+    _lastBeliefMap = beliefMap;
+    ros::Rate loop_rate(PaintRate);
+    loop_rate.sleep();
+
+    visualization_msgs::MarkerArray cells;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                auto _x = Parameters::xMin + x * Parameters::voxelSize;
+                auto _y = Parameters::yMin + y * Parameters::voxelSize;
+                auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                QBeliefVoxel voxel = beliefMap->query(_x, _y, _z);
+
+                visualization_msgs::Marker cell;
+                cell.action = 0;
+                cell.id = (int) voxel.hash;
+                cell.type = visualization_msgs::Marker::CUBE;
+                cell.header.frame_id = "map";
+                cell.scale.x = Parameters::voxelSize;
+                cell.scale.y = Parameters::voxelSize;
+                cell.scale.z = Parameters::voxelSize;
+                cell.color.a = 0.9;
+                float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
+                cell.color.r = intensity;
+                cell.color.g = intensity;
+                cell.color.b = intensity;
+                cell.pose.position.x = voxel.position.x();
+                cell.pose.position.y = voxel.position.y();
+                cell.pose.position.z = voxel.position.z();
+                cells.markers.push_back(cell);
+            }
+        }
+    }
+
+    beliefMapPublisher.publish(cells);
+
+    // Clear ICM's ray voxels
+    visualization_msgs::MarkerArray rayVoxels;
+    visualization_msgs::Marker clearVoxel;
+    clearVoxel.action = 3; // clear all
+    clearVoxel.header.frame_id = "map";
+    rayVoxels.markers.push_back(clearVoxel);
+    rayVoxelPublisher.publish(rayVoxels);
+
+    ros::spinOnce();
+}
+
 void Visualizer::publishSensor(const Visualizable *visualizable)
 {
     auto sensor = (Sensor*) visualizable;
-    ROS_INFO("Publishing Sensor ....");
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(PaintRate);
     int i = 0;
 
     while (ros::ok())
@@ -263,10 +304,8 @@ void Visualizer::publishRay(TrueMap &trueMap, Sensor &sensor)
 {
     octomap::KeyRay ray;
     trueMap.computeRayKeys(sensor.position(), sensor.position() + sensor.orientation() * Parameters::sensorRange, ray);
-    ROS_INFO_STREAM("PUBLISHING SENSOR " << sensor.position() << " to " << (sensor.position() + sensor.orientation() * Parameters::sensorRange));
 
-    ROS_INFO("Publishing SENSOR ....");
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(PaintRate);
 
     int step = 0;
     while (ros::ok())

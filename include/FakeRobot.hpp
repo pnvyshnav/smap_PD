@@ -3,6 +3,8 @@
 #include <vector>
 #include <type_traits>
 
+#include <ecl/time/stopwatch.hpp>
+
 #include "Parameters.hpp"
 #include "StereoCameraSensor.h"
 #include "Observation.hpp"
@@ -60,16 +62,33 @@ public:
 
     void run()
     {
+        ROS_INFO("FakeRobot is running...");
         _stopRequested = false;
-        for (auto rad = 0.; !_stopRequested; rad += 8. * M_PI / 180.)
+        unsigned int step = 0;
+        ecl::StopWatch stopWatch;
+        for (auto rad = 0.;
+             !_stopRequested && step < Parameters::FakeRobotNumSteps;
+             rad += Parameters::FakeRobotAngularVelocity, ++step)
         {
             setOrientation(Parameters::Vec3Type(std::cos(rad), std::sin(rad), 0));
             Robot::publishObservation(observe());
         }
+
+        if (_stopRequested)
+            ROS_INFO("Robot stopped after %g full rounds in %d steps.",
+                     (Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity)/(2. * M_PI),
+                     (int)step);
+        else
+            ROS_INFO("Robot completed %g full rounds in %d steps.",
+                     (Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity)/(2. * M_PI),
+                     (int)step);
+
+        ROS_INFO_STREAM("Elapsed time: " << stopWatch.elapsed() << " seconds");
     }
 
     void stop()
     {
+        ROS_INFO("FakeRobot is stopping...");
         _stopRequested = true;
     }
 

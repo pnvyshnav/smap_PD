@@ -48,12 +48,15 @@ Sensor::computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) 
     auto reachingProbabilities = beliefMap.reachingProbabilitiesOnRay(ray, bouncingProbabilities);
     std::valarray<Parameters::NumType> prior = bouncingProbabilities * reachingProbabilities;
 
+#ifdef LOG_DETAILS
     ROS_INFO("Found %i cause voxels.", (int)causeVoxels.size());
+#endif
 
     std::valarray<Parameters::NumType> likelihood(ray.size());
     for (unsigned int i = 0; i < ray.size(); ++i)
         likelihood[i] = likelihoodGivenCause(measurement, causeVoxels[i]);
     icm.posteriorOnRay = likelihood * prior;
+
 
     const unsigned int end = ray.size() - 1;
 
@@ -62,12 +65,11 @@ Sensor::computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) 
                                                                                  reachingProbabilities[end]);
 
     auto causeProbabilityFromInfinityPrior = bouncingProbabilityFromInfinity * reachingProbabilityFromInfinity;
+    assert(!std::isnan(causeProbabilityFromInfinityPrior));
 
     Parameters::NumType likelihoodGivenInfinity = likelihoodGivenCause(measurement, QBeliefVoxel::hole());
 
     icm.posteriorInfinity = likelihoodGivenInfinity * causeProbabilityFromInfinityPrior;
-
-   //TODO  assert(std::abs(prior.sum() + causeProbabilityFromInfinityPrior - (Parameters::NumType)1.) < (Parameters::NumType)1e-5);
 
     auto eta = icm.posteriorOnRay.sum() + icm.posteriorInfinity;
     if (eta < 1e-10)
@@ -80,6 +82,7 @@ Sensor::computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) 
         icm.posteriorInfinity /= eta;
     }
 
+    //TODO reactivate
     assert(std::abs(icm.posteriorOnRay.sum() + icm.posteriorInfinity - 1.) < 1e-10);
 
     return icm;

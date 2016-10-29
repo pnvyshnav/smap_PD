@@ -46,11 +46,20 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
                 auto sample = UniformDistribution::sample();
                 if (sample < scaledOccupancy(voxel.node()->getOccupancy()))
                 {
+#ifdef LOG_DETAILS
                     ROS_INFO("Cause Voxel is %d/%d.  %f < %f", i, (int)positions.size(), sample,
                              scaledOccupancy(voxel.node()->getOccupancy()));
+#endif
                     // voxel is the cause voxel
                     return _observationGivenCause(voxel);
                 }
+            }
+            // TODO avoid sensing a hole by returning last position
+            // TODO but only if it is at distance == Parameters::sensorRange
+            if (!positions.empty() && positions.back().distance(position()) >= Parameters::sensorRange-2*Parameters::voxelSize)
+            {
+                QTrueVoxel voxel = trueMap.query(positions.back());
+                return _observationGivenCause(voxel);
             }
         }
     }

@@ -14,22 +14,21 @@ class Belief
 public:
     typedef std::valarray<Parameters::NumType> Particles;
 
-    static const Particles particles;
-
     Belief();
 
-    Parameters::NumType mean() const;
-    Parameters::NumType variance() const;
+    Parameters::NumType mean();
+    Parameters::NumType variance();
 
     bool isBeliefValid() const;
 
     void updateBelief(Parameters::NumType a, Parameters::NumType b);
 
-    bool operator== (const Belief& rhs) const;
+    bool operator== (Belief& rhs);
 
 private:
     Particles pdf;
-    static Particles generateParticles();
+    bool _recompute;
+    Parameters::NumType _mean, _variance;
 };
 
 // The problem: OcTreeDataNode does not provide a virtual destructor.
