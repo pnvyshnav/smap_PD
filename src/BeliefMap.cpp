@@ -84,12 +84,12 @@ std::valarray<Parameters::NumType> BeliefMap::reachingProbabilitiesOnRay(const o
     return reachingProbabilities;
 }
 
-bool BeliefMap::update(const Observation &observation, TrueMap &trueMap)
+bool BeliefMap::update(const Observation &observation)
 {
     for (auto &measurement : observation.measurements())
     {
         icm = new InverseCauseModel(
-                measurement.sensor->computeInverseCauseModel(measurement, trueMap, *this));
+                measurement.sensor->computeInverseCauseModel(measurement, *this));
         Parameters::NumType prBeforeVoxel = 0;
         Parameters::NumType prAfterVoxel = icm->posteriorOnRay.sum();
         Parameters::NumType prOnVoxel;
@@ -190,12 +190,12 @@ BeliefVoxel *BeliefMap::_updateNodeRecurs(BeliefVoxel *node, bool node_just_crea
             {
                 // current node does not have children AND it is not a new node
                 // -> expand pruned node
-                expandNode(node);
+                _expandNode(node);
             }
             else
             {
                 // not a pruned node, create requested child
-                createNodeChild(node, pos);
+                _createNodeChild(node, pos);
                 created_node = true;
             }
         }
@@ -212,18 +212,18 @@ BeliefVoxel *BeliefMap::_updateNodeRecurs(BeliefVoxel *node, bool node_just_crea
     }
 }
 
-void BeliefMap::expandNode(BeliefVoxel *node)
+void BeliefMap::_expandNode(BeliefVoxel *node)
 {
     assert(!node->hasChildren());
 
     for (unsigned int k = 0; k < 8; k++)
     {
-        BeliefVoxel *newNode = createNodeChild(node, k);
+        BeliefVoxel *newNode = _createNodeChild(node, k);
         newNode->setValue(std::make_shared<Belief>(*(node->getValue().get())));
     }
 }
 
-BeliefVoxel *BeliefMap::createNodeChild(BeliefVoxel *node, unsigned int childIdx)
+BeliefVoxel *BeliefMap::_createNodeChild(BeliefVoxel *node, unsigned int childIdx)
 {
     assert(childIdx < 8);
 

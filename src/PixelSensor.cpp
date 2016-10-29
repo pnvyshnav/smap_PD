@@ -5,7 +5,7 @@
 #include <cassert>
 
 PixelSensor::PixelSensor(Parameters::Vec3Type position, Parameters::Vec3Type orientation)
-	: Sensor(position, orientation)
+	: FakeSensor(position, orientation)
 {}
 
 // TODO this is a hack
@@ -44,10 +44,10 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
                 ++i;
                 QTrueVoxel voxel = trueMap.query(pos);
                 auto sample = UniformDistribution::sample();
-                if (sample < scaledOccupancy(voxel.node->getOccupancy()))
+                if (sample < scaledOccupancy(voxel.node()->getOccupancy()))
                 {
                     ROS_INFO("Cause Voxel is %d/%d.  %f < %f", i, (int)positions.size(), sample,
-                             scaledOccupancy(voxel.node->getOccupancy()));
+                             scaledOccupancy(voxel.node()->getOccupancy()));
                     // voxel is the cause voxel
                     return _observationGivenCause(voxel);
                 }
@@ -59,7 +59,7 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
     return Measurement::hole(this);
 }
 
-Measurement PixelSensor::_observationGivenCause(QTrueVoxel causeVoxel, bool deterministic) const
+Measurement PixelSensor::_observationGivenCause(QVoxel causeVoxel, bool deterministic) const
 {
     assert(causeVoxel.type == GEOMETRY_VOXEL);
 	Parameters::NumType deterministicRange = (Parameters::NumType) causeVoxel.position.distance(_position);
@@ -70,7 +70,7 @@ Measurement PixelSensor::_observationGivenCause(QTrueVoxel causeVoxel, bool dete
 	return Measurement::voxel(this, tg.sample());
 }
 
-Parameters::NumType PixelSensor::likelihoodGivenCause(Measurement measurement, QTrueVoxel causeVoxel) const
+Parameters::NumType PixelSensor::likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const
 {
     if (causeVoxel.type == GEOMETRY_VOXEL)
     {
@@ -93,3 +93,7 @@ Parameters::NumType PixelSensor::likelihoodGivenCause(Measurement measurement, Q
         return (Parameters::NumType) (1. / Parameters::sensorRange);
     }
 }
+
+FakeSensor::FakeSensor(Parameters::Vec3Type &position, Parameters::Vec3Type &orientation) : Sensor(position,
+                                                                                                   orientation)
+{}

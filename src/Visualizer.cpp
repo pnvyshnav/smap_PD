@@ -21,9 +21,8 @@ void Visualizer::render()
     ros::spin();
 }
 
-Visualizer::Visualizer(int argc, char **argv)
+Visualizer::Visualizer()
 {
-    ros::init(argc, argv, "SMAP");
     nodeHandle = new ros::NodeHandle;
     trueMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("true_map", 1000);
     trueMap2dPublisher = nodeHandle->advertise<nav_msgs::GridCells>("true_map_2d", 0);
@@ -66,7 +65,7 @@ void Visualizer::publishTrueMap(const Visualizable *visualizable) {
                 cell.scale.x = Parameters::voxelSize;
                 cell.scale.y = Parameters::voxelSize;
                 cell.scale.z = Parameters::voxelSize;
-                cell.color.a = (int)std::round(voxel.node->getOccupancy());
+                cell.color.a = (int)std::round(voxel.node()->getOccupancy());
                 cell.color.r = 0;
                 cell.color.g = 0;
                 cell.color.b = 0;
@@ -104,7 +103,7 @@ void Visualizer::publishTrueMap2dSlice(const Visualizable *visualizable, unsigne
             auto _x = Parameters::xMin + x * Parameters::voxelSize;
             auto _y = Parameters::yMin + y * Parameters::voxelSize;
             QTrueVoxel voxel = trueMap->query(_x, _y, _z);
-            if (voxel.node->getOccupancy() < 0.5)
+            if (voxel.node()->getOccupancy() < 0.5)
                 continue;
 
             geometry_msgs::Point p;
@@ -152,7 +151,7 @@ void Visualizer::publishBeliefMap(const Visualizable *visualizable)
                 cell.scale.y = Parameters::voxelSize;
                 cell.scale.z = Parameters::voxelSize;
                 cell.color.a = 0.9;
-                float intensity = (float) (1.0 - voxel.node->getValue()->mean());
+                float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
                 cell.color.r = intensity;
                 cell.color.g = intensity;
                 cell.color.b = intensity;

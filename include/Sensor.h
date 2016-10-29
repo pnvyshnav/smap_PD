@@ -37,8 +37,6 @@ public:
     Sensor(Parameters::Vec3Type &position,
            Parameters::Vec3Type &orientation);
 
-    virtual Observation observe(TrueMap &trueMap) const = 0;
-
     /**
      * @brief Global position of the sensor.
      */
@@ -57,9 +55,9 @@ public:
      * @param causeVoxel The true cause voxel.
      * @return Likelihood between 0 and 1.
      */
-    virtual Parameters::NumType likelihoodGivenCause(Measurement measurement, QTrueVoxel causeVoxel) const = 0;
+    virtual Parameters::NumType likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const = 0;
 
-    InverseCauseModel computeInverseCauseModel(Measurement measurement, TrueMap &trueMap, BeliefMap &beliefMap) const;
+    InverseCauseModel computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) const;
 
 protected:
     Parameters::Vec3Type _position;

@@ -21,7 +21,7 @@ std::vector<PixelSensor> StereoCameraSensor::pixels() const
     return _pixelSensors;
 }
 
-Parameters::NumType StereoCameraSensor::likelihoodGivenCause(Measurement measurement, QTrueVoxel causeVoxel) const
+Parameters::NumType StereoCameraSensor::likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const
 {
     return measurement.sensor->likelihoodGivenCause(measurement, causeVoxel);
 }

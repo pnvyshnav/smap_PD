@@ -1,62 +1,30 @@
 #pragma once
 
 #include <vector>
-#include <type_traits>
+#include <functional>
 
-#include "Parameters.hpp"
-#include "StereoCameraSensor.h"
 #include "Observation.hpp"
-#include "TrueMap.h"
 
-
-/**
- * Representation of a robot in a given pose and having a sensor.
- * Provided SENSOR template has to behave like {@see Sensor}.
- */
-template <class SENSOR = StereoCameraSensor>
 class Robot
 {
 public:
+    typedef void (*ObservationHandler)(const Observation &);
 
-    Robot(Parameters::Vec3Type position,
-          Parameters::Vec3Type orientation)
-            : _position(position), _orientation(orientation),
-              _sensor(position, orientation) {}
+    virtual void run() = 0;
+    virtual void stop() = 0;
 
-    Parameters::Vec3Type position() const
+    void registerObserver(ObservationHandler handler)
     {
-        return _position;
+        _observers.push_back(handler);
     }
 
-    void setPosition(const Parameters::Vec3Type &position)
+protected:
+    void publishObservation(const Observation &observation)
     {
-        _position = position;
-        _sensor.setPosition(position);
-    }
-
-    Parameters::Vec3Type orientation() const
-    {
-        return _orientation;
-    }
-
-    void setOrientation(const Parameters::Vec3Type &orientation)
-    {
-        _orientation = orientation;
-        _sensor.setOrientation(orientation);
-    }
-
-    Observation observe(TrueMap &trueMap) const
-    {
-        return _sensor.observe(trueMap);
-    }
-
-    SENSOR &sensor()
-    {
-        return _sensor;
+        for (auto &handler : _observers)
+            (*handler)(observation);
     }
 
 private:
-    Parameters::Vec3Type _position;
-    Parameters::Vec3Type _orientation;
-    SENSOR _sensor;
+    std::vector<ObservationHandler> _observers;
 };

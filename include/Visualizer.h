@@ -10,8 +10,8 @@
 class Visualizer
 {
 public:
-    Visualizer(int argc, char **argv);
-    ~Visualizer();
+    Visualizer();
+    virtual ~Visualizer();
 
     void render();
 

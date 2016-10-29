@@ -8,11 +8,20 @@
 #include "BeliefMap.h"
 #include "Sensor.h"
 
+class FakeSensor : public Sensor
+{
+public:
+    FakeSensor(Parameters::Vec3Type &position,
+               Parameters::Vec3Type &orientation);
+
+    virtual Observation observe(TrueMap &trueMap) const = 0;
+};
+
 
 /**
  * @brief Represents a range sensor that only computes a single ray.
  */
-class PixelSensor : public Sensor
+class PixelSensor : public FakeSensor
 {
     friend class StereoCameraSensor;
 public:
@@ -32,7 +41,7 @@ public:
      * @param causeVoxel The true cause voxel.
      * @return Likelihood between 0 and 1.
      */
-    Parameters::NumType likelihoodGivenCause(Measurement measurement, QTrueVoxel causeVoxel) const;
+    Parameters::NumType likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const;
 
 private:
     /**
@@ -41,6 +50,6 @@ private:
      * @param deterministic If false, the measurement becomes noisy.
      * @return Simulated observation measurement.
      */
-    Measurement _observationGivenCause(QTrueVoxel causeVoxel,
+    Measurement _observationGivenCause(QVoxel causeVoxel,
                                        bool deterministic = Parameters::deterministicSensorMeasurements) const;
 };

@@ -149,13 +149,13 @@ add_executable(smap src/main.cpp
         include/Parameters.hpp
         src/BeliefVoxel.cpp
         src/BeliefMap.cpp
-        include/Robot.hpp
+        include/FakeRobot.hpp
         src/PixelSensor.cpp
         include/PixelSensor.h
         include/TruncatedGaussianDistribution.hpp
         include/TrueMap.h
         src/TrueMap.cpp
-        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp src/Visualizer.cpp include/Visualizer.h include/Visualizable.hpp)
+        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp src/Visualizer.cpp include/Visualizer.h include/Visualizable.hpp include/Drone.cpp include/Drone.hpp include/Robot.hpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

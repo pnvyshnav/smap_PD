@@ -31,20 +31,22 @@ public:
     BeliefVoxel *updateNode(const octomap::point3d& position, const Belief &belief);
     BeliefVoxel *updateNode(const octomap::OcTreeKey& key, const Belief &belief);
 
-    std::valarray<Parameters::NumType> bouncingProbabilitiesOnRay(const octomap::KeyRay &ray) const;
+    std::valarray<Parameters::NumType> bouncingProbabilitiesOnRay(
+            const octomap::KeyRay &ray) const;
 
-    std::valarray<Parameters::NumType> reachingProbabilitiesOnRay(const octomap::KeyRay &ray,
-                                                                  const std::valarray<Parameters::NumType> &bouncingProbabilities) const;
+    std::valarray<Parameters::NumType> reachingProbabilitiesOnRay(
+            const octomap::KeyRay &ray,
+            const std::valarray<Parameters::NumType> &bouncingProbabilities) const;
 
-    bool update(const Observation &observation, TrueMap &trueMap);
+    bool update(const Observation &observation);
 
     InverseCauseModel *icm;
 
 private:
-    BeliefVoxel *_updateNodeRecurs(BeliefVoxel* node, bool node_just_created, const octomap::OcTreeKey& key,
+    BeliefVoxel *_updateNodeRecurs(BeliefVoxel* node, bool node_just_created,
+                                   const octomap::OcTreeKey& key,
                                    unsigned int depth, const Belief &belief);
 
-    void expandNode(BeliefVoxel *node);
-    BeliefVoxel *createNodeChild(BeliefVoxel *node, unsigned int childIdx);
+    void _expandNode(BeliefVoxel *node);
+    BeliefVoxel *_createNodeChild(BeliefVoxel *node, unsigned int childIdx);
 };
-

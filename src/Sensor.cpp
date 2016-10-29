@@ -27,20 +27,18 @@ void Sensor::setOrientation(const Parameters::Vec3Type &orientation)
 }
 
 InverseCauseModel
-Sensor::computeInverseCauseModel(Measurement measurement, TrueMap &trueMap, BeliefMap &beliefMap) const
+Sensor::computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) const
 {
     InverseCauseModel icm;
     octomap::KeyRay ray;
     beliefMap.computeRayKeys(position(), orientation() * Parameters::sensorRange + position(), ray);
-    octomap::KeyRay rayTrueMap;
-    trueMap.computeRayKeys(position(), orientation() * Parameters::sensorRange + position(), rayTrueMap);
     unsigned int j = 0;
     icm.ray.reserve(ray.size());
-    std::vector<QTrueVoxel> causeVoxels;
+    std::vector<QVoxel> causeVoxels;
     for (auto &key : ray)
     {
         icm.ray.push_back(key);
-        causeVoxels.push_back(trueMap.query(key));
+        causeVoxels.push_back(beliefMap.query(key));
         ++j;
         if (j >= ray.size())
             break;
@@ -65,7 +63,7 @@ Sensor::computeInverseCauseModel(Measurement measurement, TrueMap &trueMap, Beli
 
     auto causeProbabilityFromInfinityPrior = bouncingProbabilityFromInfinity * reachingProbabilityFromInfinity;
 
-    Parameters::NumType likelihoodGivenInfinity = likelihoodGivenCause(measurement, QTrueVoxel::hole());
+    Parameters::NumType likelihoodGivenInfinity = likelihoodGivenCause(measurement, QBeliefVoxel::hole());
 
     icm.posteriorInfinity = likelihoodGivenInfinity * causeProbabilityFromInfinityPrior;
 
