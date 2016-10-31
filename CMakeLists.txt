@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs ecl_time
+        message_filters
 )
 
 ## System dependencies are found with CMake's conventions
@@ -25,6 +26,11 @@ find_package(catkin REQUIRED COMPONENTS
 #FIND_PACKAGE(Eigen3 REQUIRED)
 find_package(PkgConfig)
 pkg_search_module(Eigen3 REQUIRED eigen3)
+
+find_package(PCL 1.8 REQUIRED)
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -155,7 +161,7 @@ add_executable(smap src/main.cpp
         include/TruncatedGaussianDistribution.hpp
         include/TrueMap.h
         src/TrueMap.cpp
-        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp src/Visualizer.cpp include/Visualizer.h include/Visualizable.hpp include/Drone.cpp include/Drone.hpp include/Robot.hpp)
+        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp src/Visualizer.cpp include/Visualizer.h include/Visualizable.hpp src/Drone.cpp include/Drone.h include/Robot.hpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -163,7 +169,8 @@ add_executable(smap src/main.cpp
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(smap
-  ${catkin_LIBRARIES}
+        ${catkin_LIBRARIES}
+        ${PCL_LIBRARIES}
 )
 
 #############

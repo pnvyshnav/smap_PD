@@ -6,6 +6,7 @@
 #include "../include/BeliefMap.h"
 #include "../include/FakeRobot.hpp"
 #include "../include/Visualizer.h"
+#include "../include/Drone.h"
 
 TrueMap trueMap = TrueMap::generate();
 BeliefMap beliefMap;
@@ -20,8 +21,8 @@ void handleObservation(const Observation &observation)
 {
     trueMap.publish();
     beliefMap.update(observation);
-    if (!ros::ok())
-        robot.stop();
+    //if (!ros::ok())
+    //    robot.stop();
 }
 
 int main(int argc, char **argv)
@@ -33,10 +34,14 @@ int main(int argc, char **argv)
     //trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
 //    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
 //    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMap, visualizer, std::placeholders::_1));
-//    robot.sensor().subscribe(std::bind(&Visualizer::publishSensor, visualizer, std::placeholders::_1));
 
-    robot.registerObserver(&handleObservation);
-    robot.run();
+//    robot.sensor().subscribe(std::bind(&Visualizer::publishSensor, visualizer, std::placeholders::_1));
+//    robot.registerObserver(&handleObservation);
+//    robot.run();
+
+    Drone drone;
+    drone.registerObserver(&handleObservation);
+    drone.run();
 
     visualizer->publishTrueMap2dSlice(&trueMap);
     visualizer->publishBeliefMapFull(&beliefMap);

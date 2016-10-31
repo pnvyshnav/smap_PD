@@ -24,7 +24,7 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
 		octomap::point3d hitpoint;
 		if (trueMap.castRay(_position, _orientation, hitpoint, false, Parameters::sensorRange))
 		{
-            return Measurement::voxel(this, (Parameters::NumType) _position.distance(hitpoint));
+            return Measurement::voxel(std::make_shared<Sensor>(*this), (Parameters::NumType) _position.distance(hitpoint));
 		}
 	}
     else
@@ -34,7 +34,7 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
         if (!trueMap.computeRay(_position, end_ray, positions) || positions.empty())
         {
             ROS_ERROR("Voxels on ray could not be computed.");
-            return Measurement::hole(this);
+            return Measurement::hole(std::make_shared<Sensor>(*this));
         }
         else
         {
@@ -65,7 +65,7 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
     }
 
     ROS_WARN_STREAM("Sensor " << _position << " -> " << _orientation << " observed a hole.");
-    return Measurement::hole(this);
+    return Measurement::hole(std::make_shared<Sensor>(*this));
 }
 
 Measurement PixelSensor::_observationGivenCause(QVoxel causeVoxel, bool deterministic) const
@@ -73,10 +73,10 @@ Measurement PixelSensor::_observationGivenCause(QVoxel causeVoxel, bool determin
     assert(causeVoxel.type == GEOMETRY_VOXEL);
 	Parameters::NumType deterministicRange = (Parameters::NumType) causeVoxel.position.distance(_position);
 	if (deterministic)
-		return Measurement::voxel(this, deterministicRange);
+		return Measurement::voxel(std::make_shared<Sensor>(*this), deterministicRange);
 	auto tg = TruncatedGaussianDistribution(deterministicRange, Parameters::sensorNoiseStd,
                                             0, Parameters::sensorRange);
-	return Measurement::voxel(this, tg.sample());
+	return Measurement::voxel(std::make_shared<Sensor>(*this), tg.sample());
 }
 
 Parameters::NumType PixelSensor::likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const

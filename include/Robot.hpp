@@ -5,6 +5,10 @@
 
 #include "Observation.hpp"
 
+/**
+ * Represents a robot that constantly generates observations
+ * while running.
+ */
 class Robot
 {
 public:
@@ -19,6 +23,11 @@ public:
     }
 
 protected:
+    /**
+     * Updates all subscribed ObservationHandlers with the
+     * provided observation.
+     * @param observation The observation.
+     */
     void publishObservation(const Observation &observation)
     {
         for (auto &handler : _observers)

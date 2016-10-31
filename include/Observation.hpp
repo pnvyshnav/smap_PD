@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 
 #include "Parameters.hpp"
 #include "TrueMap.h"
@@ -16,30 +17,30 @@ struct Measurement
     /**
      * Sensor that produced this measurement.
      */
-    const Sensor *sensor;
+    const std::shared_ptr<Sensor> sensor;
 
     /**
      * Determines which geometry was sensed.
      */
     const GeometryType geometry;
 
-    static Measurement hole(const Sensor *sensor)
+    static Measurement hole(const std::shared_ptr<Sensor> &sensor)
     {
         return Measurement(sensor, std::numeric_limits<Parameters::NumType>::infinity(), GEOMETRY_HOLE);
     }
 
-    static Measurement spurious(const Sensor *sensor)
+    static Measurement spurious(const std::shared_ptr<Sensor> &sensor)
     {
         return Measurement(sensor, std::numeric_limits<Parameters::NumType>::infinity(), GEOMETRY_SPURIOUS);
     }
 
-    static Measurement voxel(const Sensor *sensor, Parameters::NumType value)
+    static Measurement voxel(const std::shared_ptr<Sensor> &sensor, Parameters::NumType value)
     {
         return Measurement(sensor, value);
     }
 
 private:
-    Measurement(const Sensor *sensor, Parameters::NumType value, GeometryType geometry = GEOMETRY_VOXEL)
+    Measurement(const std::shared_ptr<Sensor> sensor, Parameters::NumType value, GeometryType geometry = GEOMETRY_VOXEL)
             : sensor(sensor), value(value), geometry(geometry)
     {}
 };

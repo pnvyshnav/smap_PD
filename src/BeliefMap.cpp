@@ -86,10 +86,19 @@ std::valarray<Parameters::NumType> BeliefMap::reachingProbabilitiesOnRay(const o
 
 bool BeliefMap::update(const Observation &observation)
 {
+    unsigned int mi = 0;
     for (auto &measurement : observation.measurements())
     {
-        icm = new InverseCauseModel(
-                measurement.sensor->computeInverseCauseModel(measurement, *this));
+        if (mi % 100 == 0)
+        {
+            std::cout << "\rUpdating " << std::round(mi*10000./observation.measurements().size())/100. << "%";
+            std::cout.flush();
+        }
+        ++mi;
+        icm = measurement.sensor->computeInverseCauseModel(measurement, *this);
+        if (icm == NULL)
+            continue;
+
         Parameters::NumType prBeforeVoxel = 0;
         Parameters::NumType prAfterVoxel = icm->posteriorOnRay.sum();
         Parameters::NumType prOnVoxel;

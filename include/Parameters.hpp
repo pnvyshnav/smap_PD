@@ -17,14 +17,14 @@ public:
 
     static const unsigned int numParticles = 101;
 
-    static constexpr NumType voxelSize = .1;
+    static constexpr NumType voxelSize = 1;
 
-    static constexpr NumType xMin = (const NumType) (-1. + voxelSize * 0.5);
-    static constexpr NumType xMax = (const NumType) (1. + voxelSize * 0.5);
-    static constexpr NumType yMin = (const NumType) (-1. + voxelSize * 0.5);
-    static constexpr NumType yMax = (const NumType) (1. + voxelSize * 0.5);
-    static constexpr NumType zMin = 0; //(const NumType) (-1. - voxelSize / 2.);
-    static constexpr NumType zMax = voxelSize; //(const NumType) (1. + voxelSize / 2.);
+    static constexpr NumType xMin = (const NumType) (-20 + voxelSize * 0.5);
+    static constexpr NumType xMax = (const NumType) (20 + voxelSize * 0.5);
+    static constexpr NumType yMin = (const NumType) (-20 + voxelSize * 0.5);
+    static constexpr NumType yMax = (const NumType) (20 + voxelSize * 0.5);
+    static constexpr NumType zMin = -20; //(const NumType) (-1. - voxelSize / 2.);
+    static constexpr NumType zMax = 20; //(const NumType) (1. + voxelSize / 2.);
 
     static constexpr NumType xCenter = (const NumType) ((xMax + xMin) / 2.0);
     static constexpr NumType yCenter = (const NumType) ((yMax + yMin) / 2.0);
@@ -35,7 +35,7 @@ public:
     static constexpr NumType freeRadiusAroundCenter = 4 * voxelSize;
 
     static const bool sensorTruncatedGaussianNoise = false;
-    static constexpr NumType sensorRange = (const NumType) 0.9;
+    static constexpr NumType sensorRange = (const NumType) 9;
     static constexpr NumType sensorNoiseStd = (const NumType) (sensorRange / 20.);
 
     static constexpr NumType spuriousMeasurementProbability = 0; // cannot be > 0 for now

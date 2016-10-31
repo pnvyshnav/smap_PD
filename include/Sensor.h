@@ -6,7 +6,7 @@
 #include "BeliefMap.h"
 
 /**
- * Class representing the results of computing the inverse cause model.
+ * Class representing the results of computing the inverse sensor cause model.
  */
 struct InverseCauseModel
 {
@@ -28,14 +28,14 @@ struct InverseCauseModel
     unsigned int rayLength;
 };
 
-/**
- * Abstract class representing a sensor.
- */
 class Sensor : public Visualizable
 {
 public:
-    Sensor(Parameters::Vec3Type &position,
-           Parameters::Vec3Type &orientation);
+    Sensor(Parameters::Vec3Type position,
+           Parameters::Vec3Type orientation,
+           Parameters::NumType range = Parameters::sensorRange);
+
+    Sensor(const Sensor &sensor);
 
     /**
      * @brief Global position of the sensor.
@@ -49,17 +49,21 @@ public:
     Parameters::Vec3Type orientation() const;
     virtual void setOrientation(const Parameters::Vec3Type &orientation);
 
+
+    Parameters::NumType range() const;
+
     /**
-     * @brief Computes the likelihood of the measurement given the true voxel that caused the measurement.
+     * @brief Computes the likelihood of the measurement given the actual voxel that caused the measurement.
      * @param measurement The measurement.
-     * @param causeVoxel The true cause voxel.
+     * @param causeVoxel The actual cause voxel.
      * @return Likelihood between 0 and 1.
      */
-    virtual Parameters::NumType likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const = 0;
+    virtual Parameters::NumType likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const;
 
-    InverseCauseModel computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) const;
+    InverseCauseModel *computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) const;
 
 protected:
     Parameters::Vec3Type _position;
     Parameters::Vec3Type _orientation;
+    const Parameters::NumType _range;
 };

@@ -1,8 +1,18 @@
 #include "../include/Sensor.h"
+#include "../include/TruncatedGaussianDistribution.hpp"
 
-Sensor::Sensor(Parameters::Vec3Type &position, Parameters::Vec3Type &orientation) : _position(position),
-                                                                                    _orientation(orientation)
-{}
+Sensor::Sensor(Parameters::Vec3Type position, Parameters::Vec3Type orientation, Parameters::NumType range)
+        : _range(range), _position(position), _orientation(orientation)
+{
+
+}
+
+Sensor::Sensor(const Sensor &sensor) : _position(sensor._position),
+                   _orientation(sensor._orientation),
+                   _range(sensor._range)
+{
+
+}
 
 Parameters::Vec3Type Sensor::position() const
 {
@@ -26,24 +36,61 @@ void Sensor::setOrientation(const Parameters::Vec3Type &orientation)
     updateVisualization();
 }
 
-InverseCauseModel
-Sensor::computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) const
+Parameters::NumType Sensor::likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const
 {
-    InverseCauseModel icm;
+    if (causeVoxel.type == GEOMETRY_VOXEL)
+    {
+        if (measurement.geometry != GEOMETRY_VOXEL)
+            return 0;
+
+        auto tg = TruncatedGaussianDistribution(measurement.value, Parameters::sensorNoiseStd,
+                                                0, measurement.value, false); // not truncated
+        return tg.pdfValue(measurement.value);
+    }
+    else if (causeVoxel.type == GEOMETRY_HOLE)
+    {
+        return (int)(measurement.geometry == GEOMETRY_HOLE);
+    }
+    else
+    {
+        if (measurement.geometry == GEOMETRY_HOLE)
+            return 0;
+
+        return (Parameters::NumType) (1. / Parameters::sensorRange);
+    }
+}
+
+
+InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) const
+{
+    auto *icm = new InverseCauseModel;
+
     octomap::KeyRay ray;
-    beliefMap.computeRayKeys(position(), orientation() * Parameters::sensorRange + position(), ray);
+    if (!beliefMap.computeRayKeys(_position, _orientation * _range + _position, ray))
+    {
+        ROS_WARN("Compute ray keys failed.");
+        delete icm;
+        return NULL;
+    }
+
+    if (ray.size() == 0)
+    {
+        delete icm;
+        return NULL;
+    }
+
     unsigned int j = 0;
-    icm.ray.reserve(ray.size());
+    icm->ray.reserve(ray.size());
     std::vector<QVoxel> causeVoxels;
     for (auto &key : ray)
     {
-        icm.ray.push_back(key);
+        icm->ray.push_back(key);
         causeVoxels.push_back(beliefMap.query(key));
         ++j;
         if (j >= ray.size())
             break;
     }
-    icm.rayLength = ray.size();
+    icm->rayLength = ray.size();
     auto bouncingProbabilities = beliefMap.bouncingProbabilitiesOnRay(ray);
     auto reachingProbabilities = beliefMap.reachingProbabilitiesOnRay(ray, bouncingProbabilities);
     std::valarray<Parameters::NumType> prior = bouncingProbabilities * reachingProbabilities;
@@ -55,7 +102,7 @@ Sensor::computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) 
     std::valarray<Parameters::NumType> likelihood(ray.size());
     for (unsigned int i = 0; i < ray.size(); ++i)
         likelihood[i] = likelihoodGivenCause(measurement, causeVoxels[i]);
-    icm.posteriorOnRay = likelihood * prior;
+    icm->posteriorOnRay = likelihood * prior;
 
 
     const unsigned int end = ray.size() - 1;
@@ -69,21 +116,31 @@ Sensor::computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) 
 
     Parameters::NumType likelihoodGivenInfinity = likelihoodGivenCause(measurement, QBeliefVoxel::hole());
 
-    icm.posteriorInfinity = likelihoodGivenInfinity * causeProbabilityFromInfinityPrior;
+    icm->posteriorInfinity = likelihoodGivenInfinity * causeProbabilityFromInfinityPrior;
 
-    auto eta = icm.posteriorOnRay.sum() + icm.posteriorInfinity;
+    auto eta = icm->posteriorOnRay.sum() + icm->posteriorInfinity;
     if (eta < 1e-10)
     {
         ROS_WARN("Inverse Cause Model: eta = %g", eta);
     }
     else
     {
-        icm.posteriorOnRay /= eta;
-        icm.posteriorInfinity /= eta;
+        icm->posteriorOnRay /= eta;
+        icm->posteriorInfinity /= eta;
     }
 
     //TODO reactivate
-    assert(std::abs(icm.posteriorOnRay.sum() + icm.posteriorInfinity - 1.) < 1e-10);
+    if (!(std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.) < 1e-10))
+    {
+        ROS_WARN("ICM assertion failed. Test: %g < 1e-10", std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.));
+        delete icm;
+        return NULL;
+    }
 
     return icm;
+}
+
+Parameters::NumType Sensor::range() const
+{
+    return _range;
 }
