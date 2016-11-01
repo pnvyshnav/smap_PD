@@ -27,7 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(PkgConfig)
 pkg_search_module(Eigen3 REQUIRED eigen3)
 
-find_package(PCL 1.8 REQUIRED)
+find_package(PCL REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
