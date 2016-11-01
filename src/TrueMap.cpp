@@ -44,6 +44,10 @@ TrueMap TrueMap::generate(unsigned int seed)
     map.updateVisualization();
 
     ROS_INFO("True map has %d nodes in total.", (int)map.calcNumNodes());
+    ROS_INFO("Voxels per dimension: %d x %d x %d",
+             (int)Parameters::voxelsPerDimensionX,
+             (int)Parameters::voxelsPerDimensionY,
+             (int)Parameters::voxelsPerDimensionZ);
     map.calcMinMax();
     ROS_INFO("True map range: (%.2f %.2f %.2f) to (%.2f %.2f %.2f)",
              map.min_value[0], map.min_value[1], map.min_value[2],

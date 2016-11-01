@@ -87,7 +87,7 @@ public:
         NODE *node = _tree->search(position);
         if (!node)
         {
-            ROS_WARN_STREAM("Voxel could not be found at position " << position);
+            //ROS_WARN_STREAM("Voxel could not be found at position " << position);
             return QTypedVoxel<NODE>::hole(position);
         }
         octomap::OcTreeKey key = _tree->coordToKey(position);
@@ -101,7 +101,7 @@ public:
         octomap::point3d position = _tree->keyToCoord(key);
         if (!node)
         {
-            ROS_WARN("Voxel could not be found at given key");
+            //ROS_WARN("Voxel could not be found at given key");
             return QTypedVoxel<NODE>::hole(position);
         }
 

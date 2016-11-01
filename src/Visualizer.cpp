@@ -128,78 +128,88 @@ void Visualizer::publishBeliefMap(const Visualizable *visualizable)
 
     auto beliefMap = (BeliefMap*) visualizable;
     _lastBeliefMap = beliefMap;
-    ros::Rate loop_rate(PaintRate);
-    loop_rate.sleep();
+    //ros::Rate loop_rate(PaintRate);
+    //loop_rate.sleep();
 
     visualization_msgs::MarkerArray cells;
     for (auto &voxel : beliefMap->lastUpdatedVoxels)
     {
         visualization_msgs::Marker cell;
-        cell.action = 0;
-        cell.id = (int) voxel.hash;
-        cell.type = visualization_msgs::Marker::CUBE;
-        cell.header.frame_id = "map";
-        cell.scale.x = Parameters::voxelSize;
-        cell.scale.y = Parameters::voxelSize;
-        cell.scale.z = Parameters::voxelSize;
-        cell.color.a = 0.9;
-        float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
-        cell.color.r = intensity;
-        cell.color.g = intensity;
-        cell.color.b = intensity;
-        cell.pose.position.x = voxel.position.x();
-        cell.pose.position.y = voxel.position.y();
-        cell.pose.position.z = voxel.position.z();
+        if (voxel.node()->getValue()->mean() < 0.4)
+        {
+            // remove voxel
+            cell.action = 2;
+            cell.id = (int) voxel.hash;
+        }
+        else
+        {
+            cell.action = 0;
+            cell.id = (int) voxel.hash;
+            cell.type = visualization_msgs::Marker::CUBE;
+            cell.header.frame_id = "map";
+            cell.scale.x = Parameters::voxelSize;
+            cell.scale.y = Parameters::voxelSize;
+            cell.scale.z = Parameters::voxelSize;
+            cell.color.a = 0.9;
+            float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
+            cell.color.r = intensity;
+            cell.color.g = intensity;
+            cell.color.b = intensity;
+            cell.pose.position.x = voxel.position.x();
+            cell.pose.position.y = voxel.position.y();
+            cell.pose.position.z = voxel.position.z();
+        }
+
         cells.markers.push_back(cell);
     }
 
     beliefMapPublisher.publish(cells);
 
     // Publish ICM's ray voxels
-    visualization_msgs::MarkerArray rayVoxels;
-    visualization_msgs::Marker clearVoxel;
-    clearVoxel.action = 3; // clear all
-    clearVoxel.header.frame_id = "map";
-    rayVoxels.markers.push_back(clearVoxel);
-    if (beliefMap->icm != NULL)
-    {
-        for (auto &key : beliefMap->icm->ray)
-        {
-            QBeliefVoxel beliefVoxel = beliefMap->query(key);
+//    visualization_msgs::MarkerArray rayVoxels;
+//    visualization_msgs::Marker clearVoxel;
+//    clearVoxel.action = 3; // clear all
+//    clearVoxel.header.frame_id = "map";
+//    rayVoxels.markers.push_back(clearVoxel);
+//    if (beliefMap->icm != NULL)
+//    {
+//        for (auto &key : beliefMap->icm->ray)
+//        {
+//            QBeliefVoxel beliefVoxel = beliefMap->query(key);
+//
+//            visualization_msgs::Marker rayVoxel;
+//            rayVoxel.action = 0;
+//            rayVoxel.id = (int) beliefVoxel.hash + 1000; // do not overwrite BeliefMap voxels
+//            rayVoxel.type = visualization_msgs::Marker::CUBE;
+//            rayVoxel.header.frame_id = "map";
+//            rayVoxel.scale.x = Parameters::voxelSize;
+//            rayVoxel.scale.y = Parameters::voxelSize;
+//            rayVoxel.scale.z = Parameters::voxelSize;
+//            rayVoxel.color.a = 0.7;
+//
+//            if (beliefVoxel.type != GEOMETRY_VOXEL)
+//            {
+//                rayVoxel.color.r = 0.2;
+//                rayVoxel.color.g = 0.2;
+//                rayVoxel.color.b = 0.2;
+//            }
+//            else
+//            {
+//                rayVoxel.color.r = 0.9;
+//                rayVoxel.color.g = 0.4;
+//                rayVoxel.color.b = 0.0;
+//            }
+//
+//            rayVoxel.pose.position.x = beliefVoxel.position.x();
+//            rayVoxel.pose.position.y = beliefVoxel.position.y();
+//            rayVoxel.pose.position.z = beliefVoxel.position.z();
+//            rayVoxels.markers.push_back(rayVoxel);
+//        }
+//    }
+//
+//    rayVoxelPublisher.publish(rayVoxels);
 
-            visualization_msgs::Marker rayVoxel;
-            rayVoxel.action = 0;
-            rayVoxel.id = (int) beliefVoxel.hash + 1000; // do not overwrite BeliefMap voxels
-            rayVoxel.type = visualization_msgs::Marker::CUBE;
-            rayVoxel.header.frame_id = "map";
-            rayVoxel.scale.x = Parameters::voxelSize;
-            rayVoxel.scale.y = Parameters::voxelSize;
-            rayVoxel.scale.z = Parameters::voxelSize;
-            rayVoxel.color.a = 0.7;
-
-            if (beliefVoxel.type != GEOMETRY_VOXEL)
-            {
-                rayVoxel.color.r = 0.2;
-                rayVoxel.color.g = 0.2;
-                rayVoxel.color.b = 0.2;
-            }
-            else
-            {
-                rayVoxel.color.r = 0.9;
-                rayVoxel.color.g = 0.4;
-                rayVoxel.color.b = 0.0;
-            }
-
-            rayVoxel.pose.position.x = beliefVoxel.position.x();
-            rayVoxel.pose.position.y = beliefVoxel.position.y();
-            rayVoxel.pose.position.z = beliefVoxel.position.z();
-            rayVoxels.markers.push_back(rayVoxel);
-        }
-    }
-
-    rayVoxelPublisher.publish(rayVoxels);
-
-    ros::spinOnce();
+    //ros::spinOnce();
 }
 
 void Visualizer::publishBeliefMapFull(const Visualizable *visualizable)

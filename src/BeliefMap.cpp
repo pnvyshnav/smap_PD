@@ -50,7 +50,9 @@ Belief *BeliefMap::belief(const octomap::OcTreeKey &key) const
     if (voxel != NULL)
         return voxel->getValue().get();
 
-    ROS_ERROR_STREAM("Belief voxel at " << keyToCoord(key) << " could not be found.");
+#ifdef LOG_DETAILS
+    ROS_WARN_STREAM("Belief voxel at " << keyToCoord(key) << " could not be found.");
+#endif
     return NULL;
 }
 
@@ -86,23 +88,16 @@ std::valarray<Parameters::NumType> BeliefMap::reachingProbabilitiesOnRay(const o
 
 bool BeliefMap::update(const Observation &observation)
 {
-    unsigned int mi = 0;
+    lastUpdatedVoxels.clear();
     for (auto &measurement : observation.measurements())
     {
-        if (mi % 100 == 0)
-        {
-            std::cout << "\rUpdating " << std::round(mi*10000./observation.measurements().size())/100. << "%";
-            std::cout.flush();
-        }
-        ++mi;
         icm = measurement.sensor->computeInverseCauseModel(measurement, *this);
-        if (icm == NULL)
+        if (!icm)
             continue;
 
         Parameters::NumType prBeforeVoxel = 0;
         Parameters::NumType prAfterVoxel = icm->posteriorOnRay.sum();
         Parameters::NumType prOnVoxel;
-        lastUpdatedVoxels.clear();
         unsigned int i = 0;
         for (auto &key : icm->ray)
         {
@@ -111,7 +106,9 @@ bool BeliefMap::update(const Observation &observation)
             const BeliefVoxel *beliefVoxel = qBeliefVoxel.node();
             if (beliefVoxel == NULL)
             {
+#ifdef LOG_DETAILS
                 ROS_WARN("Belief voxel for given voxel key on ray could not be found.");
+#endif
                 break;
             }
 
@@ -149,10 +146,10 @@ bool BeliefMap::update(const Observation &observation)
             if (i >= icm->rayLength)
                 break;
         }
-        updateVisualization();
         delete icm;
         icm = NULL;
     }
+    updateVisualization();
 
     return true;
 }

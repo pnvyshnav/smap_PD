@@ -60,7 +60,6 @@ Parameters::NumType Sensor::likelihoodGivenCause(Measurement measurement, QVoxel
     }
 }
 
-
 InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) const
 {
     auto *icm = new InverseCauseModel;
@@ -129,7 +128,6 @@ InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, Bel
         icm->posteriorInfinity /= eta;
     }
 
-    //TODO reactivate
     if (!(std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.) < 1e-10))
     {
         ROS_WARN("ICM assertion failed. Test: %g < 1e-10", std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.));

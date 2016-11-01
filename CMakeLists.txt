@@ -17,7 +17,7 @@ link_libraries(${OCTOMAP_LIBRARIES})
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
-  std_msgs ecl_time
+  std_msgs ecl_time tf
         message_filters
 )
 
