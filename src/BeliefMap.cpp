@@ -72,8 +72,9 @@ std::valarray<Parameters::NumType> BeliefMap::bouncingProbabilitiesOnRay(const o
     return bouncingProbabilities;
 }
 
-std::valarray<Parameters::NumType> BeliefMap::reachingProbabilitiesOnRay(const octomap::KeyRay &ray,
-                                                                         const std::valarray<Parameters::NumType> &bouncingProbabilities) const
+std::valarray<Parameters::NumType> BeliefMap::reachingProbabilitiesOnRay(
+        const octomap::KeyRay &ray,
+        const std::valarray<Parameters::NumType> &bouncingProbabilities) const
 {
     assert(ray.size() == bouncingProbabilities.size());
     std::valarray<Parameters::NumType> reachingProbabilities(ray.size());
@@ -96,9 +97,9 @@ bool BeliefMap::update(const Observation &observation)
             continue;
 
         Parameters::NumType prBeforeVoxel = 0;
-        Parameters::NumType prAfterVoxel = icm->posteriorOnRay.sum();
-        Parameters::NumType prOnVoxel;
         unsigned int i = 0;
+        Parameters::NumType prOnVoxel;
+        Parameters::NumType prAfterVoxel = icm->posteriorOnRay.sum();
         for (auto &key : icm->ray)
         {
             prOnVoxel = icm->posteriorOnRay[i];

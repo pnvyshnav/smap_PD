@@ -17,14 +17,14 @@ public:
 
     static const unsigned int numParticles = 101;
 
-    static constexpr NumType voxelSize = 0.25;
+    static constexpr NumType voxelSize = 0.125;
 
     static constexpr NumType xMin = -5;
     static constexpr NumType xMax = 5;
     static constexpr NumType yMin = -5;
     static constexpr NumType yMax = 5;
-    static constexpr NumType zMin = -1;
-    static constexpr NumType zMax = 3;
+    static constexpr NumType zMin = -2;
+    static constexpr NumType zMax = 4;
 
     static constexpr NumType xCenter = (const NumType) ((xMax + xMin) / 2.0);
     static constexpr NumType yCenter = (const NumType) ((yMax + yMin) / 2.0);

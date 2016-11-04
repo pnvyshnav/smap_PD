@@ -23,11 +23,16 @@ public:
 
     void updateBelief(Parameters::NumType a, Parameters::NumType b);
 
-    bool operator== (Belief& rhs);
+    bool operator==(Belief& rhs);
+
+    /**
+     * Stringifies PDF particles for debugging.
+     */
+    const std::string str() const;
 
 private:
     Particles pdf;
-    bool _recompute;
+    bool _recomputeMean, _recomputeVariance;
     Parameters::NumType _mean, _variance;
 };
 

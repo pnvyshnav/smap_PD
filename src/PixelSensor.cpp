@@ -43,6 +43,8 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
             {
                 ++i;
                 QTrueVoxel voxel = trueMap.query(pos);
+                if (voxel.type != GEOMETRY_VOXEL)
+                    continue;
                 auto sample = UniformDistribution::sample();
                 if (sample < scaledOccupancy(voxel.node()->getOccupancy()))
                 {

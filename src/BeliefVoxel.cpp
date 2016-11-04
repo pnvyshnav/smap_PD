@@ -1,4 +1,6 @@
 #include <ros/console.h>
+#include <sstream>
+
 #include "../include/BeliefVoxel.h"
 
 
@@ -17,7 +19,7 @@ Belief::Particles generateParticles()
 Belief::Particles particles = generateParticles();
 
 
-Belief::Belief() : _recompute(true)
+Belief::Belief() : _recomputeMean(true), _recomputeVariance(true)
 {
     if (particles.size() == 0)
         particles = generateParticles();
@@ -34,17 +36,17 @@ Belief::Belief() : _recompute(true)
 
 Parameters::NumType Belief::mean()
 {
-    if (_recompute)
+    if (_recomputeMean)
     {
         _mean = (particles * pdf).sum();
-        _recompute = false;
+        _recomputeMean = false;
     }
     return _mean;
 }
 
 Parameters::NumType Belief::variance()
 {
-    if (_recompute)
+    if (_recomputeVariance)
     {
         Parameters::NumType exp = 0;
         for (unsigned int i = 0; i < Parameters::numParticles; ++i)
@@ -52,7 +54,7 @@ Parameters::NumType Belief::variance()
             exp += std::pow(particles[i], 2) * pdf[i];
         }
         _variance = exp - std::pow(mean(), 2);
-        _recompute = false;
+        _recomputeVariance = false;
     }
     return _variance;
 }
@@ -69,7 +71,7 @@ bool Belief::isBeliefValid() const
 
 void Belief::updateBelief(Parameters::NumType a, Parameters::NumType b)
 {
-    std::valarray<Parameters::NumType> new_pdf = (a * particles + b) * pdf;
+    const std::valarray<Parameters::NumType> new_pdf = (a * particles + b) * pdf;
 
     // normalize
     if (new_pdf.sum() > 0.) // TODO remove condition
@@ -78,11 +80,21 @@ void Belief::updateBelief(Parameters::NumType a, Parameters::NumType b)
         ROS_WARN("Cannot update belief. New PDF sum (%g) would be too small.", new_pdf.sum());
 
     assert(isBeliefValid());
-    _recompute = true;
+    _recomputeMean = true;
+    _recomputeVariance = true;
 }
 
 bool Belief::operator==(Belief &rhs)
 {
     return std::abs(mean() - rhs.mean()) < Parameters::equalityThreshold
         && std::abs(variance() - rhs.variance()) < Parameters::equalityThreshold;
+}
+
+const std::string Belief::str() const
+{
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(2);
+    for (auto &p : pdf)
+        ss << p << " ";
+    return ss.str();
 }

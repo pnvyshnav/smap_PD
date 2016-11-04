@@ -135,7 +135,8 @@ void Visualizer::publishBeliefMap(const Visualizable *visualizable)
     for (auto &voxel : beliefMap->lastUpdatedVoxels)
     {
         visualization_msgs::Marker cell;
-        if (voxel.node()->getValue()->mean() < 0.4)
+        // TODO do not remove voxels by z position
+        if (voxel.node()->getValue()->mean() < 0.4 || voxel.position.z() < 0.4 || voxel.position.z() > 1.5)
         {
             // remove voxel
             cell.action = 2;

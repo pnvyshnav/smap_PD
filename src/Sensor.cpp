@@ -43,9 +43,9 @@ Parameters::NumType Sensor::likelihoodGivenCause(Measurement measurement, QVoxel
         if (measurement.geometry != GEOMETRY_VOXEL)
             return 0;
 
-        auto tg = TruncatedGaussianDistribution(measurement.value, Parameters::sensorNoiseStd,
-                                                0, measurement.value, false); // not truncated
-        return tg.pdfValue(measurement.value);
+        auto tg = TruncatedGaussianDistribution(measurement.value, Parameters::sensorNoiseStd * measurement.value * 0.1 ,//TODO sensorNoiseStd range-dependent
+                                                0, _range * 2.0); // TODO truncated?
+        return tg.pdfValue(causeVoxel.position.distance(_position));
     }
     else if (causeVoxel.type == GEOMETRY_HOLE)
     {
@@ -65,7 +65,7 @@ InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, Bel
     auto *icm = new InverseCauseModel;
 
     octomap::KeyRay ray;
-    if (!beliefMap.computeRayKeys(_position, _orientation * _range + _position, ray))
+    if (!beliefMap.computeRayKeys(_position, _orientation * _range * 2.0 + _position, ray)) //TODO remove *2.0
     {
         ROS_WARN("Compute ray keys failed.");
         delete icm;
