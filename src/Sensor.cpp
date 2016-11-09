@@ -43,9 +43,15 @@ Parameters::NumType Sensor::likelihoodGivenCause(Measurement measurement, QVoxel
         if (measurement.geometry != GEOMETRY_VOXEL)
             return 0;
 
+#ifdef FAKE_2D
+        auto tg = TruncatedGaussianDistribution(causeVoxel.position.distance(_position), Parameters::sensorNoiseStd,//TODO sensorNoiseStd range-dependent
+                                                0, _range); // TODO truncated?
+        return tg.pdfValue(measurement.value);
+#else
         auto tg = TruncatedGaussianDistribution(measurement.value, Parameters::sensorNoiseStd * measurement.value * 0.1 ,//TODO sensorNoiseStd range-dependent
                                                 0, _range * 2.0); // TODO truncated?
         return tg.pdfValue(causeVoxel.position.distance(_position));
+#endif
     }
     else if (causeVoxel.type == GEOMETRY_HOLE)
     {
@@ -65,7 +71,7 @@ InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, Bel
     auto *icm = new InverseCauseModel;
 
     octomap::KeyRay ray;
-    if (!beliefMap.computeRayKeys(_position, _orientation * _range * 2.0 + _position, ray)) //TODO remove *2.0
+    if (!beliefMap.computeRayKeys(_position, _orientation * _range + _position, ray)) //TODO remove *2.0
     {
         ROS_WARN("Compute ray keys failed.");
         delete icm;
@@ -118,7 +124,7 @@ InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, Bel
     icm->posteriorInfinity = likelihoodGivenInfinity * causeProbabilityFromInfinityPrior;
 
     auto eta = icm->posteriorOnRay.sum() + icm->posteriorInfinity;
-    if (eta < 1e-10)
+    if (eta < 1e-20)
     {
         ROS_WARN("Inverse Cause Model: eta = %g", eta);
     }
@@ -130,7 +136,7 @@ InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, Bel
 
     if (!(std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.) < 1e-10))
     {
-        ROS_WARN("ICM assertion failed. Test: %g < 1e-10", std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.));
+        ROS_WARN("ICM assertion failed. Test: %g < 1e-20", std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.));
         delete icm;
         return NULL;
     }

@@ -21,8 +21,10 @@ void handleObservation(const Observation &observation)
 {
     trueMap.publish();
     beliefMap.update(observation);
-    //if (!ros::ok())
-    //    robot.stop();
+#ifdef FAKE_2D
+    if (!ros::ok())
+        robot.stop();
+#endif
 }
 
 int main(int argc, char **argv)
@@ -32,16 +34,18 @@ int main(int argc, char **argv)
 
     Visualizer *visualizer = new Visualizer;
     //trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
-//    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
-    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMap, visualizer, std::placeholders::_1));
+    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
 
-//    robot.sensor().subscribe(std::bind(&Visualizer::publishSensor, visualizer, std::placeholders::_1));
-//    robot.registerObserver(&handleObservation);
-//    robot.run();
-
+#ifdef FAKE_2D
+    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
+    robot.sensor().subscribe(std::bind(&Visualizer::publishSensor, visualizer, std::placeholders::_1));
+    robot.registerObserver(&handleObservation);
+    robot.run();
+#else
     Drone drone;
     drone.registerObserver(&handleObservation);
     drone.run();
+#endif
 
     visualizer->publishTrueMap2dSlice(&trueMap);
     visualizer->publishBeliefMapFull(&beliefMap);

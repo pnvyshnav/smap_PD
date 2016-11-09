@@ -2,6 +2,7 @@
 #include <sstream>
 
 #include "../include/BeliefVoxel.h"
+#include "../include/Parameters.hpp"
 
 
 Belief::Particles generateParticles()
@@ -25,7 +26,8 @@ Belief::Belief() : _recomputeMean(true), _recomputeVariance(true)
         particles = generateParticles();
 
     unsigned int n = Parameters::numParticles;
-    Parameters::NumType c1 = (Parameters::NumType) ((4. * n - 2. - 6. * (n - 1) * Parameters::priorMean) / (n * n + n));
+    //TODO bugfix: take (1-prior) such that mean matches priorMean
+    Parameters::NumType c1 = (Parameters::NumType) ((4. * n - 2. - 6. * (n - 1) * (1.-Parameters::priorMean)) / (n * n + n));
     Parameters::NumType c2 = (Parameters::NumType) (-c1 + 2. / n);
     pdf = c2 - (c2-c1) * particles;
     if (!isBeliefValid())
@@ -66,7 +68,7 @@ bool Belief::isBeliefValid() const
         if (p < -1e-10)
             return false;
     }
-    return pdf.sum() - 1. < 1e-10;
+    return std::abs(pdf.sum() - 1.) < 1e-10;
 }
 
 void Belief::updateBelief(Parameters::NumType a, Parameters::NumType b)

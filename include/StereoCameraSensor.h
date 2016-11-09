@@ -10,11 +10,11 @@
 #include "TrueMap.h"
 #include "BeliefMap.h"
 
-class StereoCameraSensor : public Sensor
+class StereoCameraSensor : public FakeSensor
 {
 public:
-    StereoCameraSensor(Parameters::Vec3Type &position,
-                       Parameters::Vec3Type &orientation);
+    StereoCameraSensor(Parameters::Vec3Type position,
+                       Parameters::Vec3Type orientation);
 
     virtual Observation observe(TrueMap &trueMap) const;
 

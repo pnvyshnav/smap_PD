@@ -60,7 +60,7 @@ public:
      */
     virtual Parameters::NumType likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const;
 
-    InverseCauseModel *computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) const;
+    virtual InverseCauseModel *computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) const;
 
 protected:
     Parameters::Vec3Type _position;

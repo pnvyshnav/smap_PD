@@ -151,8 +151,8 @@ void Visualizer::publishBeliefMap(const Visualizable *visualizable)
             cell.scale.x = Parameters::voxelSize;
             cell.scale.y = Parameters::voxelSize;
             cell.scale.z = Parameters::voxelSize;
-            cell.color.a = 0.9;
-            float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
+            cell.color.a = 1;
+            float intensity = (float) (1.0 - .5 * voxel.node()->getValue()->mean());
             cell.color.r = intensity;
             cell.color.g = intensity;
             cell.color.b = intensity;

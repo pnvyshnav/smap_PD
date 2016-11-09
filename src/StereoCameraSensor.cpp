@@ -1,8 +1,8 @@
 #include "../include/StereoCameraSensor.h"
 
 
-StereoCameraSensor::StereoCameraSensor(Parameters::Vec3Type &position, Parameters::Vec3Type &orientation)
-        : Sensor(position, orientation)
+StereoCameraSensor::StereoCameraSensor(Parameters::Vec3Type position, Parameters::Vec3Type orientation)
+        : FakeSensor(position, orientation)
 {
     // TODO initialize with more than 1 pixel
     _pixelSensors.push_back(PixelSensor(position, orientation));
@@ -23,7 +23,9 @@ std::vector<PixelSensor> StereoCameraSensor::pixels() const
 
 Parameters::NumType StereoCameraSensor::likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const
 {
-    return measurement.sensor->likelihoodGivenCause(measurement, causeVoxel);
+    // TODO improve architecture
+    PixelSensor pixelSensor(measurement.sensor->position(), measurement.sensor->orientation());
+    return pixelSensor.likelihoodGivenCause(measurement, causeVoxel);
 }
 
 void StereoCameraSensor::setPosition(const Parameters::Vec3Type &position)

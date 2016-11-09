@@ -8,6 +8,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.h>
+#include <pcl/filters/voxel_grid.h>
 
 #include <tf/tf.h>
 #include <tf/transform_datatypes.h>
@@ -43,7 +44,16 @@ void Drone::handleMeasurements(Drone::PointCloudMessage &pointsMsg, Drone::Trans
     pcl::PCLPointCloud2 pcl_pc2;
     pcl_conversions::toPCL(*pointsMsg, pcl_pc2);
     pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFiltered(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::fromPCLPointCloud2(pcl_pc2, *pointCloud);
+
+    pcl::VoxelGrid<pcl::PointXYZ> sor;
+    sor.setInputCloud(pointCloud);
+    sor.setLeafSize(Parameters::PointCloudResolution, Parameters::PointCloudResolution, Parameters::PointCloudResolution);
+    sor.filter(*pointCloudFiltered);
+
+    ROS_INFO("Point Cloud size reduced from %i to %i points.",
+             (int)pointCloud->size(), (int)pointCloudFiltered->size());
 
     tf::StampedTransform stampedTransform;
     tf::transformStampedMsgToTF(*transformationMsg, stampedTransform);
@@ -78,10 +88,10 @@ void Drone::handleMeasurements(Drone::PointCloudMessage &pointsMsg, Drone::Trans
         return;
     }
 
-    auto firstValidPoint = pointCloud->begin();
-    while (firstValidPoint != pointCloud->end() && std::isnan(firstValidPoint->x))
+    auto firstValidPoint = pointCloudFiltered->begin();
+    while (firstValidPoint != pointCloudFiltered->end() && std::isnan(firstValidPoint->x))
         ++firstValidPoint;
-    if (firstValidPoint == pointCloud->end())
+    if (firstValidPoint == pointCloudFiltered->end())
     {
         ROS_WARN("Measured point cloud did not contain any valid points.");
         return;
@@ -98,7 +108,7 @@ void Drone::handleMeasurements(Drone::PointCloudMessage &pointsMsg, Drone::Trans
 
     unsigned int nans = 0;
     std::vector<Measurement> measurements;
-    for (auto &p = firstValidPoint; p < pointCloud->end(); p += 1000)
+    for (auto &p = firstValidPoint; p < pointCloudFiltered->end(); ++p)
     {
         if (std::isnan(p->x))
         {

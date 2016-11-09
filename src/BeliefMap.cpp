@@ -1,5 +1,7 @@
 #include "../include/BeliefMap.h"
 #include "../include/Sensor.h"
+#include "../include/PixelSensor.h"
+#include "../include/StereoCameraSensor.h"
 
 #include <cassert>
 
@@ -64,7 +66,7 @@ std::valarray<Parameters::NumType> BeliefMap::bouncingProbabilitiesOnRay(const o
     {
         auto *b = belief(key);
         if (b == NULL)
-            bouncingProbabilities[i] = 0; // TODO correct error handling?
+            bouncingProbabilities[i] = 0.5; // TODO correct error handling?
         else
             bouncingProbabilities[i] = b->mean();
         ++i;
@@ -90,19 +92,29 @@ std::valarray<Parameters::NumType> BeliefMap::reachingProbabilitiesOnRay(
 bool BeliefMap::update(const Observation &observation)
 {
     lastUpdatedVoxels.clear();
+    int fails = 0;
     for (auto &measurement : observation.measurements())
     {
+#ifdef FAKE_2D
+        StereoCameraSensor cameraSensor(measurement.sensor->position(), measurement.sensor->orientation());
+        icm = cameraSensor.computeInverseCauseModel(measurement, *this);
+#else
         icm = measurement.sensor->computeInverseCauseModel(measurement, *this);
+#endif
         if (!icm)
+        {
+            ++fails;
             continue;
-
-        Parameters::NumType prBeforeVoxel = 0;
+        }
         unsigned int i = 0;
+        Parameters::NumType prBeforeVoxel = 0;
         Parameters::NumType prOnVoxel;
-        Parameters::NumType prAfterVoxel = icm->posteriorOnRay.sum();
+        Parameters::NumType prAfterVoxel = icm->posteriorOnRay.sum() + icm->posteriorInfinity;
         for (auto &key : icm->ray)
         {
             prOnVoxel = icm->posteriorOnRay[i];
+            prAfterVoxel -= prOnVoxel;
+
             const QBeliefVoxel qBeliefVoxel = query(key);
             const BeliefVoxel *beliefVoxel = qBeliefVoxel.node();
             if (beliefVoxel == NULL)
@@ -142,13 +154,16 @@ bool BeliefMap::update(const Observation &observation)
             lastUpdatedVoxels.push_back(qBeliefVoxel);
 
             prBeforeVoxel += prOnVoxel;
-            prAfterVoxel -= prOnVoxel;
             ++i;
             if (i >= icm->rayLength)
                 break;
         }
         delete icm;
         icm = NULL;
+    }
+    if (fails > 0)
+    {
+        ROS_WARN("ICM Computation failed for %i of %i measurements.", fails, (int)observation.measurements().size());
     }
     updateVisualization();
 
