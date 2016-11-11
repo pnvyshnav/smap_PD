@@ -41,7 +41,7 @@ public:
     static constexpr NumType sensorRange = (const NumType) 0.9;
     static constexpr NumType sensorNoiseStd = (const NumType) (sensorRange / 20.);
 #else
-    static constexpr NumType voxelSize = 0.125;
+    static constexpr NumType voxelSize = 0.0625;
 
     static constexpr NumType xMin = -5;
     static constexpr NumType xMax = 5;
@@ -65,7 +65,7 @@ public:
 
     static constexpr NumType spuriousMeasurementProbability = 0; //TODO cannot be > 0 for now
 
-    static constexpr NumType priorMean = .5;
+    static constexpr NumType priorMean = .5; // TODO fix it
 
     //
     // Fake sensor measurements

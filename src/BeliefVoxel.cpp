@@ -25,11 +25,26 @@ Belief::Belief() : _recomputeMean(true), _recomputeVariance(true)
     if (particles.size() == 0)
         particles = generateParticles();
 
-    unsigned int n = Parameters::numParticles;
+    double n = Parameters::numParticles;
     //TODO bugfix: take (1-prior) such that mean matches priorMean
-    Parameters::NumType c1 = (Parameters::NumType) ((4. * n - 2. - 6. * (n - 1) * (1.-Parameters::priorMean)) / (n * n + n));
-    Parameters::NumType c2 = (Parameters::NumType) (-c1 + 2. / n);
-    pdf = c2 - (c2-c1) * particles;
+    //Parameters::NumType c1 = (Parameters::NumType) ((4. * n - 2. - 6. * (n - 1) * (1.-Parameters::priorMean)) / (n * n + n));
+    //Parameters::NumType c2 = (Parameters::NumType) (-c1 + 2. / n);
+    //double a = c2 - (c2-c1);
+    //pdf = c2 - (c2-c1) * particles;
+
+//    double a = (6. * (-1 - n + 2.*n*Parameters::priorMean))/(-1. + std::pow(n, 2.));
+//    double b = (-2. * (-1 - 2.*n + 3*n*Parameters::priorMean))/((-1 + n) * n);
+
+   // double a = 6. * (1. - n + 2. * n * Parameters::priorMean)/(-1. + std::pow(n, 2));
+   // double b = -2. * (1. - 2. * n + 3. * n * Parameters::priorMean)/(n * (1. + n));
+    double a = 6. * (1. - n - 2*Parameters::priorMean + 2*n*Parameters::priorMean)/(n * (1 + n));
+    double b = (-2. * (1. - 2. * n - 3*Parameters::priorMean + 3*n*Parameters::priorMean))/(n * (1 + n));
+    pdf = b + a * particles;
+
+    //double a = (6. * std::pow(n, 2) * Parameters::priorMean)/(1. + 3. * n + 2 * std::pow(n, 2));
+    //double a = (6.*n*Parameters::priorMean)/(1.+3.*n+2.*std::pow(n, 2));
+
+    //pdf = a * particles;
     if (!isBeliefValid())
     {
         ROS_ERROR("Prior voxel belief is invalid.");
@@ -63,11 +78,11 @@ Parameters::NumType Belief::variance()
 
 bool Belief::isBeliefValid() const
 {
-    for (Parameters::NumType p : pdf)
-    {
-        if (p < -1e-10)
-            return false;
-    }
+//    for (Parameters::NumType p : pdf)
+//    {
+//        if (p < -1e-10)
+//            return false;
+//    }
     return std::abs(pdf.sum() - 1.) < 1e-10;
 }
 
