@@ -2,6 +2,8 @@
 #include "../include/TrueMap.h"
 #include "../include/BeliefMap.h"
 #include "../include/Sensor.h"
+#include "../include/LogOddsMap.h"
+#include "../include/Parameters.hpp"
 
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -28,6 +30,7 @@ Visualizer::Visualizer()
     nodeHandle = new ros::NodeHandle;
     trueMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("true_map", 10);
     trueMap2dPublisher = nodeHandle->advertise<nav_msgs::GridCells>("true_map_2d", 0);
+    logOddsMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("logodds_map", 10);
     beliefMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("belief_map", 10);
     sensorPublisher = nodeHandle->advertise<visualization_msgs::Marker>("sensor", 10);
     rayVoxelPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("ray_voxels", 10);
@@ -121,6 +124,54 @@ void Visualizer::publishTrueMap2dSlice(const Visualizable *visualizable, unsigne
     ros::spinOnce();
 }
 
+void Visualizer::publishLogOddsMap(const Visualizable *visualizable)
+{
+    if (!visualizable)
+        return;
+
+    auto logOddsMap = (LogOddsMap*) visualizable;
+    //ros::Rate loop_rate(PaintRate);
+    //loop_rate.sleep();
+
+    visualization_msgs::MarkerArray cells;
+    for (auto &voxel : logOddsMap->lastUpdatedVoxels)
+    {
+        visualization_msgs::Marker cell;
+        // TODO do not remove voxels by z position
+#ifndef FAKE_2D
+        if (voxel.node()->getOccupancy() < 0.5 || voxel.position.z() < 0.4 || voxel.position.z() > 1.5)
+        {
+            // remove voxel
+            cell.action = 2;
+            cell.id = (int) voxel.hash;
+        }
+        else
+#endif
+        {
+            cell.action = 0;
+            cell.id = (int) voxel.hash;
+            cell.type = visualization_msgs::Marker::CUBE;
+
+            cell.header.frame_id = "map";
+            cell.scale.x = Parameters::voxelSize;
+            cell.scale.y = Parameters::voxelSize;
+            cell.scale.z = Parameters::voxelSize;
+            cell.color.a = 1;
+            float intensity = (float) (1.0 - voxel.node()->getOccupancy());
+            cell.color.r = intensity;
+            cell.color.g = intensity;
+            cell.color.b = intensity;
+            cell.pose.position.x = voxel.position.x();
+            cell.pose.position.y = voxel.position.y();
+            cell.pose.position.z = voxel.position.z();
+        }
+
+        cells.markers.push_back(cell);
+    }
+
+    logOddsMapPublisher.publish(cells);
+}
+
 void Visualizer::publishBeliefMap(const Visualizable *visualizable)
 {
     if (!visualizable)
@@ -136,6 +187,7 @@ void Visualizer::publishBeliefMap(const Visualizable *visualizable)
     {
         visualization_msgs::Marker cell;
         // TODO do not remove voxels by z position
+#ifndef FAKE_2D
         if (voxel.node()->getValue()->mean() < 0.4 || voxel.position.z() < 0.4 || voxel.position.z() > 1.5)
         {
             // remove voxel
@@ -143,6 +195,7 @@ void Visualizer::publishBeliefMap(const Visualizable *visualizable)
             cell.id = (int) voxel.hash;
         }
         else
+#endif
         {
             cell.action = 0;
             cell.id = (int) voxel.hash;

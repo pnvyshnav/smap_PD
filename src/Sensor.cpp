@@ -1,6 +1,8 @@
 #include "../include/Sensor.h"
 #include "../include/TruncatedGaussianDistribution.hpp"
 
+#undef FAKE_2D // TODO remove
+
 Sensor::Sensor(Parameters::Vec3Type position, Parameters::Vec3Type orientation, Parameters::NumType range)
         : _range(range), _position(position), _orientation(orientation)
 {
@@ -48,10 +50,10 @@ Parameters::NumType Sensor::likelihoodGivenCause(Measurement measurement, QVoxel
                                                 0, _range); // TODO truncated?
         return tg.pdfValue(measurement.value);
 #else
-        return std::abs(measurement.value - causeVoxel.position.distance(_position)) < 1e-3;
-//        auto tg = TruncatedGaussianDistribution(measurement.value, Parameters::sensorNoiseStd * measurement.value * 0.1 ,//TODO sensorNoiseStd range-dependent
-//                                                0, _range * 2.0); // TODO truncated?
-//        return tg.pdfValue(causeVoxel.position.distance(_position));
+      //  return std::abs(measurement.value - causeVoxel.position.distance(_position)) < Parameters::voxelSize;
+        auto tg = TruncatedGaussianDistribution(measurement.value, Parameters::sensorNoiseStd * measurement.value,//TODO sensorNoiseStd range-dependent
+                                                0, _range); // TODO truncated?
+        return tg.pdfValue(causeVoxel.position.distance(_position));
 #endif
     }
     else if (causeVoxel.type == GEOMETRY_HOLE)

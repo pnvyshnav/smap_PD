@@ -4,8 +4,13 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <ros/node_handle.h>
 #include <tf/transform_datatypes.h>
+#include <tf2_msgs/TFMessage.h>
 
 #include "Robot.hpp"
+
+
+// Disable flag to transform and downsample incoming point clouds.
+#define PREPROCESSED_INPUT
 
 class Drone : public Robot
 {
@@ -24,6 +29,8 @@ private:
     bool _stopRequested;
 
     ros::Publisher _tfPointCloudPub;
+    ros::Publisher _tfDownsampledPointCloudPub;
+    ros::Publisher _tfDronePub;
 
     static const tf::Transform vicon;
     static const tf::Transform camera;

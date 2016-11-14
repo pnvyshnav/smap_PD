@@ -4,7 +4,7 @@
 
 #include <octomap/OcTree.h>
 
-#define FAKE_2D 1
+//#define FAKE_2D
 
 class Parameters
 {
@@ -41,7 +41,7 @@ public:
     static constexpr NumType sensorRange = (const NumType) 0.9;
     static constexpr NumType sensorNoiseStd = (const NumType) (sensorRange / 20.);
 #else
-    static constexpr NumType voxelSize = 0.0625;
+    static constexpr NumType voxelSize = 0.125;
 
     static constexpr NumType xMin = -5;
     static constexpr NumType xMax = 5;
@@ -60,7 +60,7 @@ public:
 
     static const bool sensorTruncatedGaussianNoise = false;
     static constexpr NumType sensorRange = (const NumType) 9;
-    static constexpr NumType sensorNoiseStd = (const NumType) (sensorRange / 20.);
+    static constexpr NumType sensorNoiseStd = (const NumType) (sensorRange / 200.); // TODO has great effect on confidence
 #endif
 
     static constexpr NumType spuriousMeasurementProbability = 0; //TODO cannot be > 0 for now
@@ -78,4 +78,15 @@ public:
     // Real sensor measurements
     //
     static constexpr float PointCloudResolution = 0.3f;
+
+    //
+    // Inverse Sensor Model
+    //
+    static constexpr NumType invSensor_prior = priorMean;
+    static constexpr NumType invSensor_increment = 0.05;
+    static constexpr NumType invSensor_occupied = /*invSensor_prior +*/ invSensor_increment;
+    static constexpr NumType invSensor_free = /*invSensor_prior */- invSensor_increment;
+    static constexpr NumType invSensor_rampSize = voxelSize;
+    static constexpr NumType invSensor_topSize = voxelSize;
+    static constexpr NumType invSensor_rampSlope = (invSensor_occupied - invSensor_free)/invSensor_rampSize;
 };

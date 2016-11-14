@@ -78,11 +78,11 @@ Parameters::NumType Belief::variance()
 
 bool Belief::isBeliefValid() const
 {
-//    for (Parameters::NumType p : pdf)
-//    {
-//        if (p < -1e-10)
-//            return false;
-//    }
+    for (Parameters::NumType p : pdf)
+    {
+        if (p < -1e-10)
+            return false;
+    }
     return std::abs(pdf.sum() - 1.) < 1e-10;
 }
 

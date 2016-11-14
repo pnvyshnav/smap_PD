@@ -7,9 +7,11 @@
 #include "../include/FakeRobot.hpp"
 #include "../include/Visualizer.h"
 #include "../include/Drone.h"
+#include "../include/LogOddsMap.h"
 
 TrueMap trueMap = TrueMap::generate();
 BeliefMap beliefMap;
+LogOddsMap logOddsMap;
 FakeRobot<> robot(
         Parameters::Vec3Type(Parameters::voxelSize/2.f,
                              Parameters::voxelSize/2.f,
@@ -21,6 +23,7 @@ void handleObservation(const Observation &observation)
 {
     trueMap.publish();
     beliefMap.update(observation);
+    //logOddsMap.update(observation);
 #ifdef FAKE_2D
     if (!ros::ok())
         robot.stop();
@@ -34,7 +37,8 @@ int main(int argc, char **argv)
 
     Visualizer *visualizer = new Visualizer;
     //trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
-    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
+    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMap, visualizer, std::placeholders::_1));
+    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMap, visualizer, std::placeholders::_1));
 
 #ifdef FAKE_2D
     trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
