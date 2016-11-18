@@ -139,7 +139,7 @@ void Visualizer::publishLogOddsMap(const Visualizable *visualizable)
         visualization_msgs::Marker cell;
         // TODO do not remove voxels by z position
 #ifndef FAKE_2D
-        if (voxel.node()->getOccupancy() < 0.5 || voxel.position.z() < 0.4 || voxel.position.z() > 1.5)
+        if (voxel.node()->getOccupancy() <= 0.52 || voxel.position.z() < 0.4 || voxel.position.z() > 1.5)
         {
             // remove voxel
             cell.action = 2;
@@ -188,7 +188,7 @@ void Visualizer::publishBeliefMap(const Visualizable *visualizable)
         visualization_msgs::Marker cell;
         // TODO do not remove voxels by z position
 #ifndef FAKE_2D
-        if (voxel.node()->getValue()->mean() < 0.4 || voxel.position.z() < 0.4 || voxel.position.z() > 1.5)
+        if (voxel.node()->getValue()->mean() < 0.52 || voxel.position.z() < 0.4 || voxel.position.z() > 1.5)
         {
             // remove voxel
             cell.action = 2;
@@ -205,7 +205,7 @@ void Visualizer::publishBeliefMap(const Visualizable *visualizable)
             cell.scale.y = Parameters::voxelSize;
             cell.scale.z = Parameters::voxelSize;
             cell.color.a = 1;
-            float intensity = (float) (1.0 - .5 * voxel.node()->getValue()->mean());
+            float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
             cell.color.r = intensity;
             cell.color.g = intensity;
             cell.color.b = intensity;

@@ -45,7 +45,8 @@ bool LogOddsMap::update(const Observation &observation)
     return true;
 }
 
-LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Measurement &measurement) const {
+LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Measurement &measurement) const
+{
     octomap::KeyRay ray;
     if (!computeRayKeys(measurement.sensor->position(),
                         measurement.sensor->orientation() * measurement.sensor->range() + measurement.sensor->position(),
@@ -62,18 +63,20 @@ LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Mea
 
     InverseSensorModel *ism = new InverseSensorModel;
     unsigned int j = 0;
-    ism->ray.reserve(ray.size());
     std::vector<QVoxel> causeVoxels;
     for (auto &key : ray)
     {
+        auto causeVoxel = query(key);
+        if (!TrueMap::insideMap(causeVoxel.position))
+            continue;
         ism->ray.push_back(key);
-        causeVoxels.push_back(query(key));
+        causeVoxels.push_back(causeVoxel);
         ++j;
         if (j >= ray.size())
             break;
     }
 
-    ism->causeProbabilitiesOnRay = std::valarray<Parameters::NumType>(ray.size());
+    ism->causeProbabilitiesOnRay = std::valarray<Parameters::NumType>(ism->ray.size());
 
     if (measurement.geometry == GEOMETRY_VOXEL)
     {

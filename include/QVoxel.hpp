@@ -25,8 +25,11 @@ public:
     const size_t hash;
 
 protected:
-    QVoxel(void *node, const octomap::point3d &position, GeometryType type, const octomap::OcTreeKey &key = octomap::OcTreeKey())
+    QVoxel(void *node, const octomap::point3d &position, GeometryType type, const octomap::OcTreeKey &key)
             : _node(node), position(position), type(type), key(key), hash(_hasher(key))
+    {}
+    QVoxel(void *node, const octomap::point3d &position, GeometryType type)
+            : _node(node), position(position), type(type), hash(0)
     {}
 
     const void *_node;
@@ -41,10 +44,15 @@ const octomap::OcTreeKey::KeyHash QVoxel::_hasher = octomap::OcTreeKey::KeyHash(
 template<class NODE>
 class QTypedVoxel : public QVoxel
 {
-public:
-    QTypedVoxel(NODE *node, const octomap::point3d &position, GeometryType type, const octomap::OcTreeKey &key = octomap::OcTreeKey())
-            : QVoxel(node, position, type, key) {}
+protected:
+    QTypedVoxel(NODE *node, const octomap::point3d &position, GeometryType type, const octomap::OcTreeKey &key)
+            : QVoxel(node, position, type, key)
+    {}
+    QTypedVoxel(NODE *node, const octomap::point3d &position, GeometryType type)
+            : QVoxel(node, position, type)
+    {}
 
+public:
     static QTypedVoxel<NODE> hole(const octomap::point3d &position = octomap::point3d())
     {
         return QTypedVoxel<NODE>(NULL, position, GEOMETRY_HOLE);
@@ -95,7 +103,7 @@ public:
         return QTypedVoxel<NODE>::voxel(node, position, key);
     }
 
-    QTypedVoxel<NODE> query(octomap::OcTreeKey key) const
+    QTypedVoxel<NODE> query(const octomap::OcTreeKey &key) const
     {
         NODE *node = _tree->search(key);
         octomap::point3d position = _tree->keyToCoord(key);

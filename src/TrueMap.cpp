@@ -54,3 +54,10 @@ TrueMap TrueMap::generate(unsigned int seed)
              map.max_value[0], map.max_value[1], map.max_value[2]);
     return map;
 }
+
+bool TrueMap::insideMap(const Parameters::Vec3Type &point)
+{
+    return point.x() >= Parameters::xMin && point.x() <= Parameters::xMax
+            && point.y() >= Parameters::yMin && point.y() <= Parameters::yMax
+            && point.z() >= Parameters::zMin && point.z() <= Parameters::zMax;
+}

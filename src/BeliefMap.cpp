@@ -125,11 +125,12 @@ bool BeliefMap::update(const Observation &observation)
                 break;
             }
 
-            if (!beliefVoxel->getValue().get()->isBeliefValid())
-            {
-                ROS_ERROR("Belief voxel has invalid PDF before updating with measurement.");
-                return false;
-            }
+            //  TODO reactivate
+//            if (!beliefVoxel->getValue().get()->isBeliefValid())
+//            {
+//                ROS_ERROR("Belief voxel has invalid PDF before updating with measurement.");
+//                return false;
+//            }
 
             Parameters::NumType mean = beliefVoxel->getValue().get()->mean();
             Parameters::NumType a = (Parameters::NumType) ((1. - mean) * prOnVoxel - mean * prAfterVoxel);
@@ -138,12 +139,13 @@ bool BeliefMap::update(const Observation &observation)
                     mean * prAfterVoxel);
             beliefVoxel->getValue().get()->updateBelief(a, b);
 
-            if (!beliefVoxel->getValue().get()->isBeliefValid())
-            {
-                // already asserted in Belief::updateBelief
-                ROS_ERROR("Belief voxel has invalid PDF after updating with measurement.");
-                return false;
-            }
+            // TODO reactivate
+//            if (!beliefVoxel->getValue().get()->isBeliefValid())
+//            {
+//                // already asserted in Belief::updateBelief
+//                ROS_ERROR("Belief voxel has invalid PDF after updating with measurement.");
+//                return false;
+//            }
 
 #ifdef LOG_DETAILS
             auto meanAfter = beliefVoxel->getValue().get()->mean();
@@ -164,6 +166,10 @@ bool BeliefMap::update(const Observation &observation)
     if (fails > 0)
     {
         ROS_WARN("ICM Computation failed for %i of %i measurements.", fails, (int)observation.measurements().size());
+    }
+    else
+    {
+        ROS_INFO("ICM Computation succeeded for all %i measurements.", (int)observation.measurements().size());
     }
     updateVisualization();
 

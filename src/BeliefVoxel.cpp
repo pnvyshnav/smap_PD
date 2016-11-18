@@ -19,6 +19,7 @@ Belief::Particles generateParticles()
 
 Belief::Particles particles = generateParticles();
 
+unsigned int Belief::_updateCounter = 0;
 
 Belief::Belief() : _recomputeMean(true), _recomputeVariance(true)
 {
@@ -45,10 +46,12 @@ Belief::Belief() : _recomputeMean(true), _recomputeVariance(true)
     //double a = (6.*n*Parameters::priorMean)/(1.+3.*n+2.*std::pow(n, 2));
 
     //pdf = a * particles;
-    if (!isBeliefValid())
-    {
-        ROS_ERROR("Prior voxel belief is invalid.");
-    }
+
+    // TODO reactivate
+//    if (!isBeliefValid())
+//    {
+//        ROS_ERROR("Prior voxel belief is invalid.");
+//    }
 }
 
 Parameters::NumType Belief::mean()
@@ -88,15 +91,18 @@ bool Belief::isBeliefValid() const
 
 void Belief::updateBelief(Parameters::NumType a, Parameters::NumType b)
 {
+    ++_updateCounter;
+    //_lastCoeff =
     const std::valarray<Parameters::NumType> new_pdf = (a * particles + b) * pdf;
 
     // normalize
-    if (new_pdf.sum() > 0.) // TODO remove condition
-        pdf = new_pdf / new_pdf.sum();
+    const double ps = new_pdf.sum();
+    if (ps > 0.) // TODO remove condition
+        pdf = new_pdf / ps;
     else
         ROS_WARN("Cannot update belief. New PDF sum (%g) would be too small.", new_pdf.sum());
 
-    assert(isBeliefValid());
+    //assert(isBeliefValid()); // TODO reactivate
     _recomputeMean = true;
     _recomputeVariance = true;
 }

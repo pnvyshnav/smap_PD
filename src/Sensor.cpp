@@ -3,6 +3,8 @@
 
 #undef FAKE_2D // TODO remove
 
+octomap::KeyRay Sensor::ray;
+
 Sensor::Sensor(Parameters::Vec3Type position, Parameters::Vec3Type orientation, Parameters::NumType range)
         : _range(range), _position(position), _orientation(orientation)
 {
@@ -72,8 +74,6 @@ Parameters::NumType Sensor::likelihoodGivenCause(Measurement measurement, QVoxel
 InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) const
 {
     auto *icm = new InverseCauseModel;
-
-    octomap::KeyRay ray;
     if (!beliefMap.computeRayKeys(_position, _orientation * _range + _position, ray)) //TODO remove *2.0
     {
         ROS_WARN("Compute ray keys failed.");

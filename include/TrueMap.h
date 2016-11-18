@@ -13,6 +13,8 @@ class TrueMap
 public:
     static TrueMap generate(unsigned int seed = (unsigned int) time(NULL));
 
+    static bool insideMap(const Parameters::Vec3Type &point);
+
 private:
     TrueMap();
 };

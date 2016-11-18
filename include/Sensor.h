@@ -66,4 +66,7 @@ protected:
     Parameters::Vec3Type _position;
     Parameters::Vec3Type _orientation;
     const Parameters::NumType _range;
+
+private:
+    static octomap::KeyRay ray; // avoid wasteful constructions
 };

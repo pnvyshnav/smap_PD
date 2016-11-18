@@ -34,6 +34,9 @@ private:
     Particles pdf;
     bool _recomputeMean, _recomputeVariance;
     Parameters::NumType _mean, _variance;
+
+    static unsigned int _updateCounter;
+    std::valarray<Parameters::NumType> _lastCoeff;
 };
 
 // The problem: OcTreeDataNode does not provide a virtual destructor.
