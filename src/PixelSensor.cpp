@@ -72,6 +72,10 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
 
 Measurement PixelSensor::_observationGivenCause(QVoxel causeVoxel, bool deterministic) const
 {
+    if (causeVoxel.type != GEOMETRY_VOXEL)
+    {
+        return Measurement::hole(std::make_shared<Sensor>(*this));
+    }
     assert(causeVoxel.type == GEOMETRY_VOXEL);
 	Parameters::NumType deterministicRange = (Parameters::NumType) causeVoxel.position.distance(_position);
 	if (deterministic)

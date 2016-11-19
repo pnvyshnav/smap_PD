@@ -43,6 +43,8 @@ public:
     InverseCauseModel *icm;
     std::vector<QBeliefVoxel> lastUpdatedVoxels;
 
+    double error(const TrueMap &trueMap) const;
+
 private:
     BeliefVoxel *_updateNodeRecurs(BeliefVoxel* node, bool node_just_created,
                                    const octomap::OcTreeKey& key,

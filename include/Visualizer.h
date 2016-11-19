@@ -21,6 +21,7 @@ public:
     void publishBeliefMap(const Visualizable *visualizable);
     void publishBeliefMapFull(const Visualizable *visualizable);
     void publishSensor(const Visualizable *visualizable);
+    void publishStereoCameraSensor(const Visualizable *visualizable);
     void publishRay(TrueMap &trueMap, Sensor &sensor);
 
     static const int PaintRate = 100;
@@ -33,6 +34,7 @@ private:
     ros::Publisher beliefMapPublisher;
     ros::Publisher rayVoxelPublisher;
     ros::Publisher sensorPublisher;
+    ros::Publisher stereoCameraSensorPublisher;
 
     TrueMap *_lastTrueMap;
     BeliefMap *_lastBeliefMap;

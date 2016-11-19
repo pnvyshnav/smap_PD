@@ -26,7 +26,6 @@ TrueMap TrueMap::generate(unsigned int seed)
                         Parameters::xMin + x * Parameters::voxelSize,
                         Parameters::yMin + y * Parameters::voxelSize,
                         Parameters::zMin + z * Parameters::voxelSize);
-
                 // cells around center (where the robot is) are free
                 if (center.distance(point) <= Parameters::freeRadiusAroundCenter)
                 {

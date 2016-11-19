@@ -11,6 +11,7 @@ Panels:
         - /MarkerArray2
         - /MarkerArray3
         - /MarkerArray4
+        - /MarkerArray5
       Splitter Ratio: 0.5
     Tree Height: 775
   - Class: rviz/Selection
@@ -39,7 +40,7 @@ Visualization Manager:
       Cell Size: 0.1
       Class: rviz/Grid
       Color: 160; 160; 164
-      Enabled: true
+      Enabled: false
       Line Style:
         Line Width: 0.03
         Value: Lines
@@ -52,13 +53,13 @@ Visualization Manager:
       Plane: XY
       Plane Cell Count: 20
       Reference Frame: <Fixed Frame>
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /belief_map
       Name: MarkerArray
       Namespaces:
-        {}
+        "": true
       Queue Size: 0
       Value: true
     - Class: rviz/Marker
@@ -66,7 +67,7 @@ Visualization Manager:
       Marker Topic: /sensor
       Name: Marker
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -93,8 +94,16 @@ Visualization Manager:
       Queue Size: 100
       Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /logodds_map
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /stereo_cam
       Name: MarkerArray
       Namespaces:
         "": true
@@ -123,20 +132,23 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
-      Class: rviz/TopDownOrtho
+      Class: rviz/Orbit
+      Distance: 5.45715
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Focal Point:
+        X: 0.0616596
+        Y: -0.0220182
+        Z: 0
       Name: Current View
       Near Clip Distance: 0.01
-      Scale: 335.551
+      Pitch: 0.729797
       Target Frame: <Fixed Frame>
-      Value: TopDownOrtho (rviz)
-      X: 0.114125
-      Y: 0.0207119
+      Value: Orbit (rviz)
+      Yaw: 5.52818
     Saved: ~
 Window Geometry:
   Displays:
@@ -154,5 +166,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1855
-  X: 55
+  X: 25
   Y: 14

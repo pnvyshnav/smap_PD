@@ -176,6 +176,28 @@ bool BeliefMap::update(const Observation &observation)
     return true;
 }
 
+double BeliefMap::error(const TrueMap &trueMap) const
+{
+    double err = 0;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
+                                       Parameters::yMin + y * Parameters::voxelSize,
+                                       Parameters::zMin + z * Parameters::voxelSize);
+                auto trueVoxel = trueMap.query(point);
+                auto estimated = query(point);
+                err += std::pow(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getValue()->mean(), 2);
+            }
+        }
+    }
+    err /= Parameters::voxelsPerDimensionX * Parameters::voxelsPerDimensionY * Parameters::voxelsPerDimensionZ;
+    return err;
+}
+
 BeliefVoxel *BeliefMap::updateNode(const octomap::point3d &position, const Belief &belief)
 {
     octomap::OcTreeKey key;

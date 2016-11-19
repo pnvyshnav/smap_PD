@@ -12,7 +12,7 @@ struct OctoMapKeyComparator
 {
     const bool operator()(const octomap::OcTreeKey &lhs, const octomap::OcTreeKey &rhs) const
     {
-        return lhs[0] < rhs[0] && lhs[1] < rhs[3] && lhs[2] < rhs[2];
+        return lhs[0] < rhs[0] && lhs[1] < rhs[1] && lhs[2] < rhs[2];
     }
 };
 
@@ -119,4 +119,30 @@ LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Mea
     }
 
     return ism;
+}
+
+double LogOddsMap::error(const TrueMap &trueMap) const
+{
+    double err = 0;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
+                                       Parameters::yMin + y * Parameters::voxelSize,
+                                       Parameters::zMin + z * Parameters::voxelSize);
+                auto trueVoxel = trueMap.query(point);
+                auto estimated = query(point);
+                if (estimated.type == GEOMETRY_VOXEL)
+                    err += std::pow(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getOccupancy(), 2);
+                else
+                    // TODO consider holes as voxels with 0.5 occupancy
+                    err += std::pow(std::round(trueVoxel.node()->getOccupancy()) - Parameters::priorMean, 2);
+            }
+        }
+    }
+    err /= Parameters::voxelsPerDimensionX * Parameters::voxelsPerDimensionY * Parameters::voxelsPerDimensionZ;
+    return err;
 }

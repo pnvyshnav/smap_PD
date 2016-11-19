@@ -19,6 +19,8 @@ public:
 
     bool update(const Observation &observation);
 
+    double error(const TrueMap &trueMap) const;
+
 private:
     struct InverseSensorModel
     {

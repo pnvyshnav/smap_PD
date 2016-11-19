@@ -4,6 +4,7 @@
 #include "../include/Sensor.h"
 #include "../include/LogOddsMap.h"
 #include "../include/Parameters.hpp"
+#include "../include/StereoCameraSensor.h"
 
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -16,9 +17,9 @@ void Visualizer::render()
 
     while (ros::ok())
     {
-        publishTrueMap(_lastTrueMap);
-        publishTrueMap2dSlice(_lastTrueMap);
-        publishBeliefMapFull(_lastBeliefMap);
+//        publishTrueMap(_lastTrueMap);
+//        publishTrueMap2dSlice(_lastTrueMap);
+//        publishBeliefMapFull(_lastBeliefMap);
         loop_rate.sleep();
     }
 
@@ -33,6 +34,7 @@ Visualizer::Visualizer()
     logOddsMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("logodds_map", 10);
     beliefMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("belief_map", 10);
     sensorPublisher = nodeHandle->advertise<visualization_msgs::Marker>("sensor", 10);
+    stereoCameraSensorPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("stereo_cam", 10);
     rayVoxelPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("ray_voxels", 10);
 }
 
@@ -45,7 +47,7 @@ void Visualizer::publishTrueMap(const Visualizable *visualizable) {
     if (!visualizable)
         return;
 
-    ROS_INFO("Publishing True Map");
+    //ROS_INFO("Publishing True Map");
 
     auto trueMap = (TrueMap *) visualizable;
     _lastTrueMap = trueMap;
@@ -139,7 +141,11 @@ void Visualizer::publishLogOddsMap(const Visualizable *visualizable)
         visualization_msgs::Marker cell;
         // TODO do not remove voxels by z position
 #ifndef FAKE_2D
-        if (voxel.node()->getOccupancy() <= 0.52 || voxel.position.z() < 0.4 || voxel.position.z() > 1.5)
+        if (voxel.node()->getOccupancy() < 0.52
+#ifndef FAKE_3D
+            || voxel.position.z() < 0.4 || voxel.position.z() > 1.5
+#endif
+                )
         {
             // remove voxel
             cell.action = 2;
@@ -188,7 +194,11 @@ void Visualizer::publishBeliefMap(const Visualizable *visualizable)
         visualization_msgs::Marker cell;
         // TODO do not remove voxels by z position
 #ifndef FAKE_2D
-        if (voxel.node()->getValue()->mean() < 0.52 || voxel.position.z() < 0.4 || voxel.position.z() > 1.5)
+        if (voxel.node()->getValue()->mean() < 0.52
+#ifndef FAKE_3D
+            || voxel.position.z() < 0.4 || voxel.position.z() > 1.5
+#endif
+            )
         {
             // remove voxel
             cell.action = 2;
@@ -326,42 +336,81 @@ void Visualizer::publishSensor(const Visualizable *visualizable)
 {
     auto sensor = (Sensor*) visualizable;
     ros::Rate loop_rate(PaintRate);
-    int i = 0;
 
-    while (ros::ok())
+    loop_rate.sleep();
+
+    visualization_msgs::Marker arrow;
+    arrow.action = 0;
+    arrow.id = (int) visualizable->visualizationId();
+    arrow.type = visualization_msgs::Marker::ARROW;
+    arrow.header.frame_id = "map";
+    arrow.scale.x = 0.05;
+    arrow.scale.y = 0.05;
+    arrow.scale.z = 0.05;
+    arrow.color.a = 1;
+    arrow.color.r = 1;
+    arrow.color.g = 0;
+    arrow.color.b = 0;
+    geometry_msgs::Point base;
+    base.x = sensor->position().x();
+    base.y = sensor->position().y();
+    base.z = sensor->position().z();
+    geometry_msgs::Point target;
+    target.x = sensor->position().x() + Parameters::sensorRange * sensor->orientation().x();
+    target.y = sensor->position().y() + Parameters::sensorRange * sensor->orientation().y();
+    target.z = sensor->position().z() + Parameters::sensorRange * sensor->orientation().z();
+#ifdef FAKE_2D
+    base.z += 0.1;
+    target.z += 0.1;
+#endif
+    arrow.points.push_back(base);
+    arrow.points.push_back(target);
+
+    sensorPublisher.publish(arrow);
+
+    ros::spinOnce();
+}
+
+void Visualizer::publishStereoCameraSensor(const Visualizable *visualizable)
+{
+    auto camera = (StereoCameraSensor*) visualizable;
+
+    visualization_msgs::MarkerArray arrows;
+    unsigned int i = 0;
+    for (auto &sensor : camera->pixels())
     {
-        loop_rate.sleep();
-
         visualization_msgs::Marker arrow;
         arrow.action = 0;
-        arrow.id = (int) visualizable->visualizationId();
+        arrow.id = (int) visualizable->visualizationId() + 1000 + i;
         arrow.type = visualization_msgs::Marker::ARROW;
         arrow.header.frame_id = "map";
-        arrow.scale.x = 0.05;
-        arrow.scale.y = 0.05;
-        arrow.scale.z = 0.05;
+        arrow.scale.x = 0.02;
+        arrow.scale.y = 0.02;
+        arrow.scale.z = 0.02;
         arrow.color.a = 1;
         arrow.color.r = 1;
         arrow.color.g = 0;
         arrow.color.b = 0;
         geometry_msgs::Point base;
-        base.x = sensor->position().x();
-        base.y = sensor->position().y();
-        base.z = sensor->position().z() + 0.1;
-        arrow.points.push_back(base);
+        base.x = sensor.position().x();
+        base.y = sensor.position().y();
+        base.z = sensor.position().z();
         geometry_msgs::Point target;
-        target.x = sensor->position().x() + Parameters::sensorRange * sensor->orientation().x();
-        target.y = sensor->position().y() + Parameters::sensorRange * sensor->orientation().y();
-        target.z = sensor->position().z() + Parameters::sensorRange * sensor->orientation().z() + 0.1;
+        target.x = sensor.position().x() + Parameters::sensorRange * sensor.orientation().x();
+        target.y = sensor.position().y() + Parameters::sensorRange * sensor.orientation().y();
+        target.z = sensor.position().z() + Parameters::sensorRange * sensor.orientation().z();
+#ifdef FAKE_2D
+        base.z += 0.1;
+        target.z += 0.1;
+#endif
+        arrow.points.push_back(base);
         arrow.points.push_back(target);
 
-        sensorPublisher.publish(arrow);
-
-        ros::spinOnce();
+        arrows.markers.push_back(arrow);
         ++i;
-        if (i > 0)
-            break;
     }
+
+    stereoCameraSensorPublisher.publish(arrows);
 }
 
 void Visualizer::publishRay(TrueMap &trueMap, Sensor &sensor)

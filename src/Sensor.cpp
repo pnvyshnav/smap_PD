@@ -1,7 +1,7 @@
 #include "../include/Sensor.h"
 #include "../include/TruncatedGaussianDistribution.hpp"
 
-#undef FAKE_2D // TODO remove
+//#undef FAKE_2D // TODO remove
 
 octomap::KeyRay Sensor::ray;
 
