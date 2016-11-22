@@ -92,6 +92,8 @@ public:
     static constexpr unsigned int voxelsPerDimensionY = (const unsigned int) ((yMax - yMin) / voxelSize);
     static constexpr unsigned int voxelsPerDimensionZ = (const unsigned int) ((zMax - zMin) / voxelSize);
 
+    static constexpr unsigned int voxelsTotal = voxelsPerDimensionX * voxelsPerDimensionY * voxelsPerDimensionZ;
+
     static constexpr NumType spuriousMeasurementProbability = 0; //TODO cannot be > 0 for now
 
     static constexpr NumType priorMean = .5; // TODO fix it

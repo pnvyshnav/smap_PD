@@ -17,7 +17,7 @@ class InverseCauseModel;
 class BeliefMap
         : public octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractOcTree>,
           public QVoxelMap<BeliefVoxel, octomap::AbstractOcTree>,
-          public Visualizable
+          public Observable
 {
 public:
     BeliefMap();
@@ -43,7 +43,7 @@ public:
     InverseCauseModel *icm;
     std::vector<QBeliefVoxel> lastUpdatedVoxels;
 
-    double error(const TrueMap &trueMap) const;
+    std::vector<double> error(const TrueMap &trueMap) const;
 
 private:
     BeliefVoxel *_updateNodeRecurs(BeliefVoxel* node, bool node_just_created,

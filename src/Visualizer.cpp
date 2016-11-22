@@ -43,7 +43,7 @@ Visualizer::~Visualizer()
     delete nodeHandle;
 }
 
-void Visualizer::publishTrueMap(const Visualizable *visualizable) {
+void Visualizer::publishTrueMap(const Observable *visualizable) {
     if (!visualizable)
         return;
 
@@ -87,7 +87,7 @@ void Visualizer::publishTrueMap(const Visualizable *visualizable) {
     trueMapPublisher.publish(cells);
 }
 
-void Visualizer::publishTrueMap2dSlice(const Visualizable *visualizable, unsigned int z)
+void Visualizer::publishTrueMap2dSlice(const Observable *visualizable, unsigned int z)
 {
     if (!visualizable)
         return;
@@ -126,7 +126,7 @@ void Visualizer::publishTrueMap2dSlice(const Visualizable *visualizable, unsigne
     ros::spinOnce();
 }
 
-void Visualizer::publishLogOddsMap(const Visualizable *visualizable)
+void Visualizer::publishLogOddsMap(const Observable *visualizable)
 {
     if (!visualizable)
         return;
@@ -178,7 +178,7 @@ void Visualizer::publishLogOddsMap(const Visualizable *visualizable)
     logOddsMapPublisher.publish(cells);
 }
 
-void Visualizer::publishBeliefMap(const Visualizable *visualizable)
+void Visualizer::publishBeliefMap(const Observable *visualizable)
 {
     if (!visualizable)
         return;
@@ -276,7 +276,7 @@ void Visualizer::publishBeliefMap(const Visualizable *visualizable)
     //ros::spinOnce();
 }
 
-void Visualizer::publishBeliefMapFull(const Visualizable *visualizable)
+void Visualizer::publishBeliefMapFull(const Observable *visualizable)
 {
     if (!visualizable)
         return;
@@ -332,7 +332,7 @@ void Visualizer::publishBeliefMapFull(const Visualizable *visualizable)
     ros::spinOnce();
 }
 
-void Visualizer::publishSensor(const Visualizable *visualizable)
+void Visualizer::publishSensor(const Observable *visualizable)
 {
     auto sensor = (Sensor*) visualizable;
     ros::Rate loop_rate(PaintRate);
@@ -341,7 +341,7 @@ void Visualizer::publishSensor(const Visualizable *visualizable)
 
     visualization_msgs::Marker arrow;
     arrow.action = 0;
-    arrow.id = (int) visualizable->visualizationId();
+    arrow.id = (int) visualizable->observableId();
     arrow.type = visualization_msgs::Marker::ARROW;
     arrow.header.frame_id = "map";
     arrow.scale.x = 0.05;
@@ -371,7 +371,7 @@ void Visualizer::publishSensor(const Visualizable *visualizable)
     ros::spinOnce();
 }
 
-void Visualizer::publishStereoCameraSensor(const Visualizable *visualizable)
+void Visualizer::publishStereoCameraSensor(const Observable *visualizable)
 {
     auto camera = (StereoCameraSensor*) visualizable;
 
@@ -381,7 +381,7 @@ void Visualizer::publishStereoCameraSensor(const Visualizable *visualizable)
     {
         visualization_msgs::Marker arrow;
         arrow.action = 0;
-        arrow.id = (int) visualizable->visualizationId() + 1000 + i;
+        arrow.id = (int) visualizable->observableId() + 1000 + i;
         arrow.type = visualization_msgs::Marker::ARROW;
         arrow.header.frame_id = "map";
         arrow.scale.x = 0.02;

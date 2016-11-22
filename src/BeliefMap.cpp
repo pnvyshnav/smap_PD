@@ -171,14 +171,14 @@ bool BeliefMap::update(const Observation &observation)
     {
         ROS_INFO("ICM Computation succeeded for all %i measurements.", (int)observation.measurements().size());
     }
-    updateVisualization();
+    updateSubscribers();
 
     return true;
 }
 
-double BeliefMap::error(const TrueMap &trueMap) const
+std::vector<double> BeliefMap::error(const TrueMap &trueMap) const
 {
-    double err = 0;
+    std::vector<double> err;
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
     {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
@@ -190,11 +190,10 @@ double BeliefMap::error(const TrueMap &trueMap) const
                                        Parameters::zMin + z * Parameters::voxelSize);
                 auto trueVoxel = trueMap.query(point);
                 auto estimated = query(point);
-                err += std::pow(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getValue()->mean(), 2);
+                err.push_back(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getValue()->mean());
             }
         }
     }
-    err /= Parameters::voxelsPerDimensionX * Parameters::voxelsPerDimensionY * Parameters::voxelsPerDimensionZ;
     return err;
 }
 
@@ -261,7 +260,7 @@ BeliefVoxel *BeliefMap::_updateNodeRecurs(BeliefVoxel *node, bool node_just_crea
     }
     else
     {
-        // at last level, updateVisualization node, end of recursion
+        // at last level, updateSubscribers node, end of recursion
         node->setValue(std::make_shared<Belief>(belief));
         return node;
     }

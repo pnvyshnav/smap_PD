@@ -3,12 +3,12 @@
 #include <octomap/OcTree.h>
 #include "Parameters.hpp"
 #include "QVoxel.hpp"
-#include "Visualizable.hpp"
+#include "Observable.hpp"
 
 class TrueMap
         : public octomap::OcTree,
           public QVoxelMap<octomap::OcTreeNode, octomap::AbstractOccupancyOcTree>,
-          public Visualizable
+          public Observable
 {
 public:
     static TrueMap generate(unsigned int seed = (unsigned int) time(NULL));

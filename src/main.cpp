@@ -8,6 +8,7 @@
 #include "../include/Visualizer.h"
 #include "../include/Drone.h"
 #include "../include/LogOddsMap.h"
+#include "../include/Statistics.h"
 
 TrueMap trueMap = TrueMap::generate();
 BeliefMap beliefMap;
@@ -24,6 +25,7 @@ FakeRobot<> robot(
         trueMap);
 
 std::vector<double> logOddsErrors, beliefErrors;
+Statistics *stats;
 
 void saveErrors(const char string[18], std::vector<double> vector);
 
@@ -33,8 +35,10 @@ void handleObservation(const Observation &observation)
     beliefMap.update(observation);
     logOddsMap.update(observation);
 
-    beliefErrors.push_back(beliefMap.error(trueMap));
-    logOddsErrors.push_back(logOddsMap.error(trueMap));
+    stats->update(logOddsMap, beliefMap);
+
+//    beliefErrors.push_back(beliefMap.error(trueMap));
+//    logOddsErrors.push_back(logOddsMap.error(trueMap));
 
 #if defined(FAKE_2D) || defined(FAKE_3D)
     if (!ros::ok())
@@ -56,6 +60,8 @@ void saveErrors(std::string filename, std::vector<double> errors)
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "SMAP");
+    ros::Time::init();
+    stats = new Statistics(trueMap);
     //trueMap.writeBinary("simple_tree.bt");
 
     Visualizer *visualizer = new Visualizer;

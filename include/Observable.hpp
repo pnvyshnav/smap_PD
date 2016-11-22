@@ -1,12 +1,11 @@
 #pragma once
 
-class Visualizer;
-class Visualizable
+class Observable
 {
 public:
-    typedef std::function<void(const Visualizable*)> Subscriber;
+    typedef std::function<void(const Observable*)> Subscriber;
 
-    Visualizable() : _id(newId++)
+    Observable() : _id(newId++)
     {}
 
     void subscribe(Subscriber subscriber)
@@ -16,16 +15,16 @@ public:
 
     void publish() const
     {
-        updateVisualization();
+        updateSubscribers();
     }
 
-    const unsigned int visualizationId() const
+    const unsigned int observableId() const
     {
         return _id;
     }
 
 protected:
-    void updateVisualization() const
+    void updateSubscribers() const
     {
         for (auto &subscriber : _subscribers)
             subscriber(this);
@@ -39,4 +38,4 @@ private:
 
 };
 
-unsigned int Visualizable::newId = 0;
+unsigned int Observable::newId = 0;

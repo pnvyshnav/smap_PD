@@ -40,7 +40,7 @@ TrueMap TrueMap::generate(unsigned int seed)
         }
     }
 
-    map.updateVisualization();
+    map.updateSubscribers();
 
     ROS_INFO("True map has %d nodes in total.", (int)map.calcNumNodes());
     ROS_INFO("Voxels per dimension: %d x %d x %d",

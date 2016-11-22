@@ -26,7 +26,7 @@ Parameters::Vec3Type Sensor::position() const
 void Sensor::setPosition(const Parameters::Vec3Type &position)
 {
     _position = position;
-    updateVisualization();
+    updateSubscribers();
 }
 
 Parameters::Vec3Type Sensor::orientation() const
@@ -37,7 +37,7 @@ Parameters::Vec3Type Sensor::orientation() const
 void Sensor::setOrientation(const Parameters::Vec3Type &orientation)
 {
     _orientation = orientation;
-    updateVisualization();
+    updateSubscribers();
 }
 
 Parameters::NumType Sensor::likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const

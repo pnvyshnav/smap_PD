@@ -2,7 +2,7 @@
 
 #include <ros/ros.h>
 
-#include "Visualizable.hpp"
+#include "Observable.hpp"
 #include "TrueMap.h"
 #include "Sensor.h"
 
@@ -15,13 +15,13 @@ public:
 
     void render();
 
-    void publishTrueMap(const Visualizable *visualizable);
-    void publishTrueMap2dSlice(const Visualizable *visualizable, unsigned int z = 0);
-    void publishLogOddsMap(const Visualizable *visualizable);
-    void publishBeliefMap(const Visualizable *visualizable);
-    void publishBeliefMapFull(const Visualizable *visualizable);
-    void publishSensor(const Visualizable *visualizable);
-    void publishStereoCameraSensor(const Visualizable *visualizable);
+    void publishTrueMap(const Observable *visualizable);
+    void publishTrueMap2dSlice(const Observable *visualizable, unsigned int z = 0);
+    void publishLogOddsMap(const Observable *visualizable);
+    void publishBeliefMap(const Observable *visualizable);
+    void publishBeliefMapFull(const Observable *visualizable);
+    void publishSensor(const Observable *visualizable);
+    void publishStereoCameraSensor(const Observable *visualizable);
     void publishRay(TrueMap &trueMap, Sensor &sensor);
 
     static const int PaintRate = 100;

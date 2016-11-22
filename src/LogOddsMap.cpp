@@ -40,7 +40,7 @@ bool LogOddsMap::update(const Observation &observation)
         delete ism;
     }
 
-    updateVisualization();
+    updateSubscribers();
 
     return true;
 }
@@ -100,7 +100,7 @@ LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Mea
             }
             else
             {
-                ism->causeProbabilitiesOnRay[i] = 0;//Parameters::invSensor_prior;
+                ism->causeProbabilitiesOnRay[i] = 0;
             }
 
             assert(ism->causeProbabilitiesOnRay[i] < 1.);
@@ -121,9 +121,9 @@ LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Mea
     return ism;
 }
 
-double LogOddsMap::error(const TrueMap &trueMap) const
+std::vector<double> LogOddsMap::error(const TrueMap &trueMap) const
 {
-    double err = 0;
+    std::vector<double> err;
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
     {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
@@ -136,13 +136,12 @@ double LogOddsMap::error(const TrueMap &trueMap) const
                 auto trueVoxel = trueMap.query(point);
                 auto estimated = query(point);
                 if (estimated.type == GEOMETRY_VOXEL)
-                    err += std::pow(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getOccupancy(), 2);
+                    err.push_back(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getOccupancy());
                 else
                     // TODO consider holes as voxels with 0.5 occupancy
-                    err += std::pow(std::round(trueVoxel.node()->getOccupancy()) - Parameters::priorMean, 2);
+                    err.push_back(std::round(trueVoxel.node()->getOccupancy()) - Parameters::priorMean);
             }
         }
     }
-    err /= Parameters::voxelsPerDimensionX * Parameters::voxelsPerDimensionY * Parameters::voxelsPerDimensionZ;
     return err;
 }

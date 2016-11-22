@@ -24,8 +24,11 @@ endif()
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
-  std_msgs ecl_time tf
-        message_filters
+  std_msgs
+  ecl_time
+  tf
+  message_filters
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -70,11 +73,10 @@ add_definitions(${PCL_DEFINITIONS})
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  smapStats.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -91,10 +93,11 @@ add_definitions(${PCL_DEFINITIONS})
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  smap
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -125,12 +128,12 @@ add_definitions(${PCL_DEFINITIONS})
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-#catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES smap
-#  CATKIN_DEPENDS octomap roscpp rospy std_msgs
-#  DEPENDS system_lib
-#)
+catkin_package(
+  INCLUDE_DIRS ${catkin_INCLUDE_DIRS}
+  LIBRARIES smap
+  CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
+  DEPENDS system_lib
+)
 
 ###########
 ## Build ##
@@ -168,7 +171,7 @@ add_executable(smap src/main.cpp
         include/TruncatedGaussianDistribution.hpp
         include/TrueMap.h
         src/TrueMap.cpp
-        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp src/Visualizer.cpp include/Visualizer.h include/Visualizable.hpp src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp include/LogOddsMap.h)
+        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp src/Visualizer.cpp include/Visualizer.h include/Observable.hpp src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp include/LogOddsMap.h src/Statistics.cpp include/Statistics.h)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

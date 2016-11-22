@@ -28,7 +28,7 @@ struct InverseCauseModel
     unsigned int rayLength;
 };
 
-class Sensor : public Visualizable
+class Sensor : public Observable
 {
 public:
     Sensor(Parameters::Vec3Type position,

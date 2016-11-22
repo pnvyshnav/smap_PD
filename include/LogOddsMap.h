@@ -4,13 +4,13 @@
 #include <octomap/OcTree.h>
 #include "Parameters.hpp"
 #include "QVoxel.hpp"
-#include "Visualizable.hpp"
+#include "Observable.hpp"
 #include "Observation.hpp"
 
 class LogOddsMap
         : public octomap::OcTree,
           public QVoxelMap<octomap::OcTreeNode, octomap::AbstractOccupancyOcTree>,
-          public Visualizable
+          public Observable
 {
 public:
     LogOddsMap();
@@ -19,7 +19,7 @@ public:
 
     bool update(const Observation &observation);
 
-    double error(const TrueMap &trueMap) const;
+    std::vector<double> error(const TrueMap &trueMap) const;
 
 private:
     struct InverseSensorModel
