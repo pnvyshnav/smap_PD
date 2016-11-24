@@ -181,6 +181,7 @@ add_executable(smap src/main.cpp
 target_link_libraries(smap
         ${catkin_LIBRARIES}
         ${PCL_LIBRARIES}
+        ${OCTOMAP_LIBRARIES}
 )
 
 #############

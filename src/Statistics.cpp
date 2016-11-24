@@ -22,6 +22,23 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
     _msg.errorLogOdds = logOddsMap.error(_trueMap);
     _msg.errorBelief = beliefMap.error(_trueMap);
 
+    _msg.noiseStd = Parameters::sensorNoiseStd;
+    _msg.ismIncrement = Parameters::invSensor_increment;
+    _msg.ismRampSize = Parameters::invSensor_rampSize;
+    _msg.ismTopSize = Parameters::invSensor_topSize;
+    _msg.ismRampSlope = Parameters::invSensor_rampSlope;
+
+    double evolutionLogOdds = 0;
+    for (double error : _msg.errorLogOdds)
+        evolutionLogOdds += std::abs(error);
+    evolutionLogOdds /= _msg.errorLogOdds.size();
+    _msg.errorEvolutionLogOdds.push_back(evolutionLogOdds);
+    double evolutionBelief = 0;
+    for (double error : _msg.errorBelief)
+        evolutionBelief += std::abs(error);
+    evolutionBelief /= _msg.errorBelief.size();
+    _msg.errorEvolutionBelief.push_back(evolutionBelief);
+
     _msg.stdLogOdds.clear();
     for (auto &voxel : logOddsMap.voxels())
     {
@@ -39,6 +56,6 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
     _publisher.publish(_msg);
 
     // TODO wait some time to ensure the data gets plotted
-    ros::Rate publishing_rate(0.3);
+    ros::Rate publishing_rate(29);
     publishing_rate.sleep();
 }

@@ -10,7 +10,7 @@
 #include "../include/LogOddsMap.h"
 #include "../include/Statistics.h"
 
-TrueMap trueMap = TrueMap::generate();
+TrueMap trueMap = TrueMap::generate(123); // TODO leave out seed value
 BeliefMap beliefMap;
 LogOddsMap logOddsMap;
 FakeRobot<> robot(
