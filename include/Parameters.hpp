@@ -59,7 +59,7 @@ public:
 
     static const bool sensorTruncatedGaussianNoise = false;
     static constexpr NumType sensorRange = (const NumType) 3;
-    static constexpr NumType sensorNoiseStd = (const NumType) (0.00003);
+    static constexpr NumType sensorNoiseStd = (const NumType) (0.2);
 
     static constexpr double FakeRobotAngularVelocity = 5. * M_PI / 180.;
 
@@ -102,10 +102,10 @@ public:
     // Inverse Sensor Model
     //
     static constexpr NumType invSensor_prior = priorMean;
-    static constexpr NumType invSensor_increment = 0.5;
+    static constexpr NumType invSensor_increment = 0.05;
     static constexpr NumType invSensor_occupied = /*invSensor_prior +*/ invSensor_increment;
     static constexpr NumType invSensor_free = /*invSensor_prior */- invSensor_increment;
     static constexpr NumType invSensor_rampSize = voxelSize;
-    static constexpr NumType invSensor_topSize = 0.1;
+    static constexpr NumType invSensor_topSize = voxelSize;
     static constexpr NumType invSensor_rampSlope = (invSensor_occupied - invSensor_free)/invSensor_rampSize;
 };

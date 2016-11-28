@@ -16,6 +16,8 @@ public:
 
     void update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap);
 
+    void saveToFile(std::string filename = "statistics.bag") const;
+
 private:
     ros::Publisher _publisher;
     ros::NodeHandle *_nh;

@@ -29,6 +29,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   message_filters
   message_generation
+  rosbag
 )
 
 ## System dependencies are found with CMake's conventions
@@ -131,7 +132,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS ${catkin_INCLUDE_DIRS}
   LIBRARIES smap
-  CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
+  CATKIN_DEPENDS roscpp rospy std_msgs message_runtime rosbag
   DEPENDS system_lib
 )
 

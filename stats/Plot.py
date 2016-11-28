@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import numpy as np
 import matplotlib.pyplot as plt
-import sys, rospy
+import sys, rospy, rosbag
 from smap.msg import smapStats
 
 
@@ -49,18 +49,19 @@ class Results:
         self.errorEvolutionsBelief = {}
         self.errorEvolutionsLogOdds = {}
 
-
     def render(self):
         plt.ion()
         while True:
             self.update()
             plt.pause(0.01)
+            if self.stats.step >= self.stats.maxStep:
+                break
 
     def update(self):
         stats = self.stats
-        print "Updating for step", stats.step
+        print("Updating for step", stats.step)
         if stats.step > self.last_step + 1:
-            print "Error: Skipped %i steps" % (stats.step - self.last_step - 1)
+            print("Error: Skipped %i steps" % (stats.step - self.last_step - 1))
         elif stats.step == self.last_step:
             return
         self.last_step = stats.step
@@ -134,18 +135,31 @@ class Results:
 
         beliefName = 'SMAP (noise std {})'.format(stats.noiseStd)
         self.errorEvolutionsBelief[beliefName] = stats.errorEvolutionBelief
-        logOddsName = 'Log Odds (inc {s.ismIncrement}, ramp {s.ismRampSize}, top {s.ismTopSize}, rslope {s.ismRampSlope}'.format(s=stats)
+        logOddsName = 'Log Odds (noise std {s.noiseStd} inc {s.ismIncrement}, ramp {s.ismRampSize}, top {s.ismTopSize}, rslope {s.ismRampSlope})'.format(
+            s=stats)
         self.errorEvolutionsLogOdds[logOddsName] = stats.errorEvolutionLogOdds
+
+        stdBeliefStd = []
+        stdLogOddsStd = []
+        for step in range(stats.step):
+            stdBeliefStd.append(np.mean(np.array(stats.stdCompleteBelief[step*stats.voxels:(step+1)*stats.voxels])))
+            stdLogOddsStd.append(np.mean(np.array(stats.stdCompleteLogOdds[step*stats.voxels:(step+1)*stats.voxels])))
+        stdBeliefStd = np.array(stdBeliefStd)
+        stdLogOddsStd = np.array(stdLogOddsStd)
 
         plt.sca(self.axis_fullError)
         plt.cla()
         plt.title("Full Average L1-Error")
-        for label, errors in self.errorEvolutionsBelief.items():
+        for label, errors in sorted(self.errorEvolutionsBelief.items(), key=lambda x: x[0]):
             plt.plot(errors, label=label)
-        for label, errors in self.errorEvolutionsLogOdds.items():
+        for label, errors in sorted(self.errorEvolutionsLogOdds.items(), key=lambda x: x[0]):
             plt.plot(errors, label=label, linestyle='dashed')
+        plt.plot(np.array(stats.errorEvolutionBelief) + stdBeliefStd / 100.)
+        plt.plot(np.array(stats.errorEvolutionLogOdds) + stdLogOddsStd / 100.)
+        plt.plot(np.array(stats.errorEvolutionBelief) - stdBeliefStd / 100.)
+        plt.plot(np.array(stats.errorEvolutionLogOdds) - stdLogOddsStd / 100.)
         plt.legend(loc='upper left', bbox_to_anchor=(1, .5),
-          ncol=1, fancybox=True, shadow=True).draggable()
+                   ncol=1, fancybox=True, shadow=True).draggable()
         plt.pause(1e-6)
 
         # plt.sca(self.axis_outside)
@@ -164,17 +178,31 @@ class Results:
 
 results = Results()
 
+
 def callback(data):
     global results
     results.stats = data
 
+
 def main(argv):
     global results
 
-    rospy.init_node('smap_stats')
-    rospy.Subscriber("stats", smapStats, callback)
+    if len(argv) <= 1:
+        rospy.init_node('smap_stats')
+        rospy.Subscriber("stats", smapStats, callback)
+    else:
+        # load bag file from argv[1]
+        bag = rosbag.Bag(argv[1])
+        for topic, msg, t in bag.read_messages(topics=['stats']):
+            results.stats = msg
+        bag.close()
+        print("Loaded ROS bag file from %s." % argv[1])
 
     results.render()
+
+    plt.ioff()
+    plt.show()
+
 
 if __name__ == '__main__':
     main(sys.argv)

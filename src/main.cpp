@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 
     Visualizer *visualizer = new Visualizer;
     //trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
-    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMap, visualizer, std::placeholders::_1));
+    //beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMap, visualizer, std::placeholders::_1));
     logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMap, visualizer, std::placeholders::_1));
 
 #if defined(FAKE_2D)
@@ -84,6 +84,8 @@ int main(int argc, char **argv)
     drone.registerObserver(&handleObservation);
     drone.run();
 #endif
+
+    stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/stats.bag");
 
     saveErrors((std::string)"belief_errors.txt", beliefErrors);
     saveErrors((std::string)"logOdds_errors.txt", logOddsErrors);

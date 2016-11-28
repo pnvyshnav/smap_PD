@@ -2,6 +2,7 @@
 #include "../include/Statistics.h"
 
 #include <smap/smapStats.h>
+#include <rosbag/bag.h>
 
 
 
@@ -19,8 +20,22 @@ Statistics::~Statistics()
 void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap)
 {
     _msg.step = ++_step;
+    _msg.maxStep = Parameters::FakeRobotNumSteps;
+
     _msg.errorLogOdds = logOddsMap.error(_trueMap);
     _msg.errorBelief = beliefMap.error(_trueMap);
+
+    assert(_msg.errorLogOdds.size() == _msg.errorBelief.size());
+
+    _msg.voxels = _msg.errorBelief.size();
+
+    // append current errors to complete error vectors
+    _msg.errorCompleteLogOdds.insert(_msg.errorCompleteLogOdds.end(),
+                                     _msg.errorLogOdds.begin(),
+                                     _msg.errorLogOdds.end());
+    _msg.errorCompleteBelief.insert(_msg.errorCompleteBelief.end(),
+                                    _msg.errorBelief.begin(),
+                                    _msg.errorBelief.end());
 
     _msg.noiseStd = Parameters::sensorNoiseStd;
     _msg.ismIncrement = Parameters::invSensor_increment;
@@ -53,9 +68,26 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
         _msg.stdBelief.push_back(std::sqrt(voxel.node()->getValue()->variance()));
     }
 
+    // append current std devs to complete std dev vectors
+    _msg.stdCompleteLogOdds.insert(_msg.stdCompleteLogOdds.end(),
+                                     _msg.stdLogOdds.begin(),
+                                     _msg.stdLogOdds.end());
+    _msg.stdCompleteBelief.insert(_msg.stdCompleteBelief.end(),
+                                    _msg.stdBelief.begin(),
+                                    _msg.stdBelief.end());
+
     _publisher.publish(_msg);
 
     // TODO wait some time to ensure the data gets plotted
-    ros::Rate publishing_rate(29);
-    publishing_rate.sleep();
+    //ros::Rate publishing_rate(29);
+    //publishing_rate.sleep();
+}
+
+void Statistics::saveToFile(std::string filename) const
+{
+    rosbag::Bag bag;
+    bag.open(filename, rosbag::bagmode::Write);
+    bag.write("stats", ros::Time::now(), _msg);
+    bag.close();
+    ROS_INFO_STREAM("Saved statistics ROS bag file to " << filename);
 }
