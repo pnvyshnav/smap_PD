@@ -54,10 +54,15 @@ was the error larger than 1, 2 and 3 standard deviations at every step?
 ![Inconsistencies](./plots/errors_outside_std_interval.png)
 
 _This looks really bad for SMAP._ Almost all computed means deviate by more than one std deviation from the true occupancy.
-It must be noted that the belief variance fits much closer to the error as compared to the Bernoulli variance
-used at Log Odds:
-### Error mean and variance of all voxels at step 500
-![Mean and Variance](./plots/inconsistencies_all_voxels.png)
+It must be noted that the belief std dev fits much closer (oftentimes too close) to the mean as compared to the Bernoulli std dev used at Log Odds.
 
-I also tried to first round the error of each voxel before testing whether the deviation exceeds one standard deviation:
+The following plot shows error (blue) and +/- 2 std devs (red) for all _updated_ voxels at the first step of the simulation:
+![Mean and Variance](./plots/inconsistencies_at_first_step.png)
+
+The following plot shows error (blue) and +/- 2 std devs (red) for all _updated_ voxels at the last step of the simulation:
+![Mean and Variance](./plots/inconsistencies_at_last_step.png)
+
+I also tried to first round the error of each voxel before testing whether the deviation exceeds one standard deviation.
+Since the rounded absolute error is either 0 or 1, the following plot is actually showing the evolution of cases where
+the voxel was wrongly estimated to be free or occupied. It shows a similar curve to the error evolution from above.
 ![Inconsistencies](./plots/rounded_errors_outside_std_interval.png)
