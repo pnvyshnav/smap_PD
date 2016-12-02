@@ -17,9 +17,11 @@ public:
 
     std::vector<QTrueVoxel> lastUpdatedVoxels;
 
-    bool update(const Observation &observation);
+    // TODO remove trueMap argument
+    bool update(const Observation &observation, const TrueMap &trueMap);
 
     std::vector<double> error(const TrueMap &trueMap) const;
+    std::vector<double> errorLastUpdated(const TrueMap &trueMap) const;
 
 private:
     struct InverseSensorModel
@@ -28,5 +30,5 @@ private:
         std::vector<octomap::OcTreeKey> ray;
     };
 
-    InverseSensorModel *_computeInverseSensorModel(const Measurement &measurement) const;
+    InverseSensorModel *_computeInverseSensorModel(const Measurement &measurement);
 };

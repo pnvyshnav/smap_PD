@@ -89,7 +89,7 @@ std::valarray<Parameters::NumType> BeliefMap::reachingProbabilitiesOnRay(
     return reachingProbabilities;
 }
 
-bool BeliefMap::update(const Observation &observation)
+bool BeliefMap::update(const Observation &observation, const TrueMap &trueMap)
 {
     lastUpdatedVoxels.clear();
     int fails = 0;
@@ -110,6 +110,8 @@ bool BeliefMap::update(const Observation &observation)
         Parameters::NumType prBeforeVoxel = 0;
         Parameters::NumType prOnVoxel;
         Parameters::NumType prAfterVoxel = icm->posteriorOnRay.sum() + icm->posteriorInfinity;
+
+        bool obstacleReached = false;
         for (auto &key : icm->ray)
         {
             prOnVoxel = icm->posteriorOnRay[i];
@@ -153,7 +155,13 @@ bool BeliefMap::update(const Observation &observation)
                      meanAfter);
 #endif
 
-            lastUpdatedVoxels.push_back(qBeliefVoxel);
+            if (!obstacleReached)
+                lastUpdatedVoxels.push_back(qBeliefVoxel);
+
+            // TODO for evaluation purposes, only take voxels that lie in front of an obstacle
+            auto trueVoxel = trueMap.query(qBeliefVoxel.key);
+            if (trueVoxel.type == GEOMETRY_HOLE || ((int)std::round(trueVoxel.node()->getOccupancy())) == 1)
+                obstacleReached = true;
 
             prBeforeVoxel += prOnVoxel;
             ++i;
@@ -169,7 +177,7 @@ bool BeliefMap::update(const Observation &observation)
     }
     else
     {
-        ROS_INFO("ICM Computation succeeded for all %i measurements.", (int)observation.measurements().size());
+        //ROS_INFO("ICM Computation succeeded for all %i measurements.", (int)observation.measurements().size());
     }
     updateSubscribers();
 
@@ -193,6 +201,18 @@ std::vector<double> BeliefMap::error(const TrueMap &trueMap) const
                 err.push_back(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getValue()->mean());
             }
         }
+    }
+    return err;
+}
+
+std::vector<double> BeliefMap::errorLastUpdated(const TrueMap &trueMap) const
+{
+    std::vector<double> err;
+    for (auto &v : lastUpdatedVoxels)
+    {
+        auto trueVoxel = trueMap.query(v.position);
+        auto estimated = query(v.position);
+        err.push_back(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getValue()->mean());
     }
     return err;
 }

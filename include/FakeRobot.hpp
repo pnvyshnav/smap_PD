@@ -81,6 +81,9 @@ public:
                     radius * std::sin(rad + 1.5*Parameters::FakeRobotAngularVelocity), 0));
 #endif
             Robot::publishObservation(observe());
+
+            if (_step % 20 == 0)
+                ROS_INFO("Robot step %i / %i", (int)_step+1, (int)Parameters::FakeRobotNumSteps);
         }
 
         if (_stopRequested)
@@ -101,8 +104,7 @@ public:
         _stopRequested = true;
     }
 
-    unsigned int currentStep()
-    {
+    unsigned int currentStep()const {
         return _step;
     }
 

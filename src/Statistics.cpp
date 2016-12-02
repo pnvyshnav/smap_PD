@@ -17,9 +17,9 @@ Statistics::~Statistics()
     delete _nh;
 }
 
-void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap)
+void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap, const FakeRobot<> &robot)
 {
-    _msg.step = ++_step;
+    _msg.step = robot.currentStep();
     _msg.maxStep = Parameters::FakeRobotNumSteps;
 
     _msg.errorLogOdds = logOddsMap.error(_trueMap);
@@ -36,6 +36,28 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
     _msg.errorCompleteBelief.insert(_msg.errorCompleteBelief.end(),
                                     _msg.errorBelief.begin(),
                                     _msg.errorBelief.end());
+
+    // append current errors of updated voxels to complete updated error vectors
+    auto errorUpdatedLogOdds = logOddsMap.errorLastUpdated(_trueMap);
+    _msg.errorCompleteUpdatedLogOdds.insert(_msg.errorCompleteUpdatedLogOdds.end(),
+                                     errorUpdatedLogOdds.begin(),
+                                     errorUpdatedLogOdds.end());
+    auto errorUpdatedBelief = beliefMap.errorLastUpdated(_trueMap);
+    _msg.errorCompleteUpdatedBelief.insert(_msg.errorCompleteUpdatedBelief.end(),
+                                    errorUpdatedBelief.begin(),
+                                    errorUpdatedBelief.end());
+    assert(errorUpdatedBelief.size() == errorUpdatedLogOdds.size());
+    _msg.updatedVoxels.push_back(errorUpdatedBelief.size());
+
+    // append std deviations for each updated voxel over all steps
+    for (auto &v : beliefMap.lastUpdatedVoxels)
+    {
+        _msg.stdCompleteUpdatedBelief.push_back(std::sqrt(v.node()->getValue()->variance()));
+    }
+    for (auto &v : logOddsMap.lastUpdatedVoxels)
+    {
+        _msg.stdCompleteUpdatedLogOdds.push_back(std::sqrt(v.node()->getOccupancy()));
+    }
 
     _msg.noiseStd = Parameters::sensorNoiseStd;
     _msg.ismIncrement = Parameters::invSensor_increment;

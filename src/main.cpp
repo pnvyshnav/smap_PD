@@ -32,10 +32,10 @@ void saveErrors(const char string[18], std::vector<double> vector);
 void handleObservation(const Observation &observation)
 {
     //trueMap.publish();
-    beliefMap.update(observation);
-    logOddsMap.update(observation);
+    beliefMap.update(observation, trueMap);
+    logOddsMap.update(observation, trueMap);
 
-    stats->update(logOddsMap, beliefMap);
+    stats->update(logOddsMap, beliefMap, robot);
 
 //    beliefErrors.push_back(beliefMap.error(trueMap));
 //    logOddsErrors.push_back(logOddsMap.error(trueMap));
@@ -85,6 +85,7 @@ int main(int argc, char **argv)
     drone.run();
 #endif
 
+    //stats->update(logOddsMap, beliefMap, robot);
     stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/stats.bag");
 
     saveErrors((std::string)"belief_errors.txt", beliefErrors);

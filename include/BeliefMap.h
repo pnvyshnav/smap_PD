@@ -38,12 +38,14 @@ public:
             const octomap::KeyRay &ray,
             const std::valarray<Parameters::NumType> &bouncingProbabilities) const;
 
-    bool update(const Observation &observation);
+    // TODO remove trueMap argument
+    bool update(const Observation &observation, const TrueMap &trueMap);
 
     InverseCauseModel *icm;
     std::vector<QBeliefVoxel> lastUpdatedVoxels;
 
     std::vector<double> error(const TrueMap &trueMap) const;
+    std::vector<double> errorLastUpdated(const TrueMap &trueMap) const;
 
 private:
     BeliefVoxel *_updateNodeRecurs(BeliefVoxel* node, bool node_just_created,

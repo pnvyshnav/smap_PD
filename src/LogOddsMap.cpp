@@ -16,7 +16,7 @@ struct OctoMapKeyComparator
     }
 };
 
-bool LogOddsMap::update(const Observation &observation)
+bool LogOddsMap::update(const Observation &observation, const TrueMap &trueMap)
 {
     lastUpdatedVoxels.clear();
     std::set<octomap::OcTreeKey, OctoMapKeyComparator> updatedKeys;
@@ -29,12 +29,19 @@ bool LogOddsMap::update(const Observation &observation)
             continue;
         }
 
+        bool obstacleReached = false;
         for (unsigned int i = 0; i < ism->ray.size(); ++i)
         {
             // update log odds
             updateNode(ism->ray[i], (float) ism->causeProbabilitiesOnRay[i]);
             updatedKeys.insert(ism->ray[i]);
-            lastUpdatedVoxels.push_back(query(ism->ray[i]));
+            if (!obstacleReached)
+                lastUpdatedVoxels.push_back(query(ism->ray[i]));
+
+            // TODO for evaluation purposes, only take voxels that lie in front of an obstacle
+            auto trueVoxel = trueMap.query(ism->ray[i]);
+            if (trueVoxel.type == GEOMETRY_HOLE || ((int)std::round(trueVoxel.node()->getOccupancy())) == 1)
+                obstacleReached = true;
         }
 
         delete ism;
@@ -45,7 +52,7 @@ bool LogOddsMap::update(const Observation &observation)
     return true;
 }
 
-LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Measurement &measurement) const
+LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Measurement &measurement)
 {
     octomap::KeyRay ray;
     if (!computeRayKeys(measurement.sensor->position(),
@@ -142,6 +149,24 @@ std::vector<double> LogOddsMap::error(const TrueMap &trueMap) const
                     err.push_back(std::round(trueVoxel.node()->getOccupancy()) - Parameters::priorMean);
             }
         }
+    }
+    return err;
+}
+
+std::vector<double> LogOddsMap::errorLastUpdated(const TrueMap &trueMap) const
+{
+    std::vector<double> err;
+    for (auto &v : lastUpdatedVoxels)
+    {
+        auto trueVoxel = trueMap.query(v.position);
+        auto estimated = query(v.position);
+        if (!trueVoxel.node())
+            continue;
+        if (estimated.type == GEOMETRY_VOXEL)
+            err.push_back(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getOccupancy());
+        else
+            // TODO consider holes as voxels with 0.5 occupancy
+            err.push_back(std::round(trueVoxel.node()->getOccupancy()) - Parameters::priorMean);
     }
     return err;
 }

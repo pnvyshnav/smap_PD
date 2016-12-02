@@ -7,6 +7,7 @@
 #include "TrueMap.h"
 #include "LogOddsMap.h"
 #include "BeliefMap.h"
+#include "FakeRobot.hpp"
 
 class Statistics
 {
@@ -14,7 +15,9 @@ public:
     Statistics(const TrueMap &trueMap);
     ~Statistics();
 
-    void update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap);
+    void update(const LogOddsMap &logOddsMap,
+                const BeliefMap &beliefMap,
+                const FakeRobot<> &robot);
 
     void saveToFile(std::string filename = "statistics.bag") const;
 
@@ -23,5 +26,4 @@ private:
     ros::NodeHandle *_nh;
     smap::smapStats _msg;
     const TrueMap _trueMap;
-    unsigned int _step;
 };
