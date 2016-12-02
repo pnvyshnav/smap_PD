@@ -24,6 +24,7 @@ that lie on the ray from the sensor position up until (and including) the first 
 The following diagram visualizes the histogram of errors at every step.
 1600 steps were executed which equates to 22.22 full rotations of the robot in the environment
 (this explains periodic patterns in the plots).
+The white line shows the average error of the updated voxels.
 Note how Log Odds errors are clustered along a line at about 0.12.
 After trying many different ISM parameters, it was not possible to improve Log Odds in the way that more errors
 would be distributed below this cluster.
