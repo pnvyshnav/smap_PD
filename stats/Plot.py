@@ -12,10 +12,14 @@ class Results:
     def __init__(self):
         self.largeErrorThreshold = 0.6
         self.frameNumber = 0
-        fh = plt.figure('Inconsistencies')
+        fh = plt.figure('Inconsistencies at first step')
         self.fig = fh
         self.axisHybrid = fh.add_subplot(211)
         self.axis_logOdds = fh.add_subplot(212)
+
+        self.lastStepFig = plt.figure('Inconsistencies at last step')
+        self.axisLastHybrid = self.lastStepFig.add_subplot(211)
+        self.axisLast_logOdds = self.lastStepFig.add_subplot(212)
         self.fig_fullError = plt.figure('Mean Absolute Error (MAE) Evolution over all Voxels')
         self.axis_fullError = self.fig_fullError.add_subplot(111)
         box = self.axis_fullError.get_position()
@@ -55,7 +59,8 @@ class Results:
         self.errorHybridCurve = None
 
         self.stats = smapStats()
-        self.title = self.fig.suptitle('step = %d' % self.stats.step)
+        self.fig.suptitle('Mean and std dev of updated voxels at first step')
+        self.lastStepFig.suptitle('Mean and std dev of updated voxels at last step')
 
         self.last_step = 0
 
@@ -89,7 +94,6 @@ class Results:
             return
         self.last_step = stats.step
         self.steps.append(stats.step)
-        self.title.set_text('step = %d' % stats.step)
 
         beliefName = 'SMAP (noise std {})'.format(stats.noiseStd)
         self.errorEvolutionsBelief[beliefName] = stats.errorEvolutionBelief
@@ -275,20 +279,73 @@ class Results:
         # self.OutsideHybridConfidenceLogOdds.append(len(list(filter(lambda (e, std): abs(e) > self.mag*std, zip(stats.errorLogOdds, stats.stdBelief)))))
         # self.OutsideLogOddsConfidenceHybrid.append(0.1+len(list(filter(lambda (e, std): abs(e) > self.mag*std, zip(stats.errorBelief, stats.stdLogOdds)))))
 
-        # plt.sca(self.axisHybrid)
-        # plt.cla()
-        # plt.title("SMAP")
-        # plt.plot(errorHybrid)
-        # plt.plot(-stdVectorHybrid*self.mag, 'r')
-        # plt.plot(stdVectorHybrid*self.mag, 'r')
-        #
-        # plt.sca(self.axis_logOdds)
-        # plt.cla()
-        # plt.title("Log Odds")
-        # plt.plot(errorLogOdds)
-        # plt.plot(-stdVectorLogOdds*self.mag, 'r')
-        # plt.plot(stdVectorLogOdds*self.mag, 'r')
-        # plt.pause(1e-6)
+        ratioBelief = len(list(filter(
+            lambda (e, std): abs(e) > self.mag * std,
+            zip(stats.errorCompleteUpdatedBelief[-stats.updatedVoxels[-1]:],
+                stats.stdCompleteUpdatedBelief[-stats.updatedVoxels[-1]:])
+        ))) * 1. / stats.updatedVoxels[-1]
+        print(list(filter(
+            lambda (e, std): abs(e) > self.mag * std,
+            zip(stats.errorCompleteUpdatedBelief[-stats.updatedVoxels[-1]:],
+                stats.stdCompleteUpdatedBelief[-stats.updatedVoxels[-1]:])
+        )))
+        ratioLogOdds = len(list(filter(
+            lambda (e, std): abs(e) > self.mag * std,
+            zip(stats.errorCompleteUpdatedLogOdds[-stats.updatedVoxels[-1]:],
+                stats.stdCompleteUpdatedLogOdds[-stats.updatedVoxels[-1]:])
+        ))) * 1. / stats.updatedVoxels[-1]
+
+        stdLastBelief = np.array(stats.stdCompleteUpdatedBelief[-stats.updatedVoxels[-1]:])
+        stdLastLogOdds = np.array(stats.stdCompleteUpdatedLogOdds[-stats.updatedVoxels[-1]:])
+        plt.sca(self.axisLastHybrid)
+        plt.cla()
+        plt.title("SMAP")
+
+
+        plt.plot(stats.errorCompleteBelief[-stats.updatedVoxels[-1]:])
+        plt.plot(-stdLastBelief * self.mag, 'r')
+        plt.plot(stdLastBelief * self.mag, 'r')
+
+        plt.sca(self.axisLast_logOdds)
+        plt.cla()
+        plt.title("Log Odds")
+        plt.plot(stats.errorCompleteLogOdds[-stats.updatedVoxels[-1]:])
+        plt.plot(-stdLastLogOdds * self.mag, 'r')
+        plt.plot(stdLastLogOdds * self.mag, 'r')
+        plt.pause(1e-6)
+
+        ratioBelief = len(list(filter(
+            lambda (e, std): abs(e) > self.mag * std,
+            zip(stats.errorCompleteUpdatedBelief[:stats.updatedVoxels[0]],
+                stats.stdCompleteUpdatedBelief[:stats.updatedVoxels[0]])
+        ))) * 1. / stats.updatedVoxels[-1]
+        print(list(filter(
+            lambda (e, std): abs(e) > self.mag * std,
+            zip(stats.errorCompleteUpdatedBelief[:stats.updatedVoxels[0]],
+                stats.stdCompleteUpdatedBelief[:stats.updatedVoxels[0]])
+        )))
+        ratioLogOdds = len(list(filter(
+            lambda (e, std): abs(e) > self.mag * std,
+            zip(stats.errorCompleteUpdatedLogOdds[:stats.updatedVoxels[0]],
+                stats.stdCompleteUpdatedLogOdds[:stats.updatedVoxels[0]])
+        ))) * 1. / stats.updatedVoxels[-1]
+
+        stdLastBelief = np.array(stats.stdCompleteUpdatedBelief[:stats.updatedVoxels[0]])
+        stdLastLogOdds = np.array(stats.stdCompleteUpdatedLogOdds[:stats.updatedVoxels[0]])
+        plt.sca(self.axisHybrid)
+        plt.cla()
+        plt.title("SMAP")
+        plt.plot(stats.errorCompleteBelief[:stats.updatedVoxels[0]])
+        plt.plot(-stdLastBelief * self.mag, 'r')
+        plt.plot(stdLastBelief * self.mag, 'r')
+
+        plt.sca(self.axis_logOdds)
+        plt.cla()
+        plt.title("Log Odds")
+        plt.plot(stats.errorCompleteLogOdds[:stats.updatedVoxels[0]])
+        plt.plot(-stdLastLogOdds * self.mag, 'r')
+        plt.plot(stdLastLogOdds * self.mag, 'r')
+        plt.pause(1e-6)
 
         # plt.sca(self.axisSparseHybrid)
         # plt.cla()
