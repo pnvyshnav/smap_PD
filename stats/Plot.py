@@ -300,18 +300,39 @@ class Results:
         plt.sca(self.axisLastHybrid)
         plt.cla()
         plt.title("SMAP")
+        self.axisLastHybrid.set_xlim([0, stats.updatedVoxels[-1]])
 
 
-        plt.plot(stats.errorCompleteBelief[-stats.updatedVoxels[-1]:])
+        plt.plot(stats.errorCompleteUpdatedBelief[-stats.updatedVoxels[-1]:])
         plt.plot(-stdLastBelief * self.mag, 'r')
         plt.plot(stdLastBelief * self.mag, 'r')
+
+        # add scatter of inconsistencies
+        lb = np.array(-stdLastBelief * self.mag)
+        ub = np.array(stdLastBelief * self.mag)
+        err = np.array(stats.errorCompleteUpdatedBelief[-stats.updatedVoxels[-1]:])
+        inconsistencies = err[(err > ub) | (err < lb)]
+        indices = np.array(list(range(stats.updatedVoxels[-1])))
+        indices = indices[(err > ub) | (err < lb)]
+        plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
 
         plt.sca(self.axisLast_logOdds)
         plt.cla()
         plt.title("Log Odds")
-        plt.plot(stats.errorCompleteLogOdds[-stats.updatedVoxels[-1]:])
+        self.axisLast_logOdds.set_xlim([0, stats.updatedVoxels[-1]])
+        plt.plot(stats.errorCompleteUpdatedLogOdds[-stats.updatedVoxels[-1]:])
         plt.plot(-stdLastLogOdds * self.mag, 'r')
         plt.plot(stdLastLogOdds * self.mag, 'r')
+
+        # add scatter of inconsistencies
+        lb = np.array(-stdLastLogOdds * self.mag)
+        ub = np.array(stdLastLogOdds * self.mag)
+        err = np.array(stats.errorCompleteUpdatedLogOdds[-stats.updatedVoxels[-1]:])
+        inconsistencies = err[(err > ub) | (err < lb)]
+        indices = np.array(list(range(stats.updatedVoxels[-1])))
+        indices = indices[(err > ub) | (err < lb)]
+        plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
+
         plt.pause(1e-6)
 
         ratioBelief = len(list(filter(
@@ -332,19 +353,42 @@ class Results:
 
         stdLastBelief = np.array(stats.stdCompleteUpdatedBelief[:stats.updatedVoxels[0]])
         stdLastLogOdds = np.array(stats.stdCompleteUpdatedLogOdds[:stats.updatedVoxels[0]])
+
         plt.sca(self.axisHybrid)
         plt.cla()
         plt.title("SMAP")
-        plt.plot(stats.errorCompleteBelief[:stats.updatedVoxels[0]])
+        plt.plot(stats.errorCompleteUpdatedBelief[:stats.updatedVoxels[0]])
+        self.axisHybrid.set_xlim([0, stats.updatedVoxels[0]])
         plt.plot(-stdLastBelief * self.mag, 'r')
         plt.plot(stdLastBelief * self.mag, 'r')
+
+        # add scatter of inconsistencies
+        lb = np.array(-stdLastBelief * self.mag)
+        ub = np.array(stdLastBelief * self.mag)
+        err = np.array(stats.errorCompleteUpdatedBelief[:stats.updatedVoxels[0]])
+        inconsistencies = err[(err > ub) | (err < lb)]
+        indices = np.array(list(range(stats.updatedVoxels[0])))
+        indices = indices[(err > ub) | (err < lb)]
+        plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
+
 
         plt.sca(self.axis_logOdds)
         plt.cla()
         plt.title("Log Odds")
-        plt.plot(stats.errorCompleteLogOdds[:stats.updatedVoxels[0]])
+        plt.plot(stats.errorCompleteUpdatedLogOdds[:stats.updatedVoxels[0]])
+        self.axis_logOdds.set_xlim([0, stats.updatedVoxels[0]])
         plt.plot(-stdLastLogOdds * self.mag, 'r')
         plt.plot(stdLastLogOdds * self.mag, 'r')
+
+        # add scatter of inconsistencies
+        lb = np.array(-stdLastLogOdds * self.mag)
+        ub = np.array(stdLastLogOdds * self.mag)
+        err = np.array(stats.errorCompleteUpdatedLogOdds[:stats.updatedVoxels[0]])
+        inconsistencies = err[(err > ub) | (err < lb)]
+        indices = np.array(list(range(stats.updatedVoxels[0])))
+        indices = indices[(err > ub) | (err < lb)]
+        plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
+
         plt.pause(1e-6)
 
         # plt.sca(self.axisSparseHybrid)
