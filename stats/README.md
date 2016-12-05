@@ -56,10 +56,10 @@ was the error larger than 1, 2 and 3 standard deviations at every step?
 _This looks really bad for SMAP._ Almost all computed means deviate by more than one std deviation from the true occupancy.
 It must be noted that the belief std dev fits much closer (oftentimes too close) to the mean as compared to the Bernoulli std dev used at Log Odds.
 
-The following plot shows error (blue) and +/- 2 std devs (red) for all _updated_ voxels at the first step of the simulation:
+The following plot shows error (blue) and +/- 2 std devs (red) for all _updated_ voxels at the first step of the simulation, inconsistencies (error > 2 std dev) are marked green:
 ![Mean and Variance](./plots/inconsistencies_at_first_step.png)
 
-The following plot shows error (blue) and +/- 2 std devs (red) for all _updated_ voxels at the last step of the simulation:
+The following plot shows error (blue) and +/- 2 std devs (red) for all _updated_ voxels at the last step of the simulation, inconsistencies (error > 2 std dev) are marked green:
 ![Mean and Variance](./plots/inconsistencies_at_last_step.png)
 
 I also tried to first round the error of each voxel before testing whether the deviation exceeds one standard deviation.
