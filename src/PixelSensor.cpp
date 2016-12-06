@@ -58,15 +58,17 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
             }
             // TODO avoid sensing a hole by returning last position
             // TODO but only if it is at distance == Parameters::sensorRange
-            if (!positions.empty() && positions.back().distance(position()) >= Parameters::sensorRange-2*Parameters::voxelSize)
-            {
-                QTrueVoxel voxel = trueMap.query(positions.back());
-                return _observationGivenCause(voxel);
-            }
+//            if (!positions.empty() && positions.back().distance(position()) >= Parameters::sensorRange-2*Parameters::voxelSize)
+//            {
+//                QTrueVoxel voxel = trueMap.query(positions.back());
+//                return _observationGivenCause(voxel);
+//            }
         }
     }
 
+#ifdef LOG_DETAILS
     ROS_WARN_STREAM("Sensor " << _position << " -> " << _orientation << " observed a hole.");
+#endif
     return Measurement::hole(std::make_shared<Sensor>(*this));
 }
 

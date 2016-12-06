@@ -172,7 +172,7 @@ add_executable(smap src/main.cpp
         include/TruncatedGaussianDistribution.hpp
         include/TrueMap.h
         src/TrueMap.cpp
-        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp src/Visualizer.cpp include/Visualizer.h include/Observable.hpp src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp include/LogOddsMap.h src/Statistics.cpp include/Statistics.h)
+        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp src/Visualizer.cpp include/Visualizer.h include/Observable.hpp src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp include/LogOddsMap.h src/Statistics.cpp include/Statistics.h tinyspline/tinyspline.c tinyspline/tinysplinecpp.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

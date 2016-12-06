@@ -40,7 +40,7 @@ Visualization Manager:
       Cell Size: 0.1
       Class: rviz/Grid
       Color: 160; 160; 164
-      Enabled: false
+      Enabled: true
       Line Style:
         Line Width: 0.03
         Value: Lines
@@ -53,7 +53,7 @@ Visualization Manager:
       Plane: XY
       Plane Cell Count: 20
       Reference Frame: <Fixed Frame>
-      Value: false
+      Value: true
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /belief_map
@@ -86,13 +86,13 @@ Visualization Manager:
       Queue Size: 0
       Value: true
     - Class: rviz/MarkerArray
-      Enabled: false
+      Enabled: true
       Marker Topic: /true_map
       Name: MarkerArray
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
-      Value: false
+      Value: true
     - Class: rviz/MarkerArray
       Enabled: false
       Marker Topic: /logodds_map
@@ -132,23 +132,20 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz/Orbit
-      Distance: 5.45715
+      Angle: 0
+      Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Focal Point:
-        X: 0.0616596
-        Y: -0.0220182
-        Z: 0
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.729797
+      Scale: 347.38
       Target Frame: <Fixed Frame>
-      Value: Orbit (rviz)
-      Yaw: 5.52818
+      Value: TopDownOrtho (rviz)
+      X: 0
+      Y: 0
     Saved: ~
 Window Geometry:
   Displays:
@@ -166,5 +163,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1855
-  X: 25
+  X: 15
   Y: 14

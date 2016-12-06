@@ -177,7 +177,9 @@ bool BeliefMap::update(const Observation &observation, const TrueMap &trueMap)
     }
     else
     {
-        //ROS_INFO("ICM Computation succeeded for all %i measurements.", (int)observation.measurements().size());
+#ifdef LOG_DETALS
+        ROS_INFO("ICM Computation succeeded for all %i measurements.", (int)observation.measurements().size());
+#endif
     }
     updateSubscribers();
 

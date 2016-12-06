@@ -16,6 +16,46 @@ TrueMap TrueMap::generate(unsigned int seed)
     srand(seed);
     TrueMap map;
     octomap::point3d center(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter);
+
+#ifdef PLANNER_2D_TEST
+    struct Rectangle
+    {
+        double x1, x2;
+        double y1, y2;
+
+        Rectangle(double _x1, double _y1, double _x2, double _y2)
+                : x1(_x1), x2(_x2), y1(_y1), y2(_y2)
+        {}
+
+        bool contains(double x, double y)
+        {
+            return x >= x1 && x <= x2 && y >= y1 && y <= y2;
+        }
+    };
+
+    std::vector<Rectangle> obstacles = std::vector<Rectangle> {
+            Rectangle(-1, -1, -0.2, 0.2)
+    };
+
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(
+                        Parameters::xMin + x * Parameters::voxelSize,
+                        Parameters::yMin + y * Parameters::voxelSize,
+                        Parameters::zMin + z * Parameters::voxelSize);
+
+                for (auto &obstacle: obstacles)
+                {
+                    map.updateNode(point, obstacle.contains(point.x(), point.y()));
+                }
+            }
+        }
+    }
+#else
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
     {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
@@ -39,6 +79,7 @@ TrueMap TrueMap::generate(unsigned int seed)
             }
         }
     }
+#endif
 
     map.updateSubscribers();
 

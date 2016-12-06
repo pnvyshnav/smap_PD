@@ -24,7 +24,7 @@ public:
     void publishStereoCameraSensor(const Observable *visualizable);
     void publishRay(TrueMap &trueMap, Sensor &sensor);
 
-    static const int PaintRate = 100;
+    static const int PaintRate = 200;
 
 private:
     ros::NodeHandle *nodeHandle;

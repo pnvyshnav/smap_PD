@@ -14,9 +14,9 @@ TrueMap trueMap = TrueMap::generate(123); // TODO leave out seed value
 BeliefMap beliefMap;
 LogOddsMap logOddsMap;
 FakeRobot<> robot(
-        Parameters::Vec3Type(Parameters::voxelSize/2.f,
-                             Parameters::voxelSize/2.f,
-                             0),
+        Parameters::Vec3Type(Parameters::xCenter,
+                             Parameters::yCenter,
+                             Parameters::zCenter),
 #if defined(FAKE_2D)
         Parameters::Vec3Type(1, 0, 0),
 #else
@@ -24,14 +24,13 @@ FakeRobot<> robot(
 #endif
         trueMap);
 
+
 std::vector<double> logOddsErrors, beliefErrors;
 Statistics *stats;
 
-void saveErrors(const char string[18], std::vector<double> vector);
-
 void handleObservation(const Observation &observation)
 {
-    //trueMap.publish();
+    trueMap.publish();
     beliefMap.update(observation, trueMap);
     logOddsMap.update(observation, trueMap);
 
@@ -65,9 +64,11 @@ int main(int argc, char **argv)
     //trueMap.writeBinary("simple_tree.bt");
 
     Visualizer *visualizer = new Visualizer;
-    //trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
-    //beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMap, visualizer, std::placeholders::_1));
+    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
+    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
     logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMap, visualizer, std::placeholders::_1));
+
+    trueMap.publish();
 
 #if defined(FAKE_2D)
     trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
@@ -86,7 +87,8 @@ int main(int argc, char **argv)
 #endif
 
     //stats->update(logOddsMap, beliefMap, robot);
-    stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/stats.bag");
+    // TODO reactivate
+    //stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/stats.bag");
 
     saveErrors((std::string)"belief_errors.txt", beliefErrors);
     saveErrors((std::string)"logOdds_errors.txt", logOddsErrors);

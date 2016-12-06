@@ -4,8 +4,9 @@
 
 #include <octomap/OcTree.h>
 
-//#define FAKE_2D
-#define FAKE_3D
+#define FAKE_2D
+#define PLANNER_2D_TEST
+//#define FAKE_3D
 
 class Parameters
 {
@@ -84,6 +85,12 @@ public:
     static constexpr NumType sensorRange = (const NumType) 9;
     static constexpr NumType sensorNoiseStd = (const NumType) (sensorRange / 200.); // TODO has great effect on confidence
 #endif
+
+#if defined(PLANNER_2D_TEST)
+    static const unsigned int StereoCameraHorizontalPixels = 80;
+    static constexpr double StereoCameraHorizontalFOV = 120. * M_PI / 180.;
+#endif
+
     static constexpr NumType xCenter = (const NumType) ((xMax + xMin) / 2.0);
     static constexpr NumType yCenter = (const NumType) ((yMax + yMin) / 2.0);
     static constexpr NumType zCenter = (const NumType) ((zMax + zMin) / 2.0);
