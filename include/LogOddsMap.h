@@ -23,6 +23,8 @@ public:
     std::vector<double> error(const TrueMap &trueMap) const;
     std::vector<double> errorLastUpdated(const TrueMap &trueMap) const;
 
+    void reset();
+
 private:
     struct InverseSensorModel
     {

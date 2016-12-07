@@ -170,3 +170,24 @@ std::vector<double> LogOddsMap::errorLastUpdated(const TrueMap &trueMap) const
     }
     return err;
 }
+
+void LogOddsMap::reset()
+{
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point((float) (Parameters::xMin + x * Parameters::voxelSize),
+                                       (float) (Parameters::yMin + y * Parameters::voxelSize),
+                                       (float) (Parameters::zMin + z * Parameters::voxelSize));
+                auto voxel = search(point);
+                if (voxel == NULL)
+                    continue;
+                voxel->setValue((float) Parameters::priorMean);
+            }
+        }
+    }
+    publish();
+}

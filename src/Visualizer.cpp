@@ -5,6 +5,7 @@
 #include "../include/LogOddsMap.h"
 #include "../include/Parameters.hpp"
 #include "../include/StereoCameraSensor.h"
+#include "../include/FakeRobot.hpp"
 
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -36,6 +37,7 @@ Visualizer::Visualizer()
     sensorPublisher = nodeHandle->advertise<visualization_msgs::Marker>("sensor", 10);
     stereoCameraSensorPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("stereo_cam", 10);
     rayVoxelPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("ray_voxels", 10);
+    splinePublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("trajectories", 10);
 }
 
 Visualizer::~Visualizer()
@@ -466,4 +468,77 @@ void Visualizer::publishRay(TrueMap &trueMap, Sensor &sensor)
         if (step > 10)
             break;
     }
+}
+
+void Visualizer::publishFakeRobot(const Observable *visualizable)
+{
+    auto robot = (FakeRobot<>*) visualizable;
+    ros::Rate loop_rate(PaintRate);
+
+    loop_rate.sleep();
+    visualization_msgs::MarkerArray markers;
+
+    auto colors = std::vector<std::vector<double> > {
+        {0.0, 0.6, 0.3},
+        {0.7, 0.6, 0.0},
+        {0.1, 0.4, 0.7}
+    };
+
+    int counter = 0;
+    for (auto &spline : robot->splines())
+    {
+        visualization_msgs::Marker marker;
+        marker.action = 0;
+        marker.id = (int) visualizable->observableId() + counter++;
+        unsigned int color = (unsigned int) (counter % colors.size());
+        marker.type = visualization_msgs::Marker::LINE_STRIP;
+        marker.header.frame_id = "map";
+        marker.scale.x = 0.01;
+        marker.scale.y = 0.01;
+        marker.scale.z = 0.01;
+        marker.color.a = 1;
+        marker.color.r = (float)colors[color][0];
+        marker.color.g = (float)colors[color][1];
+        marker.color.b = (float)colors[color][2];
+        for (double x = 0; x <= 1.01; x += 0.015)
+        {
+            std::vector<float> result = spline.evaluate(std::min(1.0, x)).result();
+            geometry_msgs::Point p;
+            p.x = result[0];
+            p.y = result[1];
+            p.z = 0.5;
+            marker.points.push_back(p);
+        }
+        markers.markers.push_back(marker);
+
+        visualization_msgs::Marker wayPoints;
+        wayPoints.action = 0;
+        wayPoints.id = (int) visualizable->observableId() + counter++;
+        wayPoints.type = visualization_msgs::Marker::POINTS;
+        wayPoints.header.frame_id = "map";
+        wayPoints.scale.x = 0.02;
+        wayPoints.scale.y = 0.02;
+        wayPoints.scale.z = 0.02;
+        wayPoints.color.a = 1;
+        wayPoints.color.r = (float)colors[color][0];
+        wayPoints.color.g = (float)colors[color][1];
+        wayPoints.color.b = (float)colors[color][2];
+        double maxRad = Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity;
+        unsigned int step = 0;
+        for (auto rad = 0.; step <= Parameters::FakeRobotNumSteps; rad += Parameters::FakeRobotAngularVelocity, ++step)
+        {
+            float overallProgress = (float) (rad / maxRad);
+            std::vector<float> result = spline.evaluate(overallProgress).result();
+            geometry_msgs::Point p;
+            p.x = result[0];
+            p.y = result[1];
+            p.z = 0.51;
+            wayPoints.points.push_back(p);
+        }
+        markers.markers.push_back(wayPoints);
+    }
+
+    splinePublisher.publish(markers);
+
+    ros::spinOnce();
 }

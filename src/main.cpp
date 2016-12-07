@@ -31,6 +31,7 @@ Statistics *stats;
 void handleObservation(const Observation &observation)
 {
     trueMap.publish();
+    robot.publish();
     beliefMap.update(observation, trueMap);
     logOddsMap.update(observation, trueMap);
 
@@ -67,6 +68,7 @@ int main(int argc, char **argv)
     trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
     beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
     logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMap, visualizer, std::placeholders::_1));
+    robot.subscribe(std::bind(&Visualizer::publishFakeRobot, visualizer, std::placeholders::_1));
 
     trueMap.publish();
 
@@ -74,7 +76,17 @@ int main(int argc, char **argv)
     trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
     robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
     robot.registerObserver(&handleObservation);
-    robot.run();
+    #if defined(PLANNER_2D_TEST)
+        for (unsigned int splineId = 0; splineId < 3; splineId++)
+        {
+            beliefMap.reset();
+            logOddsMap.reset();
+            robot.selectSpline(splineId);
+            robot.run();
+        }
+    #else
+        robot.run();
+    #endif
 #elif defined(FAKE_3D)
     trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
     robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));

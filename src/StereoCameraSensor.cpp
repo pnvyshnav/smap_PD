@@ -65,11 +65,10 @@ Parameters::NumType StereoCameraSensor::likelihoodGivenCause(Measurement measure
 
 void StereoCameraSensor::setPosition(const Parameters::Vec3Type &position)
 {
-    auto diff = this->position() - position;
     Sensor::setPosition(position);
     for (auto &pixel : _pixelSensors)
     {
-        pixel._position += diff;
+        pixel._position = position;
     }
 }
 

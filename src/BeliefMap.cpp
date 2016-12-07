@@ -313,3 +313,22 @@ BeliefVoxel *BeliefMap::_createNodeChild(BeliefVoxel *node, unsigned int childId
 
     return node->getChild(childIdx);
 }
+
+void BeliefMap::reset()
+{
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
+                                       Parameters::yMin + y * Parameters::voxelSize,
+                                       Parameters::zMin + z * Parameters::voxelSize);
+                auto voxel = search(point);
+                voxel->getValue()->reset();
+            }
+        }
+    }
+    publish();
+}

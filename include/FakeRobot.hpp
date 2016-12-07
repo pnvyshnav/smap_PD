@@ -19,7 +19,7 @@
  * Provided SENSOR template has to behave like {@see Sensor}.
  */
 template <class SENSOR = StereoCameraSensor>
-class FakeRobot : public Robot
+class FakeRobot : public Robot, public Observable
 {
 public:
     FakeRobot(Parameters::Vec3Type position,
@@ -27,28 +27,54 @@ public:
           TrueMap &trueMap)
             : _position(position), _orientation(orientation),
               _sensor(position, orientation),
-              _trueMap(trueMap)
+              _trueMap(trueMap),
+              _splineId(0)
     {
-        ts::BSpline spline(3, 2, 7, TS_CLAMPED);
+        // Trajectories to evaluate
+        ts::BSpline spline1(1, 2, 3, TS_CLAMPED);
+        std::vector<float> ctrlp1 = spline1.ctrlp();
+        ctrlp1[0]  =  0.0f;
+        ctrlp1[1]  = -0.9f;
 
-        std::vector<float> ctrlp = spline.ctrlp();
-        ctrlp[0]  = -0.05f; // x0
-        ctrlp[1]  =  0.9f;  // y0
-        ctrlp[2]  = -0.5f;  // x1
-        ctrlp[3]  = -0.5f;  // y1
-        ctrlp[4]  = -0.5f;  // x2
-        ctrlp[5]  =  0.0f;  // y2
-        ctrlp[6]  = -0.25f; // x3
-        ctrlp[7]  =  0.5f;  // y3
-        ctrlp[8]  = -0.75f; // x4
-        ctrlp[9]  =  0.75f; // y4
-        ctrlp[10] =  0.0f;  // x5
-        ctrlp[11] =  0.5f;  // y5
-        ctrlp[12] =  0.5f;  // x6
-        ctrlp[13] =  0.0f;  // y6
-        spline.setCtrlp(ctrlp);
+        ctrlp1[2]  =  0.0f;
+        ctrlp1[3]  =  0.0f;
 
-        _splines.push_back(spline);
+        ctrlp1[4]  = -0.9f;
+        ctrlp1[5]  =  0.0f;
+        spline1.setCtrlp(ctrlp1);
+        _splines.push_back(spline1);
+
+        ts::BSpline spline2(2, 2, 4, TS_CLAMPED);
+        std::vector<float> ctrlp2 = spline2.ctrlp();
+        ctrlp2[0]  =  0.0f;
+        ctrlp2[1]  = -0.9f;
+
+        ctrlp2[2]  =  0.5f;
+        ctrlp2[3]  = -0.1f;
+
+        ctrlp2[4]  =  0.0f;
+        ctrlp2[5]  =  0.0f;
+
+        ctrlp2[6]  = -0.9f;
+        ctrlp2[7]  =  0.0f;
+        spline2.setCtrlp(ctrlp2);
+        _splines.push_back(spline2);
+
+        ts::BSpline spline3(2, 2, 4, TS_CLAMPED);
+        std::vector<float> ctrlp3 = spline3.ctrlp();
+        ctrlp3[0]  =  0.0f;
+        ctrlp3[1]  = -0.9f;
+
+        ctrlp3[2]  =  0.0f;
+        ctrlp3[3]  =  0.4f;
+
+        ctrlp3[4]  =  0.4f;
+        ctrlp3[5]  =  0.0f;
+
+        ctrlp3[6]  = -0.9f;
+        ctrlp3[7]  =  0.0f;
+        spline3.setCtrlp(ctrlp3);
+        _splines.push_back(spline3);
     }
 
     Parameters::Vec3Type position() const
@@ -91,18 +117,19 @@ public:
         ecl::StopWatch stopWatch;
 
         std::vector<Parameters::Vec3Type> positions = std::vector<Parameters::Vec3Type> {
-                Parameters::Vec3Type(0.05, 0.95, 0.05),
-                Parameters::Vec3Type(-0.25, 0.05, 0.05),
-                Parameters::Vec3Type(-0.35, -.25, 0.05)
+                Parameters::Vec3Type( 0.05,  0.95, 0.05),
+                Parameters::Vec3Type(-0.25,  0.05, 0.05),
+                Parameters::Vec3Type(-0.95, -0.25, 0.05)
         };
+        double maxRad = Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity;
         for (auto rad = 0.;
-             !_stopRequested && _step < Parameters::FakeRobotNumSteps;
+             !_stopRequested && _step <= Parameters::FakeRobotNumSteps;
              rad += Parameters::FakeRobotAngularVelocity, ++_step)
         {
 #ifdef FAKE_2D
     #ifdef PLANNER_2D_TEST
-            auto spline = _splines[0];
-            float overallProgress = rad / (Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity);
+            auto spline = _splines[_splineId];
+            float overallProgress = rad / maxRad;
             std::vector<float> result = spline.evaluate(overallProgress).result();
             setPosition(Parameters::Vec3Type(result[0], result[1], 0.05));
 
@@ -118,11 +145,11 @@ public:
 //            double angle = std::atan2(next.x()-positions[pos].x(), next.y()-positions[pos].y()) + M_PI_4;
 //            setOrientation(Parameters::Vec3Type(-std::cos(angle), -std::sin(angle), 0));
 
-            float miniStep = 0.5f / (Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity);
+            float miniStep = 0.5f / maxRad;
             auto next = spline.evaluate(std::min(1.0f, overallProgress+miniStep)).result();
             auto prev = spline.evaluate(std::max(0.0f, overallProgress-miniStep)).result();
             double angle = std::atan2(next[0] - prev[0], next[1] - prev[1]);
-            setOrientation(Parameters::Vec3Type(-std::sin(angle), -std::cos(angle), 0));
+            setOrientation(Parameters::Vec3Type(std::sin(angle), std::cos(angle), 0));
     #else
             setOrientation(Parameters::Vec3Type(std::cos(rad), std::sin(rad), 0));
     #endif
@@ -168,6 +195,11 @@ public:
         return _splines;
     }
 
+    void selectSpline(unsigned int splineId)
+    {
+        _splineId = splineId;
+    }
+
 private:
     Parameters::Vec3Type _position;
     Parameters::Vec3Type _orientation;
@@ -176,4 +208,5 @@ private:
     bool _stopRequested;
     unsigned int _step;
     std::vector<ts::BSpline> _splines;
+    unsigned int _splineId;
 };

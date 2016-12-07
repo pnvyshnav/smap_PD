@@ -2,6 +2,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sys, rospy, rosbag
+
+import scipy
+import scipy.stats
+from scipy.stats import pearsonr
+
 from smap.msg import smapStats
 
 import matplotlib.cm as cm
@@ -33,10 +38,8 @@ class Results:
         self.axisErrorStdDiff2 = self.fig_errorStdDiff.add_subplot(312)
         self.axisErrorStdDiff3 = self.fig_errorStdDiff.add_subplot(313)
 
-        self.fig_inconsistencies = plt.figure('Errors Outside Std Interval')
-        self.axisInconsistencies1 = self.fig_inconsistencies.add_subplot(311)
-        self.axisInconsistencies2 = self.fig_inconsistencies.add_subplot(312)
-        self.axisInconsistencies3 = self.fig_inconsistencies.add_subplot(313)
+        self.fig_inconsistencies = plt.figure('Correlation of Error and Variance')
+        self.axisCorrelation = self.fig_inconsistencies.add_subplot(111)
 
         self.fig_roundedInconsistencies = plt.figure('Rounded Errors Outside Std Interval')
         self.axisRoundedInconsistencies = self.fig_roundedInconsistencies.add_subplot(111)
@@ -124,74 +127,27 @@ class Results:
         plt.legend(loc='upper right', bbox_to_anchor=(1, .5),
                    ncol=1, fancybox=True, shadow=True).draggable()
 
-        plt.sca(self.axisInconsistencies1)
+        plt.sca(self.axisCorrelation)
         plt.cla()
-        plt.title("Inconsistencies Error to 1 Std Deviation")
-        inconsistentBelief = []
-        inconsistentLogOdds = []
+        plt.title("Pearson Correlation Coefficient between Absolute Error and Mapping Variance")
+        pccBelief = []
+        pccLogOdds = []
         start = 0
         for step in range(stats.step):
-            inconsistentBelief.append(len(list(filter(
-                lambda (e, std): abs(e) > std,
-                zip(stats.errorCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]],
-                    stats.stdCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]])
-            ))) * 1. / stats.updatedVoxels[step])
-            inconsistentLogOdds.append(len(list(filter(
-                lambda (e, std): abs(e) > std,
-                zip(stats.errorCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]],
-                    stats.stdCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]])
-            ))) * 1. / stats.updatedVoxels[step])
+            pcc, p = pearsonr(
+                np.abs(stats.errorCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]]),
+                stats.stdCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]])
+            pccBelief.append(pcc)
+            pcc, p = pearsonr(
+                np.abs(stats.errorCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]]),
+                stats.stdCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]])
+            pccLogOdds.append(pcc)
             start += stats.updatedVoxels[step]
-        plt.plot(inconsistentBelief, label=beliefName)
-        plt.plot(inconsistentLogOdds, label=logOddsName)
+        plt.plot(pccBelief, label=beliefName)
+        plt.plot(pccLogOdds, label=logOddsName)
         plt.legend(loc='upper right', bbox_to_anchor=(1, .5),
                    ncol=1, fancybox=True, shadow=True).draggable()
 
-        plt.sca(self.axisInconsistencies2)
-        plt.cla()
-        plt.title("Inconsistencies Error to 2 Std Deviations")
-        inconsistentBelief = []
-        inconsistentLogOdds = []
-        start = 0
-        for step in range(stats.step):
-            inconsistentBelief.append(len(list(filter(
-                lambda (e, std): abs(e) > 2. * std,
-                zip(stats.errorCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]],
-                    stats.stdCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]])
-            ))) * 1. / stats.updatedVoxels[step])
-            inconsistentLogOdds.append(len(list(filter(
-                lambda (e, std): abs(e) > 2. * std,
-                zip(stats.errorCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]],
-                    stats.stdCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]])
-            ))) * 1. / stats.updatedVoxels[step])
-            start += stats.updatedVoxels[step]
-        plt.plot(inconsistentBelief, label=beliefName)
-        plt.plot(inconsistentLogOdds, label=logOddsName)
-        plt.legend(loc='upper right', bbox_to_anchor=(1, .5),
-                   ncol=1, fancybox=True, shadow=True).draggable()
-
-        plt.sca(self.axisInconsistencies3)
-        plt.cla()
-        plt.title("Inconsistencies Error to 3 Std Deviations")
-        inconsistentBelief = []
-        inconsistentLogOdds = []
-        start = 0
-        for step in range(stats.step):
-            inconsistentBelief.append(len(list(filter(
-                lambda (e, std): abs(e) > 3. * std,
-                zip(stats.errorCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]],
-                    stats.stdCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]])
-            ))) * 1. / stats.updatedVoxels[step])
-            inconsistentLogOdds.append(len(list(filter(
-                lambda (e, std): abs(e) > 3. * std,
-                zip(stats.errorCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]],
-                    stats.stdCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]])
-            ))) * 1. / stats.updatedVoxels[step])
-            start += stats.updatedVoxels[step]
-        plt.plot(inconsistentBelief, label=beliefName)
-        plt.plot(inconsistentLogOdds, label=logOddsName)
-        plt.legend(loc='upper right', bbox_to_anchor=(1, .5),
-                   ncol=1, fancybox=True, shadow=True).draggable()
 
         plt.sca(self.axisErrorStdDiff1)
         plt.cla()
@@ -395,7 +351,7 @@ class Results:
         # plt.cla()
         # plt.title("SMAP")
         # plt.plot(errorHybrid[::100])
-        # plt.plot(-stdVectorHybrid[::100] * self.mag, 'r')
+        # plt.plot(-stdVectorHybrid[::100] * self.mag, 'r')pyt
         # plt.plot(stdVectorHybrid[::100] * self.mag, 'r')
         #
         # plt.sca(self.axisSparseLogOdds)
@@ -499,7 +455,7 @@ class Results:
                 # print error
                 bin_number = int(round(bins * (1 - (error - miny) / (maxy - miny))))
                 if 0 <= bin_number < bins:
-                    b[bin_number] += 1  # TODO bin number incorrect?
+                    b[bin_number] += 1
                     # if bin_number != 50:
                     #     print bin_number
                 sum += error

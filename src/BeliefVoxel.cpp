@@ -19,8 +19,6 @@ Belief::Particles generateParticles()
 
 Belief::Particles particles = generateParticles();
 
-unsigned int Belief::_updateCounter = 0;
-
 Belief::Belief() : _recomputeMean(true), _recomputeVariance(true)
 {
     if (particles.size() == 0)
@@ -91,8 +89,6 @@ bool Belief::isBeliefValid() const
 
 void Belief::updateBelief(Parameters::NumType a, Parameters::NumType b)
 {
-    ++_updateCounter;
-    //_lastCoeff =
     const std::valarray<Parameters::NumType> new_pdf = (a * particles + b) * pdf;
 
     // normalize
@@ -120,4 +116,14 @@ const std::string Belief::str() const
     for (auto &p : pdf)
         ss << p << " ";
     return ss.str();
+}
+
+void Belief::reset()
+{
+    double n = Parameters::numParticles;
+    double a = 6. * (1. - n - 2*Parameters::priorMean + 2*n*Parameters::priorMean)/(n * (1 + n));
+    double b = (-2. * (1. - 2. * n - 3*Parameters::priorMean + 3*n*Parameters::priorMean))/(n * (1 + n));
+    pdf = b + a * particles;
+    _recomputeMean = true;
+    _recomputeVariance = true;
 }

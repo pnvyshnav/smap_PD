@@ -47,6 +47,8 @@ public:
     std::vector<double> error(const TrueMap &trueMap) const;
     std::vector<double> errorLastUpdated(const TrueMap &trueMap) const;
 
+    void reset();
+
 private:
     BeliefVoxel *_updateNodeRecurs(BeliefVoxel* node, bool node_just_created,
                                    const octomap::OcTreeKey& key,

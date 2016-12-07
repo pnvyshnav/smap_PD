@@ -24,7 +24,7 @@ public:
     // Fake sensor measurements
     //
     static const bool deterministicSensorMeasurements = false;
-    static const unsigned int FakeRobotNumSteps = 1600;
+    static const unsigned int FakeRobotNumSteps = 16;
 
     //
     // Real sensor measurements
@@ -43,10 +43,10 @@ public:
     static constexpr NumType freeRadiusAroundCenter = 4 * voxelSize;
 
     static const bool sensorTruncatedGaussianNoise = false;
-    static constexpr NumType sensorRange = (const NumType) 0.9;
+    static constexpr NumType sensorRange = (const NumType) 0.3;
     static constexpr NumType sensorNoiseStd = (const NumType) (sensorRange / 20.);
 
-    static constexpr double FakeRobotAngularVelocity = 1. * M_PI / 180.;
+    static constexpr double FakeRobotAngularVelocity = 10. * M_PI / 180.;
 #elif defined(FAKE_3D)
     static constexpr NumType voxelSize = 0.125;
     static constexpr NumType xMin = (const NumType) (-2. + voxelSize * 0.5);

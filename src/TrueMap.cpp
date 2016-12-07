@@ -15,7 +15,6 @@ TrueMap TrueMap::generate(unsigned int seed)
 {
     srand(seed);
     TrueMap map;
-    octomap::point3d center(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter);
 
 #ifdef PLANNER_2D_TEST
     struct Rectangle
@@ -34,7 +33,8 @@ TrueMap TrueMap::generate(unsigned int seed)
     };
 
     std::vector<Rectangle> obstacles = std::vector<Rectangle> {
-            Rectangle(-1, -1, -0.2, 0.2)
+            Rectangle(-1.0, -1.0, -0.1, -0.1),
+            Rectangle(-1.0,  0.1, -0.1,  1.0)
     };
 
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
@@ -44,9 +44,9 @@ TrueMap TrueMap::generate(unsigned int seed)
             for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
             {
                 octomap::point3d point(
-                        Parameters::xMin + x * Parameters::voxelSize,
-                        Parameters::yMin + y * Parameters::voxelSize,
-                        Parameters::zMin + z * Parameters::voxelSize);
+                        (float) (Parameters::xMin + x * Parameters::voxelSize),
+                        (float) (Parameters::yMin + y * Parameters::voxelSize),
+                        (float) (Parameters::zMin + z * Parameters::voxelSize));
 
                 for (auto &obstacle: obstacles)
                 {
