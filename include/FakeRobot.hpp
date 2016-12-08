@@ -12,6 +12,7 @@
 #include "Observation.hpp"
 #include "TrueMap.h"
 #include "Robot.hpp"
+#include "LogOddsMap.h"
 
 
 /**
@@ -193,6 +194,26 @@ public:
     std::vector<ts::BSpline> splines() const
     {
         return _splines;
+    }
+
+    unsigned int selectedSpline() const
+    {
+        return _splineId;
+    }
+
+    /**
+     * Computes the reachability of the current active trajectory at the current step.
+     * @return Reachability of voxels along the current trajectory.
+     */
+    double currentReachability(LogOddsMap &map) const
+    {
+        unsigned int step = 0;
+        double maxRad = Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity;
+        for (auto rad = 0.; step <= Parameters::FakeRobotNumSteps;
+             rad += Parameters::FakeRobotAngularVelocity, ++step)
+        {
+
+        }
     }
 
     void selectSpline(unsigned int splineId)

@@ -4,9 +4,9 @@
 
 #include <octomap/OcTree.h>
 
-#define FAKE_2D
-#define PLANNER_2D_TEST
-//#define FAKE_3D
+//#define FAKE_2D
+//#define PLANNER_2D_TEST
+#define FAKE_3D
 
 class Parameters
 {
@@ -24,7 +24,7 @@ public:
     // Fake sensor measurements
     //
     static const bool deterministicSensorMeasurements = false;
-    static const unsigned int FakeRobotNumSteps = 16;
+    static const unsigned int FakeRobotNumSteps = 13000;
 
     //
     // Real sensor measurements
@@ -43,10 +43,10 @@ public:
     static constexpr NumType freeRadiusAroundCenter = 4 * voxelSize;
 
     static const bool sensorTruncatedGaussianNoise = false;
-    static constexpr NumType sensorRange = (const NumType) 0.3;
+    static constexpr NumType sensorRange = (const NumType) 0.9;
     static constexpr NumType sensorNoiseStd = (const NumType) (sensorRange / 20.);
 
-    static constexpr double FakeRobotAngularVelocity = 10. * M_PI / 180.;
+    static constexpr double FakeRobotAngularVelocity = 1. * M_PI / 180.;
 #elif defined(FAKE_3D)
     static constexpr NumType voxelSize = 0.125;
     static constexpr NumType xMin = (const NumType) (-2. + voxelSize * 0.5);
@@ -87,8 +87,8 @@ public:
 #endif
 
 #if defined(PLANNER_2D_TEST)
-    static const unsigned int StereoCameraHorizontalPixels = 80;
-    static constexpr double StereoCameraHorizontalFOV = 120. * M_PI / 180.;
+    static const unsigned int StereoCameraHorizontalPixels = 8;
+    static constexpr double StereoCameraHorizontalFOV = 40. * M_PI / 180.;
 #endif
 
     static constexpr NumType xCenter = (const NumType) ((xMax + xMin) / 2.0);

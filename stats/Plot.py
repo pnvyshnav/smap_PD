@@ -25,13 +25,13 @@ class Results:
         self.lastStepFig = plt.figure('Inconsistencies at last step')
         self.axisLastHybrid = self.lastStepFig.add_subplot(211)
         self.axisLast_logOdds = self.lastStepFig.add_subplot(212)
+        self.lastStepCorrectedFig = plt.figure('Corrected Inconsistencies at last step')
+        self.axisLastCorrectedHybrid = self.lastStepCorrectedFig.add_subplot(211)
+        self.axisLastCorrected_logOdds = self.lastStepCorrectedFig.add_subplot(212)
         self.fig_fullError = plt.figure('Mean Absolute Error (MAE) Evolution over all Voxels')
         self.axis_fullError = self.fig_fullError.add_subplot(111)
         box = self.axis_fullError.get_position()
         self.axis_fullError.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        self.fig_zoomedInconsistency = plt.figure('zoomedOnInconsistencies')
-        self.axisHybridLargeErrors = self.fig_zoomedInconsistency.add_subplot(211)
-        self.axisLogoddsLargeErrors = self.fig_zoomedInconsistency.add_subplot(212)
 
         self.fig_errorStdDiff = plt.figure('Difference from Error to Std')
         self.axisErrorStdDiff1 = self.fig_errorStdDiff.add_subplot(311)
@@ -43,13 +43,6 @@ class Results:
 
         self.fig_roundedInconsistencies = plt.figure('Rounded Errors Outside Std Interval')
         self.axisRoundedInconsistencies = self.fig_roundedInconsistencies.add_subplot(111)
-
-        self.fig_sparse = plt.figure('Sparse Inconsistencies')
-        self.axisSparseHybrid = self.fig_sparse.add_subplot(211)
-        self.axisSparseLogOdds = self.fig_sparse.add_subplot(212)
-
-        self.fig_outside = plt.figure('Deviations > 2 Stddev')
-        self.axis_outside = self.fig_outside.add_subplot(111)
 
         self.fig_histogram = plt.figure('Error Histogram Evolution')
         self.axisHistogramHybrid = self.fig_histogram.add_subplot(121)
@@ -264,13 +257,13 @@ class Results:
         plt.plot(stdLastBelief * self.mag, 'r')
 
         # add scatter of inconsistencies
-        lb = np.array(-stdLastBelief * self.mag)
-        ub = np.array(stdLastBelief * self.mag)
-        err = np.array(stats.errorCompleteUpdatedBelief[-stats.updatedVoxels[-1]:])
-        inconsistencies = err[(err > ub) | (err < lb)]
-        indices = np.array(list(range(stats.updatedVoxels[-1])))
-        indices = indices[(err > ub) | (err < lb)]
-        plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
+        # lb = np.array(-stdLastBelief * self.mag)
+        # ub = np.array(stdLastBelief * self.mag)
+        # err = np.array(stats.errorCompleteUpdatedBelief[-stats.updatedVoxels[-1]:])
+        # inconsistencies = err[(err > ub) | (err < lb)]
+        # indices = np.array(list(range(stats.updatedVoxels[-1])))
+        # indices = indices[(err > ub) | (err < lb)]
+        # plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
 
         plt.sca(self.axisLast_logOdds)
         plt.cla()
@@ -281,15 +274,104 @@ class Results:
         plt.plot(stdLastLogOdds * self.mag, 'r')
 
         # add scatter of inconsistencies
-        lb = np.array(-stdLastLogOdds * self.mag)
-        ub = np.array(stdLastLogOdds * self.mag)
-        err = np.array(stats.errorCompleteUpdatedLogOdds[-stats.updatedVoxels[-1]:])
-        inconsistencies = err[(err > ub) | (err < lb)]
-        indices = np.array(list(range(stats.updatedVoxels[-1])))
-        indices = indices[(err > ub) | (err < lb)]
-        plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
+        # lb = np.array(-stdLastLogOdds * self.mag)
+        # ub = np.array(stdLastLogOdds * self.mag)
+        # err = np.array(stats.errorCompleteUpdatedLogOdds[-stats.updatedVoxels[-1]:])
+        # inconsistencies = err[(err > ub) | (err < lb)]
+        # indices = np.array(list(range(stats.updatedVoxels[-1])))
+        # indices = indices[(err > ub) | (err < lb)]
+        # plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
 
         plt.pause(1e-6)
+
+
+        # corrected std dev compared to actual error
+
+        # def correct(std, error):
+        #     ms = np.mean(std)
+        #     me = np.mean(error)
+        #     return std * (ms/me)
+
+        # def correct(std, error):
+        #     X = np.array(list(range(len(std))))
+        #     par = np.polyfit(X, std, 1, full=True)
+        #     print "std params: ", par[0]
+        #     sSlope = par[0][0]
+        #     sIntercept = par[0][1]
+        #     par = np.polyfit(X, error, 1, full=True)
+        #     print "err params: ", par[0]
+        #     eSlope = par[0][0]
+        #     eIntercept = par[0][1]
+        #
+        #     newStd = (std - (sIntercept+eIntercept)*(sSlope/eSlope)) * (eSlope/sSlope)
+        #     par = np.polyfit(X, newStd, 1, full=True)
+        #     print "new params: ", par[0]
+        #
+        #     return newStd
+
+        def correct(std, err):
+            minStd = np.min(std)
+            maxStd = np.max(std)
+            dStd = maxStd - minStd
+            print "std params: ", minStd, maxStd
+            minErr = np.min(err)
+            maxErr = np.max(err)
+            dErr = maxErr - minErr
+            print "err params: ", minErr, maxErr
+
+            newStd = (std  - minStd) * dErr / dStd + minErr
+            minNew = np.min(newStd)
+            maxNew = np.max(newStd)
+            print "new params: ", minNew, maxNew
+
+            return newStd
+
+        stdLastBelief = np.abs(np.array(stats.stdCompleteUpdatedBelief[-stats.updatedVoxels[-1]:]))
+        stdLastLogOdds = np.abs(np.array(stats.stdCompleteUpdatedLogOdds[-stats.updatedVoxels[-1]:]))
+        plt.sca(self.axisLastCorrectedHybrid)
+        plt.cla()
+        plt.title("SMAP")
+        self.axisLastCorrectedHybrid.set_xlim([0, stats.updatedVoxels[-1]])
+        self.axisLastCorrectedHybrid.set_ylim([0, 1])
+
+        errorBelief = np.abs(stats.errorCompleteUpdatedBelief[-stats.updatedVoxels[-1]:])
+        plt.plot(errorBelief)
+        correctedBeliefStd = correct(stdLastBelief, errorBelief)
+        plt.plot(correctedBeliefStd, 'r')
+
+        # add scatter of inconsistencies
+        # lb = np.array(-stdLastBelief * self.mag)
+        # ub = np.array(stdLastBelief * self.mag)
+        # err = np.array(stats.errorCompleteUpdatedBelief[-stats.updatedVoxels[-1]:])
+        # inconsistencies = err[(err > ub) | (err < lb)]
+        # indices = np.array(list(range(stats.updatedVoxels[-1])))
+        # indices = indices[(err > ub) | (err < lb)]
+        # plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
+
+        plt.sca(self.axisLastCorrected_logOdds)
+        plt.cla()
+        plt.title("Log Odds")
+        self.axisLastCorrected_logOdds.set_xlim([0, stats.updatedVoxels[-1]])
+        self.axisLastCorrected_logOdds.set_ylim([0, 1])
+
+        errorLogOdds = np.abs(stats.errorCompleteUpdatedLogOdds[-stats.updatedVoxels[-1]:])
+        plt.plot(errorLogOdds)
+        correctedLogOddsStd = correct(stdLastLogOdds, errorLogOdds)
+        plt.plot(correctedLogOddsStd, 'r')
+
+        # add scatter of inconsistencies
+        # lb = np.array(-stdLastLogOdds * self.mag)
+        # ub = np.array(stdLastLogOdds * self.mag)
+        # err = np.array(stats.errorCompleteUpdatedLogOdds[-stats.updatedVoxels[-1]:])
+        # inconsistencies = err[(err > ub) | (err < lb)]
+        # indices = np.array(list(range(stats.updatedVoxels[-1])))
+        # indices = indices[(err > ub) | (err < lb)]
+        # plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
+
+        plt.pause(1e-6)
+
+
+
 
         ratioBelief = len(list(filter(
             lambda (e, std): abs(e) > self.mag * std,
@@ -319,13 +401,13 @@ class Results:
         plt.plot(stdLastBelief * self.mag, 'r')
 
         # add scatter of inconsistencies
-        lb = np.array(-stdLastBelief * self.mag)
-        ub = np.array(stdLastBelief * self.mag)
-        err = np.array(stats.errorCompleteUpdatedBelief[:stats.updatedVoxels[0]])
-        inconsistencies = err[(err > ub) | (err < lb)]
-        indices = np.array(list(range(stats.updatedVoxels[0])))
-        indices = indices[(err > ub) | (err < lb)]
-        plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
+        # lb = np.array(-stdLastBelief * self.mag)
+        # ub = np.array(stdLastBelief * self.mag)
+        # err = np.array(stats.errorCompleteUpdatedBelief[:stats.updatedVoxels[0]])
+        # inconsistencies = err[(err > ub) | (err < lb)]
+        # indices = np.array(list(range(stats.updatedVoxels[0])))
+        # indices = indices[(err > ub) | (err < lb)]
+        # plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
 
 
         plt.sca(self.axis_logOdds)
@@ -337,13 +419,13 @@ class Results:
         plt.plot(stdLastLogOdds * self.mag, 'r')
 
         # add scatter of inconsistencies
-        lb = np.array(-stdLastLogOdds * self.mag)
-        ub = np.array(stdLastLogOdds * self.mag)
-        err = np.array(stats.errorCompleteUpdatedLogOdds[:stats.updatedVoxels[0]])
-        inconsistencies = err[(err > ub) | (err < lb)]
-        indices = np.array(list(range(stats.updatedVoxels[0])))
-        indices = indices[(err > ub) | (err < lb)]
-        plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
+        # lb = np.array(-stdLastLogOdds * self.mag)
+        # ub = np.array(stdLastLogOdds * self.mag)
+        # err = np.array(stats.errorCompleteUpdatedLogOdds[:stats.updatedVoxels[0]])
+        # inconsistencies = err[(err > ub) | (err < lb)]
+        # indices = np.array(list(range(stats.updatedVoxels[0])))
+        # indices = indices[(err > ub) | (err < lb)]
+        # plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
 
         plt.pause(1e-6)
 
@@ -448,17 +530,17 @@ class Results:
         for step in range(steps):
             b = [0.0001] * bins
             sum = 0
-            for error in stats.errorCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]]:
-                error = abs(error)
+            for errorBelief in stats.errorCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]]:
+                errorBelief = abs(errorBelief)
                 # if abs(error - 0.5) < 1e-2:
                 #     continue
                 # print error
-                bin_number = int(round(bins * (1 - (error - miny) / (maxy - miny))))
+                bin_number = int(round(bins * (1 - (errorBelief - miny) / (maxy - miny))))
                 if 0 <= bin_number < bins:
                     b[bin_number] += 1
                     # if bin_number != 50:
                     #     print bin_number
-                sum += error
+                sum += errorBelief
             start += stats.updatedVoxels[step]
             total += b
             averageErrorUpdatedBelief.append(sum / stats.updatedVoxels[step])
@@ -486,15 +568,15 @@ class Results:
         for step in range(steps):
             b = [0.0001] * bins
             sum = 0
-            for error in stats.errorCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]]:
-                error = abs(error)
+            for errorBelief in stats.errorCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]]:
+                errorBelief = abs(errorBelief)
                 # if abs(error - 0.5) < 1e-2:
                 #     continue
                 # print error
-                bin_number = int(round(bins * (1 - (error - miny) / (maxy - miny))))
+                bin_number = int(round(bins * (1 - (errorBelief - miny) / (maxy - miny))))
                 if 0 <= bin_number < bins:
                     b[bin_number] += 1
-                sum += error
+                sum += errorBelief
             start += stats.updatedVoxels[step]
             total += b
             averageErrorUpdatedLogOdds.append(sum / stats.updatedVoxels[step])

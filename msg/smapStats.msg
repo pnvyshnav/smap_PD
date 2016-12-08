@@ -49,3 +49,9 @@ float64 ismIncrement
 float64 ismRampSize
 float64 ismTopSize
 float64 ismRampSlope
+
+# Number of voxels per trajectory
+uint32[] trajectoryVoxels
+
+# Evolution of reachability along each trajectory (size is step*trajectoryVoxels)
+float64[] trajectoryReachabilities

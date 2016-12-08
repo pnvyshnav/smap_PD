@@ -56,6 +56,7 @@ TrueMap TrueMap::generate(unsigned int seed)
         }
     }
 #else
+    auto center = Parameters::Vec3Type(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter);
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
     {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)

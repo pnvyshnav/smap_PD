@@ -31,7 +31,7 @@ Statistics *stats;
 void handleObservation(const Observation &observation)
 {
     trueMap.publish();
-    robot.publish();
+    //robot.publish();
     beliefMap.update(observation, trueMap);
     logOddsMap.update(observation, trueMap);
 
@@ -100,7 +100,7 @@ int main(int argc, char **argv)
 
     //stats->update(logOddsMap, beliefMap, robot);
     // TODO reactivate
-    //stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/stats.bag");
+    stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/stats.bag");
 
     saveErrors((std::string)"belief_errors.txt", beliefErrors);
     saveErrors((std::string)"logOdds_errors.txt", logOddsErrors);
