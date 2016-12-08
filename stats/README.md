@@ -68,8 +68,3 @@ following plot, Log Odds does not identify several significant errors (>0.5) or 
 actual error (blue).
 
 ![Mean and Variance](./plots/corrected_inconsistencies_at_last_step.png)
-
-I also tried to first round the error of each voxel before testing whether the deviation exceeds one standard deviation.
-Since the rounded absolute error is either 0 or 1, the following plot is actually showing the evolution of cases where
-the voxel was wrongly estimated to be free or occupied. It shows a similar curve to the error evolution from above.
-![Inconsistencies](./plots/rounded_errors_outside_std_interval.png)
