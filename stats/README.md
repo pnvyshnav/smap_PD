@@ -60,6 +60,15 @@ The following plot shows error (blue) and +/- 2 std devs (red) for all _updated_
 The following plot shows error (blue) and +/- 2 std devs (red) for all _updated_ voxels at the last step of the simulation, inconsistencies (error > 2 std dev) are marked green:
 ![Mean and Variance](./plots/inconsistencies_at_last_step.png)
 
+The computed std dev from the SMAP approach and from the Log Odds approach (Bernoulli std dev) can be adjusted
+to better fit the error and to get a fairer comparison between the two methods. The std devs of all updated voxels
+for the last steps were fitted to the actual error of those voxels (absolute difference between voxel mean and true voxel
+occupancy) by scaling and moving all std dev values to the min/max range of the true error. As can be seen in the
+following plot, Log Odds does not identify several significant errors (>0.5) or the std dev (in red) overshoots the
+actual error (blue).
+
+![Mean and Variance](./plots/corrected_inconsistencies_at_last_step.png)
+
 I also tried to first round the error of each voxel before testing whether the deviation exceeds one standard deviation.
 Since the rounded absolute error is either 0 or 1, the following plot is actually showing the evolution of cases where
 the voxel was wrongly estimated to be free or occupied. It shows a similar curve to the error evolution from above.
