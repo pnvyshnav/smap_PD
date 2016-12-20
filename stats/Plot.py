@@ -123,24 +123,64 @@ class Results:
         plt.sca(self.axisCorrelation)
         plt.cla()
         plt.title("Pearson Correlation Coefficient between Absolute Error and Mapping Variance")
+
+        def my_pearson(x, y):
+            r, _ = pearsonr(x, y)
+            return r
         pccBelief = []
         pccLogOdds = []
         start = 0
-        for step in range(stats.step):
-            pcc, p = pearsonr(
-                np.abs(stats.errorCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]]),
-                stats.stdCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]])
-            pccBelief.append(pcc)
-            pcc, p = pearsonr(
-                np.abs(stats.errorCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]]),
-                stats.stdCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]])
-            pccLogOdds.append(pcc)
-            start += stats.updatedVoxels[step]
-        plt.plot(pccBelief, label=beliefName)
-        plt.plot(pccLogOdds, label=logOddsName)
+        #for step in range(stats.step):
+        #    #print("Computing PCC...")
+        #    #print("Updated Voxels: %i" % stats.updatedVoxels[step])
+        #    pcc = my_pearson(
+        #        np.abs(np.array(stats.errorCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]])),
+        #        stats.stdCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]])
+        #    pccBelief.append(pcc)
+        #    pcc = my_pearson(
+        #        np.abs(np.array(stats.errorCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]])),
+        #        stats.stdCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]])
+        #    pccLogOdds.append(pcc)
+        #    start += stats.updatedVoxels[step]
+        #plt.plot(pccBelief, label="PY " + beliefName)
+        #plt.plot(pccLogOdds, label="PY " + logOddsName)
+        plt.plot(np.array(stats.stdErrorCorrelationBelief), label=beliefName)
+        plt.plot(np.array(stats.stdErrorCorrelationLogOdds), label=logOddsName)
         plt.legend(loc='upper right', bbox_to_anchor=(1, .5),
                    ncol=1, fancybox=True, shadow=True).draggable()
 
+
+
+        stdLastBelief = np.array(stats.stdCompleteUpdatedBelief[-stats.updatedVoxels[-1]:])
+        #print "stats.stdCompleteUpdatedBelief", stats.stdCompleteUpdatedBelief
+        stdLastLogOdds = np.array(stats.stdCompleteUpdatedLogOdds[-stats.updatedVoxels[-1]:])
+        plt.sca(self.axisLastHybrid)
+        plt.cla()
+        plt.title("SMAP")
+
+        plt.plot(stats.errorCompleteUpdatedBelief[-stats.updatedVoxels[-1]:])
+        plt.plot(-stdLastBelief * self.mag, 'r')
+        plt.plot(stdLastBelief * self.mag, 'r')
+
+        # add scatter of inconsistencies
+        # lb = np.array(-stdLastBelief * self.mag)
+        # ub = np.array(stdLastBelief * self.mag)
+        # err = np.array(stats.errorCompleteUpdatedBelief[-stats.updatedVoxels[-1]:])
+        # inconsistencies = err[(err > ub) | (err < lb)]
+        # indices = np.array(list(range(stats.updatedVoxels[-1])))
+        # indices = indices[(err > ub) | (err < lb)]
+        # plt.scatter(indices, inconsistencies, c='g', edgecolor='g')
+
+        plt.sca(self.axisLast_logOdds)
+        plt.cla()
+        plt.title("Log Odds")
+        plt.plot(stats.errorCompleteUpdatedLogOdds[-stats.updatedVoxels[-1]:])
+        plt.plot(-stdLastLogOdds * self.mag, 'r')
+        plt.plot(stdLastLogOdds * self.mag, 'r')
+
+
+        if len(stats.errorCompleteUpdatedBelief) == 0 or len(stats.errorCompleteUpdatedLogOdds) == 0:
+            return
 
         plt.sca(self.axisErrorStdDiff1)
         plt.cla()

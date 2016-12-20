@@ -40,6 +40,10 @@ float64[] stdCompleteLogOdds
 float64[] stdCompleteUpdatedBelief
 float64[] stdCompleteUpdatedLogOdds
 
+# evolution of the correlation between std dev and error of updated voxels
+float64[] stdErrorCorrelationBelief
+float64[] stdErrorCorrelationLogOdds
+
 # noise std deviation for observation simulation,
 # and SMAP's likelihoodGivenCause computation
 float64 noiseStd

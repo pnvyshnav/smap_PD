@@ -160,8 +160,12 @@ std::vector<double> LogOddsMap::errorLastUpdated(const TrueMap &trueMap) const
     {
         auto trueVoxel = trueMap.query(v.position);
         auto estimated = query(v.position);
-        if (!trueVoxel.node())
+        if (!trueVoxel.node() || !estimated.node())
+        {
+            ROS_WARN("Skipping error last updated computation for log odds.");
+            err.push_back(0.5);
             continue;
+        }
         if (estimated.type == GEOMETRY_VOXEL)
             err.push_back(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getOccupancy());
         else

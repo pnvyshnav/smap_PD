@@ -214,6 +214,12 @@ std::vector<double> BeliefMap::errorLastUpdated(const TrueMap &trueMap) const
     {
         auto trueVoxel = trueMap.query(v.position);
         auto estimated = query(v.position);
+        if (!trueVoxel.node() || !estimated.node())
+        {
+            ROS_WARN("Skipping error last updated computation for belief.");
+            err.push_back(0.5);
+            continue;
+        }
         err.push_back(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getValue()->mean());
     }
     return err;
