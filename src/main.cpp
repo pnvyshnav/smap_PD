@@ -31,7 +31,7 @@ Statistics *stats;
 void handleObservation(const Observation &observation)
 {
     trueMap.publish();
-    //robot.publish();
+    robot.publish();
     beliefMap.update(observation, trueMap);
     logOddsMap.update(observation, trueMap);
 
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
     robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
     robot.registerObserver(&handleObservation);
     #if defined(PLANNER_2D_TEST)
-        for (unsigned int splineId = 0; splineId < 3; splineId++)
+        for (unsigned int splineId = 0; splineId < robot.splines().size(); splineId++)
         {
             beliefMap.reset();
             logOddsMap.reset();

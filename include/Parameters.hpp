@@ -7,7 +7,7 @@
 //#define FAKE_2D
 //#define PLANNER_2D_TEST
 #define FAKE_3D
-#define MANY_STEPS
+//#define MANY_STEPS
 
 class Parameters
 {
@@ -25,7 +25,7 @@ public:
     // Fake sensor measurements
     //
     static const bool deterministicSensorMeasurements = false;
-    static const unsigned int FakeRobotNumSteps = 1000;
+    static const unsigned int FakeRobotNumSteps = 600;
 
     //
     // Real sensor measurements
