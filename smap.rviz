@@ -13,6 +13,7 @@ Panels:
         - /MarkerArray4
         - /MarkerArray5
         - /MarkerArray6
+        - /MarkerArray7
       Splitter Ratio: 0.5
     Tree Height: 775
   - Class: rviz/Selection
@@ -112,10 +113,18 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
+      Marker Topic: /trajectoryVoxels
+      Name: MarkerArray
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
       Marker Topic: /trajectories
       Name: MarkerArray
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
   Enabled: true
@@ -150,7 +159,7 @@ Visualization Manager:
         Value: false
       Name: Current View
       Near Clip Distance: 0.01
-      Scale: 205.322
+      Scale: 308.484
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
       X: 0
@@ -172,5 +181,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1855
-  X: 15
+  X: 55
   Y: 14

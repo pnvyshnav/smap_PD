@@ -31,6 +31,8 @@ public:
 
     static double avg_distance(const std::vector<double> &xs, const std::vector<double> &ys);
 
+    void reset();
+
 private:
     ros::Publisher _publisher;
     ros::NodeHandle *_nh;

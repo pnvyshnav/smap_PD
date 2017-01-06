@@ -38,6 +38,7 @@ Visualizer::Visualizer()
     stereoCameraSensorPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("stereo_cam", 10);
     rayVoxelPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("ray_voxels", 10);
     splinePublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("trajectories", 10);
+    trajectoryVoxelsPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("trajectoryVoxels", 10);
 }
 
 Visualizer::~Visualizer()
@@ -470,7 +471,7 @@ void Visualizer::publishRay(TrueMap &trueMap, Sensor &sensor)
     }
 }
 
-void Visualizer::publishFakeRobot(const Observable *visualizable)
+void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap *trueMap)
 {
     auto robot = (FakeRobot<>*) visualizable;
     ros::Rate loop_rate(PaintRate);
@@ -479,18 +480,21 @@ void Visualizer::publishFakeRobot(const Observable *visualizable)
     visualization_msgs::MarkerArray markers;
 
     auto colors = std::vector<std::vector<double> > {
-        {0.0, 0.6, 0.3},
-        {0.7, 0.6, 0.0},
-        {0.1, 0.4, 0.7}
+        {1, 0, 0},
+        {0, 0.4, 0},
+        {0, 0, 1}
     };
 
+    visualization_msgs::MarkerArray allTrajectoryVoxels;
+
     int counter = 0;
+    unsigned int splineId = 0;
     for (auto &spline : robot->splines())
     {
         visualization_msgs::Marker marker;
         marker.action = 0;
         marker.id = (int) visualizable->observableId() + counter++;
-        unsigned int color = (unsigned int) (counter % colors.size());
+        unsigned int color = (unsigned int) (splineId % colors.size());
         marker.type = visualization_msgs::Marker::LINE_STRIP;
         marker.header.frame_id = "map";
         marker.scale.x = 0.01;
@@ -536,9 +540,36 @@ void Visualizer::publishFakeRobot(const Observable *visualizable)
             wayPoints.points.push_back(p);
         }
         markers.markers.push_back(wayPoints);
+
+        visualization_msgs::Marker trajectoryVoxels;
+        trajectoryVoxels.action = 0;
+        trajectoryVoxels.id = (int) visualizable->observableId() + counter++;
+        trajectoryVoxels.type = visualization_msgs::Marker::POINTS;
+        trajectoryVoxels.header.frame_id = "map";
+        trajectoryVoxels.scale.x = 0.1;
+        trajectoryVoxels.scale.y = 0.1;
+        trajectoryVoxels.scale.z = 0.1;
+        trajectoryVoxels.color.a = 0.8;
+        trajectoryVoxels.color.r = (float)colors[color][0];
+        trajectoryVoxels.color.g = (float)colors[color][1];
+        trajectoryVoxels.color.b = (float)colors[color][2];
+        robot->selectSpline(splineId);
+        for (auto &key : robot->currentSplinesVoxels())
+        {
+            auto coords = trueMap->keyToCoord(key);
+            geometry_msgs::Point p;
+            p.x = coords.x();
+            p.y = coords.y();
+            p.z = 0.51;
+            trajectoryVoxels.points.push_back(p);
+        }
+        allTrajectoryVoxels.markers.push_back(trajectoryVoxels);
+
+        ++splineId;
     }
 
     splinePublisher.publish(markers);
+    trajectoryVoxelsPublisher.publish(allTrajectoryVoxels);
 
     ros::spinOnce();
 }

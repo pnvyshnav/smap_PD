@@ -146,9 +146,24 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
                                     _msg.stdBelief.end());
 #endif
 
+#ifdef PLANNER_2D_TEST
+    _msg.trajectoryVoxels = (unsigned int) robot.currentSplinesVoxels().size();
+    ROS_INFO("Trajectory voxels: %d", (int)_msg.trajectoryVoxels);
+    for (auto &key: robot.currentSplinesVoxels())
+    {
+        _msg.trajectoryOccupanciesBelief.push_back(beliefMap.query(key).node()->getValue()->mean());
+        _msg.trajectoryStdDevsBelief.push_back(std::sqrt(beliefMap.query(key).node()->getValue()->variance()));
+        double occLogOdds = Parameters::priorMean;
+        if (logOddsMap.query(key).node())
+            occLogOdds = logOddsMap.query(key).node()->getOccupancy();
+        _msg.trajectoryOccupanciesLogOdds.push_back(occLogOdds);
+        _msg.trajectoryStdDevsLogOdds.push_back(std::sqrt(occLogOdds * (1. - occLogOdds)));
+    }
+#endif
+
     _publisher.publish(_msg);
 
-    // TODO wait some time to ensure the data gets plotted
+    // TODO wait some time to ensure data is plotted
     //ros::Rate publishing_rate(29);
     //publishing_rate.sleep();
 }
@@ -167,7 +182,7 @@ double Statistics::pcc(const std::vector<double> &xs, const std::vector<double> 
     //ROS_INFO("Actually updated voxels: %i and %i", (int)xs.size(), (int)ys.size());
     assert(xs.size() == ys.size());
     if (xs.size() != ys.size())
-        ROS_ERROR("XS != YS!!!");
+        ROS_ERROR("Error during PCC computation: input arrays have different lengths.");
     unsigned int n = xs.size();
 
     double meanX = 0, meanY = 0;
@@ -220,4 +235,42 @@ double Statistics::avg_distance(const std::vector<double> &xs, const std::vector
     }
     meanDst /= n;
     return meanDst;
+}
+
+void Statistics::reset()
+{
+    _msg.step = 0;
+    _msg.maxStep = 0;
+    _msg.voxels = 0;
+
+    _msg.errorBelief.clear();
+    _msg.errorLogOdds.clear();
+    _msg.errorEvolutionBelief.clear();
+    _msg.errorEvolutionLogOdds.clear();
+
+    _msg.errorCompleteBelief.clear();
+    _msg.errorCompleteLogOdds.clear();
+
+    _msg.updatedVoxels.clear();
+
+    _msg.errorCompleteUpdatedBelief.clear();
+    _msg.errorCompleteUpdatedLogOdds.clear();
+
+    _msg.stdBelief.clear();
+    _msg.stdLogOdds.clear();
+
+    _msg.stdCompleteBelief.clear();
+    _msg.stdCompleteLogOdds.clear();
+
+    _msg.stdCompleteUpdatedBelief.clear();
+    _msg.stdCompleteUpdatedLogOdds.clear();
+
+    _msg.stdErrorCorrelationBelief.clear();
+    _msg.stdErrorCorrelationLogOdds.clear();
+
+    _msg.trajectoryVoxels = 0;
+    _msg.trajectoryOccupanciesBelief.clear();
+    _msg.trajectoryOccupanciesLogOdds.clear();
+    _msg.trajectoryStdDevsBelief.clear();
+    _msg.trajectoryStdDevsLogOdds.clear();
 }

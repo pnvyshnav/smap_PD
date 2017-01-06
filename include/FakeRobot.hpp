@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <type_traits>
+#include <unordered_set>
 
 #include <ecl/time/stopwatch.hpp>
 
@@ -122,7 +123,9 @@ public:
                 Parameters::Vec3Type(-0.25,  0.05, 0.05),
                 Parameters::Vec3Type(-0.95, -0.25, 0.05)
         };
+
         double maxRad = Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity;
+
         for (auto rad = 0.;
              !_stopRequested && _step <= Parameters::FakeRobotNumSteps;
              rad += Parameters::FakeRobotAngularVelocity, ++_step)
@@ -207,6 +210,7 @@ public:
      */
     double currentReachability(LogOddsMap &map) const
     {
+        // TODO implement
         unsigned int step = 0;
         double maxRad = Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity;
         for (auto rad = 0.; step <= Parameters::FakeRobotNumSteps;
@@ -214,11 +218,37 @@ public:
         {
 
         }
+        return -1;
     }
 
     void selectSpline(unsigned int splineId)
     {
         _splineId = splineId;
+
+#ifdef PLANNER_2D_TEST
+        _splineVoxels.clear();
+        double maxRad = Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity;
+        auto spline = _splines[_splineId];
+        // update spline voxels
+        unsigned int ustep = 0;
+        for (auto rad = 0.;
+             !_stopRequested && ustep <= Parameters::FakeRobotNumSteps;
+             rad += Parameters::FakeRobotAngularVelocity, ++ustep)
+        {
+            float overallProgress = rad / maxRad;
+            std::vector<float> result = spline.evaluate(overallProgress).result();
+            _splineVoxels.insert(_trueMap.coordToKey(result[0], result[1], 0.05));
+        }
+#endif
+    }
+
+    /**
+     * Returns the keys to the voxels covered by the current spline.
+     * @return Set of distinct OcTreeKeys.
+     */
+    const std::unordered_set<octomap::OcTreeKey, octomap::OcTreeKey::KeyHash> &currentSplinesVoxels() const
+    {
+        return _splineVoxels;
     }
 
 private:
@@ -230,4 +260,5 @@ private:
     unsigned int _step;
     std::vector<ts::BSpline> _splines;
     unsigned int _splineId;
+    std::unordered_set<octomap::OcTreeKey, octomap::OcTreeKey::KeyHash> _splineVoxels;
 };

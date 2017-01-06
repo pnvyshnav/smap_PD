@@ -23,7 +23,7 @@ public:
     void publishSensor(const Observable *visualizable);
     void publishStereoCameraSensor(const Observable *visualizable);
     void publishRay(TrueMap &trueMap, Sensor &sensor);
-    void publishFakeRobot(const Observable *visualizable);
+    void publishFakeRobot(const Observable *visualizable, const TrueMap *trueMap);
 
     static const int PaintRate = 200;
 
@@ -37,6 +37,7 @@ private:
     ros::Publisher sensorPublisher;
     ros::Publisher stereoCameraSensorPublisher;
     ros::Publisher splinePublisher;
+    ros::Publisher trajectoryVoxelsPublisher;
 
     TrueMap *_lastTrueMap;
     BeliefMap *_lastBeliefMap;

@@ -68,7 +68,7 @@ int main(int argc, char **argv)
     trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
     beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
     logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMap, visualizer, std::placeholders::_1));
-    robot.subscribe(std::bind(&Visualizer::publishFakeRobot, visualizer, std::placeholders::_1));
+    //robot.subscribe(std::bind(&Visualizer::publishFakeRobot, visualizer, std::placeholders::_1, &trueMap));
 
     trueMap.publish();
 
@@ -79,10 +79,13 @@ int main(int argc, char **argv)
     #if defined(PLANNER_2D_TEST)
         for (unsigned int splineId = 0; splineId < robot.splines().size(); splineId++)
         {
+            ROS_INFO("Evaluating spline %d...", (int)splineId);
             beliefMap.reset();
             logOddsMap.reset();
             robot.selectSpline(splineId);
             robot.run();
+            stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/splines/spline_" + std::to_string(splineId) + ".bag");
+            stats->reset();
         }
     #else
         robot.run();
@@ -100,7 +103,10 @@ int main(int argc, char **argv)
 
     //stats->update(logOddsMap, beliefMap, robot);
     // TODO reactivate
+
+#ifndef PLANNER_2D_TEST
     stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/stats.bag");
+#endif
 
     saveErrors((std::string)"belief_errors.txt", beliefErrors);
     saveErrors((std::string)"logOdds_errors.txt", logOddsErrors);

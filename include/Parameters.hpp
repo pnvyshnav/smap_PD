@@ -4,9 +4,9 @@
 
 #include <octomap/OcTree.h>
 
-//#define FAKE_2D
-//#define PLANNER_2D_TEST
-#define FAKE_3D
+#define FAKE_2D
+#define PLANNER_2D_TEST
+//#define FAKE_3D
 //#define MANY_STEPS
 
 class Parameters
@@ -25,7 +25,7 @@ public:
     // Fake sensor measurements
     //
     static const bool deterministicSensorMeasurements = false;
-    static const unsigned int FakeRobotNumSteps = 600;
+    static const unsigned int FakeRobotNumSteps = 60;
 
     //
     // Real sensor measurements
@@ -44,7 +44,7 @@ public:
     static constexpr NumType freeRadiusAroundCenter = 4 * voxelSize;
 
     static const bool sensorTruncatedGaussianNoise = false;
-    static constexpr NumType sensorRange = (const NumType) 0.9;
+    static constexpr NumType sensorRange = (const NumType) 1.5;
     static constexpr NumType sensorNoiseStd = (const NumType) (sensorRange / 20.);
 
     static constexpr double FakeRobotAngularVelocity = 1. * M_PI / 180.;
