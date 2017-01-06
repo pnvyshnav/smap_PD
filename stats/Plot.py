@@ -148,8 +148,9 @@ class Results:
                 stats.stdCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]])
             pccLogOdds.append(pcc)
             start += stats.updatedVoxels[step]
-        plt.plot(pccBelief, label="PY " + beliefName)
-        plt.plot(pccLogOdds, label="PY " + logOddsName)
+        # TODO reactivate Python's PCC computation?
+        # plt.plot(pccBelief, label="PY " + beliefName)
+        # plt.plot(pccLogOdds, label="PY " + logOddsName)
         plt.plot(np.array(stats.stdErrorCorrelationBelief), label=beliefName)
         stats.stdErrorCorrelationLogOdds = np.array(stats.stdErrorCorrelationLogOdds)
         last_finite = 1.
