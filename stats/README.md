@@ -46,18 +46,22 @@ It is computed as 1/n * sqrt(μ² + σ²) for each voxel mean μ and std dev σ 
 ![RSME only updated voxels](./plots/root_mean_square_error_(rmse)_evolution_over_all_voxels.png
 )
 
-## Correlation between Error and Variance
+## Correlation between Error and Std Dev
 The variance computed for each voxel should give insights into the confidence of the occupancy estimation.
 The larger the variance, the greater is the expected error. The following plot shows the correlation between
-SMAP's belief voxel Gaussian variance / Log Odds' Bernoulli variance, and the absolute error over all updated voxels
+SMAP's belief voxel Gaussian std dev / Log Odds' Bernoulli std dev, and the absolute error over all updated voxels
 at each step.
 
-![Correlation](./plots/correlation_of_error_and_variance.png)
+![Correlation](./plots/correlation_of_error_and_stddev.png)
 
-The following plot shows error (blue) and +/- 2 std devs (red) for all _updated_ voxels at the first step of the simulation, inconsistencies (error > 2 std dev) are marked green:
+The average distance between the true error and std deviation evolves as follows:
+
+![Distance](./plots/distance_error_and_stddev.png)
+
+The following plot shows error (blue) and +/- 2 std devs (red) for all _updated_ voxels at the first step of the simulation:
 ![Mean and Variance](./plots/inconsistencies_at_first_step.png)
 
-The following plot shows error (blue) and +/- 2 std devs (red) for all _updated_ voxels at the last step of the simulation, inconsistencies (error > 2 std dev) are marked green:
+The following plot shows error (blue) and +/- 2 std devs (red) for all _updated_ voxels at the last step of the simulation:
 ![Mean and Variance](./plots/inconsistencies_at_last_step.png)
 
 The computed std dev from the SMAP approach and from the Log Odds approach (Bernoulli std dev) can be adjusted
