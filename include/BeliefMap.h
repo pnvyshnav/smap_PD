@@ -45,6 +45,7 @@ public:
     std::vector<QBeliefVoxel> lastUpdatedVoxels;
 
     std::vector<double> error(const TrueMap &trueMap) const;
+    std::vector<double> stddev() const;
     std::vector<double> errorLastUpdated(const TrueMap &trueMap) const;
 
     void reset();

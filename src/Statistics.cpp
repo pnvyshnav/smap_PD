@@ -17,6 +17,13 @@ Statistics::~Statistics()
     delete _nh;
 }
 
+template<class IN, class OUT>
+std::vector<OUT> convertVector(const std::vector<IN> &input)
+{
+    std::vector<OUT> output(input.begin(), input.end());
+    return output;
+};
+
 void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap, const FakeRobot<> &robot)
 {
     _msg.step = robot.currentStep();
@@ -24,6 +31,9 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
 
     _msg.errorLogOdds = logOddsMap.error(_trueMap);
     _msg.errorBelief = beliefMap.error(_trueMap);
+
+    _msg.stdLogOdds = logOddsMap.stddev();
+    _msg.stdBelief = beliefMap.stddev();
 
     assert(_msg.errorLogOdds.size() == _msg.errorBelief.size());
 
@@ -57,6 +67,11 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
         }
         double p = v.node() == NULL ? Parameters::priorMean : v.node()->getOccupancy();
         // Bernoulli variance
+        double std = std::sqrt(p * (1. - p));
+        if (std > 0.5)
+        {
+            ROS_ERROR("Std = %f for p = %f", std, p);
+        }
         stdUpdatedLogOdds.push_back(std::sqrt(p * (1. - p)));
     }
 
@@ -86,6 +101,14 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
     _msg.errorCompleteUpdatedBelief.insert(_msg.errorCompleteUpdatedBelief.end(),
                                     absErrorUpdatedBelief.begin(),
                                     absErrorUpdatedBelief.end());
+
+    // append current std devs to complete std dev vectors
+    _msg.stdCompleteLogOdds.insert(_msg.stdCompleteLogOdds.end(),
+                                     _msg.stdLogOdds.begin(),
+                                     _msg.stdLogOdds.end());
+    _msg.stdCompleteBelief.insert(_msg.stdCompleteBelief.end(),
+                                    _msg.stdBelief.begin(),
+                                    _msg.stdBelief.end());
 
     // append current std devs of updated voxels to complete updated error vectors
     _msg.stdCompleteUpdatedBelief.insert(_msg.stdCompleteUpdatedBelief.end(),
@@ -159,6 +182,12 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
         _msg.trajectoryOccupanciesLogOdds.push_back(occLogOdds);
         _msg.trajectoryStdDevsLogOdds.push_back(std::sqrt(occLogOdds * (1. - occLogOdds)));
     }
+
+    // add trajectory position / angle
+    _msg.trajectoryX.push_back(robot.position().x());
+    _msg.trajectoryY.push_back(robot.position().y());
+    _msg.trajectoryT.push_back(robot.yaw());
+    _msg.trajectoryId = robot.selectedSpline();
 #endif
 
     _publisher.publish(_msg);
@@ -273,4 +302,9 @@ void Statistics::reset()
     _msg.trajectoryOccupanciesLogOdds.clear();
     _msg.trajectoryStdDevsBelief.clear();
     _msg.trajectoryStdDevsLogOdds.clear();
+
+
+    _msg.trajectoryX.clear();
+    _msg.trajectoryY.clear();
+    _msg.trajectoryT.clear();
 }

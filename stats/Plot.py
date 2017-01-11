@@ -25,6 +25,9 @@ class Results:
         self.lastStepFig = plt.figure('Inconsistencies at last step')
         self.axisLastHybrid = self.lastStepFig.add_subplot(211)
         self.axisLast_logOdds = self.lastStepFig.add_subplot(212)
+        self.lastStepCorrectFig = plt.figure('Correct Estimate Inconsistencies at last step')
+        self.axisLastCorrectHybrid = self.lastStepCorrectFig.add_subplot(211)
+        self.axisLastCorrect_logOdds = self.lastStepCorrectFig.add_subplot(212)
         self.lastStepCorrectedFig = plt.figure('Corrected Inconsistencies at last step')
         self.axisLastCorrectedHybrid = self.lastStepCorrectedFig.add_subplot(211)
         self.axisLastCorrected_logOdds = self.lastStepCorrectedFig.add_subplot(212)
@@ -41,8 +44,17 @@ class Results:
         self.axisErrorStdDiff2 = self.fig_errorStdDiff.add_subplot(312)
         self.axisErrorStdDiff3 = self.fig_errorStdDiff.add_subplot(313)
 
-        self.fig_inconsistencies = plt.figure('Correlation of Error and Variance')
+        self.fig_inconsistencies = plt.figure('Correlation of Error and Std')
         self.axisCorrelation = self.fig_inconsistencies.add_subplot(111)
+
+        self.fig_posNegDistance = plt.figure('Positive/Negative Distance between Error and Std')
+        self.axisPosNegDistanceHybrid = self.fig_posNegDistance.add_subplot(211)
+        self.axisPosNegDistanceLogOdds = self.fig_posNegDistance.add_subplot(212)
+
+        self.fig_correctStdDev = plt.figure('Std Dev for Correct Prediction')
+        self.fig_correctStdDev.suptitle("Std Dev where Prediction Error < 0.3")
+        self.axisCorrectStdDevHybrid = self.fig_correctStdDev.add_subplot(211)
+        self.axisCorrectStdDevLogOdds = self.fig_correctStdDev.add_subplot(212)
 
         self.fig_roundedInconsistencies = plt.figure('Rounded Errors Outside Std Interval')
         self.axisRoundedInconsistencies = self.fig_roundedInconsistencies.add_subplot(111)
@@ -94,34 +106,212 @@ class Results:
         self.last_step = stats.step
         self.steps.append(stats.step)
 
+        def correct(std, err):
+            minStd = np.min(std)
+            maxStd = np.max(std)
+            dStd = maxStd - minStd
+            print "std params: ", minStd, maxStd
+            minErr = np.min(err)
+            maxErr = np.max(err)
+            dErr = maxErr - minErr
+            print "err params: ", minErr, maxErr
+
+            newStd = (std  - minStd) * dErr / dStd + minErr
+            minNew = np.min(newStd)
+            maxNew = np.max(newStd)
+            print "new params: ", minNew, maxNew
+
+            return newStd
+
         beliefName = 'SMAP (noise std {})'.format(stats.noiseStd)
         self.errorEvolutionsBelief[beliefName] = stats.errorEvolutionBelief
         logOddsName = 'Log Odds (noise std {s.noiseStd} inc {s.ismIncrement}, ramp {s.ismRampSize}, top {s.ismTopSize}, rslope {s.ismRampSlope})'.format(
             s=stats)
         self.errorEvolutionsLogOdds[logOddsName] = stats.errorEvolutionLogOdds
 
-        plt.sca(self.axisRoundedInconsistencies)
-        plt.cla()
-        plt.title("Inconsistencies Rounded Error to 1 Std Deviation")
-        inconsistentBelief = []
-        inconsistentLogOdds = []
+        # plt.sca(self.axisRoundedInconsistencies)
+        # plt.cla()
+        # plt.title("Inconsistencies Rounded Error to 1 Std Deviation")
+        # inconsistentBelief = []
+        # inconsistentLogOdds = []
+        # start = 0
+        # for step in range(stats.step):
+        #     inconsistentBelief.append(len(list(filter(
+        #         lambda (e, std): round(abs(e)) > std,
+        #         zip(stats.errorCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]],
+        #             stats.stdCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]])
+        #     ))) * 1. / stats.updatedVoxels[step])
+        #     inconsistentLogOdds.append(len(list(filter(
+        #         lambda (e, std): round(abs(e)) > std,
+        #         zip(stats.errorCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]],
+        #             stats.stdCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]])
+        #     ))) * 1. / stats.updatedVoxels[step])
+        #     start += stats.updatedVoxels[step]
+        # plt.plot(inconsistentBelief, label=beliefName)
+        # plt.plot(inconsistentLogOdds, label=logOddsName)
+        # plt.legend(loc='upper right', bbox_to_anchor=(1, .5),
+        #            ncol=1, fancybox=True, shadow=True).draggable()
+
+
+
+        diffBeliefNeg = []
+        diffBeliefPos = []
+        diffLogOddsNeg = []
+        diffLogOddsPos = []
+        avgErrBelief = []
+        avgStdBelief = []
+        avgErrLogOdds = []
+        avgStdLogOdds = []
+        maxStdBelief = []
+        minStdBelief = []
+        maxStdLogOdds = []
+        minStdLogOdds = []
+
+        #return
         start = 0
         for step in range(stats.step):
-            inconsistentBelief.append(len(list(filter(
-                lambda (e, std): round(abs(e)) > std,
-                zip(stats.errorCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]],
-                    stats.stdCompleteUpdatedBelief[start:start + stats.updatedVoxels[step]])
-            ))) * 1. / stats.updatedVoxels[step])
-            inconsistentLogOdds.append(len(list(filter(
-                lambda (e, std): round(abs(e)) > std,
-                zip(stats.errorCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]],
-                    stats.stdCompleteUpdatedLogOdds[start:start + stats.updatedVoxels[step]])
-            ))) * 1. / stats.updatedVoxels[step])
-            start += stats.updatedVoxels[step]
-        plt.plot(inconsistentBelief, label=beliefName)
-        plt.plot(inconsistentLogOdds, label=logOddsName)
+            errLogOdds = np.array(stats.errorCompleteLogOdds[start:start + stats.voxels])
+            stdLogOdds = np.array(stats.stdCompleteLogOdds[start:start + stats.voxels])
+
+            errBelief = np.array(stats.errorCompleteBelief[start:start + stats.voxels])
+            stdBelief = np.array(stats.stdCompleteBelief[start:start + stats.voxels])
+            #stdBelief = correct(stdBelief, errBelief)
+
+            # XXX take only the voxels that were correctly estimated by Log-Odds
+            stdBelief = stdBelief[np.abs(errBelief) < 0.3]
+            errBelief = errBelief[np.abs(errBelief) < 0.3]
+            # print("total voxels:", stats.voxels, "  Correctly predicted:", len(stdBelief))
+            #stdBelief = correct(stdBelief, errBelief)
+            # print("Mean Belief Std:", np.mean(stdBelief))
+
+
+            maxStdBelief.append(np.max(stdBelief) if len(stdBelief) > 0 else np.nan)
+            minStdBelief.append(np.min(stdBelief) if len(stdBelief) > 0 else np.nan)
+
+            avgErrBelief.append(np.mean(np.abs(errBelief)))
+            avgStdBelief.append(np.mean(np.abs(stdBelief)))
+
+            diffBelief = stdBelief - errBelief
+            diffBeliefNeg.append(np.abs(np.mean(diffBelief[diffBelief < 0])))
+            diffBeliefPos.append(np.abs(np.mean(diffBelief[diffBelief > 0])))
+
+
+            #stdLogOdds = correct(stdLogOdds, errLogOdds)
+
+            stdLogOdds = stdLogOdds[np.isfinite(errLogOdds)]
+            errLogOdds = errLogOdds[np.isfinite(errLogOdds)]
+            stdLogOdds = stdLogOdds[np.isfinite(stdLogOdds)]
+            errLogOdds = errLogOdds[np.isfinite(stdLogOdds)]
+            stdLogOdds = stdLogOdds[np.abs(errLogOdds) < 0.3]
+            errLogOdds = errLogOdds[np.abs(errLogOdds) < 0.3]
+            maxStdLogOdds.append(np.max(stdLogOdds) if len(stdLogOdds) > 0 else np.nan)
+            minStdLogOdds.append(np.min(stdLogOdds) if len(stdLogOdds) > 0 else np.nan)
+            #stdLogOdds = correct(stdLogOdds, errLogOdds)
+
+            avgErrLogOdds.append(np.mean(np.abs(errLogOdds)))
+            avgStdLogOdds.append(np.mean(np.abs(stdLogOdds)))
+
+            diffLogOdds = stdLogOdds - errLogOdds
+            diffLogOddsNeg.append(np.abs(np.mean(diffLogOdds[diffLogOdds < 0])))
+            diffLogOddsPos.append(np.abs(np.mean(diffLogOdds[diffLogOdds > 0])))
+
+            start += stats.voxels
+
+        #return
+        plt.sca(self.axisPosNegDistanceHybrid)
+        plt.cla()
+        plt.title("SMAP")
+        plt.xlabel("Steps")
+        plt.ylabel("Distance Std - Error")
+
+        plt.plot(diffBeliefPos, label="Positive")
+        plt.plot(diffBeliefNeg, label="Negative")
+        plt.plot(avgErrBelief, label="Avg Abs Error")
+        plt.plot(avgStdBelief, label="Avg Std")
+        plt.plot(maxStdBelief, label="Max Std")
+        plt.plot(minStdBelief, label="Min Std")
         plt.legend(loc='upper right', bbox_to_anchor=(1, .5),
                    ncol=1, fancybox=True, shadow=True).draggable()
+
+        plt.sca(self.axisPosNegDistanceLogOdds)
+        plt.cla()
+        plt.title("LogOdds")
+        plt.xlabel("Steps")
+        plt.ylabel("Distance Std - Error")
+
+        plt.plot(diffLogOddsPos, label="Positive")
+        plt.plot(diffLogOddsNeg, label="Negative")
+        plt.plot(avgErrLogOdds, label="Avg Abs Error")
+        plt.plot(avgStdLogOdds, label="Avg Std")
+        plt.plot(maxStdLogOdds, label="Max Std")
+        plt.plot(minStdLogOdds, label="Min Std")
+        plt.legend(loc='upper right', bbox_to_anchor=(1, .5),
+                   ncol=1, fancybox=True, shadow=True).draggable()
+
+
+        ###################################################################################
+        # Variance of Std Dev where Prediction Error < 0.3
+        ###################################################################################
+        varStdBelief = []
+        varStdLogOdds = []
+        varErrBelief = []
+        varErrLogOdds = []
+        numCorrectBelief = []
+        numCorrectLogOdds = []
+        start = 0
+        for step in range(stats.step):
+            errLogOdds = np.array(stats.errorCompleteLogOdds[start:start + stats.voxels])
+            stdLogOdds = np.array(stats.stdCompleteLogOdds[start:start + stats.voxels])
+            # stdLogOdds = correct(stdLogOdds, errLogOdds)
+
+            errBelief = np.array(stats.errorCompleteBelief[start:start + stats.voxels])
+            stdBelief = np.array(stats.stdCompleteBelief[start:start + stats.voxels])
+            # stdBelief = correct(stdBelief, errBelief)
+
+            #XXX take only the voxels that were correctly estimated by Log-Odds
+            stdBelief = stdBelief[np.abs(errLogOdds) < 0.3]
+            errBelief = errBelief[np.abs(errLogOdds) < 0.3]
+
+            stdLogOdds = stdLogOdds[np.abs(errLogOdds) < 0.3]
+            errLogOdds = errLogOdds[np.abs(errLogOdds) < 0.3]
+
+            varStdBelief.append(np.var(stdBelief))
+            varErrBelief.append(np.var(errBelief))
+            numCorrectBelief.append(len(stdBelief))
+
+
+
+
+            varStdLogOdds.append(np.var(stdLogOdds))
+            varErrLogOdds.append(np.var(errLogOdds))
+            numCorrectLogOdds.append(len(stdLogOdds))
+
+            start += stats.voxels
+
+        plt.sca(self.axisCorrectStdDevHybrid)
+        plt.cla()
+        plt.title("Variance of Std Dev where Log Prediction Error < 0.3")
+        plt.xlabel("Steps")
+        plt.ylabel("Variance")
+
+        plt.plot(varStdBelief, label="Var Std SMAP")
+        plt.plot(varStdLogOdds, label="Var Std Log-Odds")
+        plt.plot(varErrBelief, label="Var Error SMAP")
+        plt.plot(varErrLogOdds, label="Var Error Log-Odds")
+        plt.legend(loc='upper right', bbox_to_anchor=(1, .5),
+                   ncol=1, fancybox=True, shadow=True).draggable()
+
+        plt.sca(self.axisCorrectStdDevLogOdds)
+        plt.cla()
+        plt.title("Number of Updated Voxels where Prediction Error < 0.3")
+        plt.xlabel("Steps")
+        plt.ylabel("Number")
+
+        plt.plot(numCorrectBelief, label=beliefName)
+        plt.plot(numCorrectLogOdds, label=logOddsName, )
+        plt.legend(loc='upper right', bbox_to_anchor=(1, .5),
+                   ncol=1, fancybox=True, shadow=True).draggable()
+
 
         plt.sca(self.axisCorrelation)
         plt.cla()
@@ -129,6 +319,7 @@ class Results:
         plt.xlabel("Steps")
         plt.ylabel("Absolute Distance")
 
+        return # TODO remove
 
         def my_pearson(x, y):
             r, _ = pearsonr(x, y)
@@ -203,8 +394,32 @@ class Results:
         plt.plot(-stdLastLogOdds * self.mag, 'r')
         plt.plot(stdLastLogOdds * self.mag, 'r')
 
+
+
+        plt.sca(self.axisLastCorrectHybrid)
+        plt.cla()
+        plt.title("SMAP")
+        lastError = np.array(stats.errorCompleteUpdatedBelief[-stats.updatedVoxels[-1]:])
+        stdLastCorrectBelief = stdLastBelief[lastError < 0.3]
+        lastError = lastError[lastError < 0.3]
+        plt.plot(lastError)
+        plt.plot(stdLastCorrectBelief, 'r')
+        self.axisLastCorrectHybrid.set_xlim([0, len(lastError)])
+
+        plt.sca(self.axisLastCorrect_logOdds)
+        plt.cla()
+        plt.title("Log Odds")
+        lastError = np.array(stats.errorCompleteUpdatedLogOdds[-stats.updatedVoxels[-1]:])
+        stdLastCorrectLogOdds = correct(stdLastLogOdds[lastError < 0.3], lastError[lastError < 0.3])
+        lastError = lastError[lastError < 0.3]
+        plt.plot(lastError)
+        plt.plot(stdLastCorrectLogOdds, 'r')
+        self.axisLastCorrect_logOdds.set_xlim([0, len(lastError)])
+
+
+
         # TODO remove
-        #return
+        # return
         #if len(stats.errorCompleteUpdatedBelief) == 0 or len(stats.errorCompleteUpdatedLogOdds) == 0:
         #    return
 
@@ -375,22 +590,7 @@ class Results:
         #
         #     return newStd
 
-        def correct(std, err):
-            minStd = np.min(std)
-            maxStd = np.max(std)
-            dStd = maxStd - minStd
-            print "std params: ", minStd, maxStd
-            minErr = np.min(err)
-            maxErr = np.max(err)
-            dErr = maxErr - minErr
-            print "err params: ", minErr, maxErr
 
-            newStd = (std  - minStd) * dErr / dStd + minErr
-            minNew = np.min(newStd)
-            maxNew = np.max(newStd)
-            print "new params: ", minNew, maxNew
-
-            return newStd
 
         stdLastBelief = np.abs(np.array(stats.stdCompleteUpdatedBelief[-stats.updatedVoxels[-1]:]))
         stdLastLogOdds = np.abs(np.array(stats.stdCompleteUpdatedLogOdds[-stats.updatedVoxels[-1]:]))

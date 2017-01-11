@@ -101,6 +101,11 @@ public:
         _sensor.setOrientation(orientation);
     }
 
+    Parameters::NumType yaw() const
+    {
+        return _yaw;
+    }
+
     Observation observe()
     {
         return _sensor.observe(_trueMap);
@@ -149,11 +154,11 @@ public:
 //            double angle = std::atan2(next.x()-positions[pos].x(), next.y()-positions[pos].y()) + M_PI_4;
 //            setOrientation(Parameters::Vec3Type(-std::cos(angle), -std::sin(angle), 0));
 
-            float miniStep = 0.5f / maxRad;
+            float miniStep = 0.05f / maxRad;
             auto next = spline.evaluate(std::min(1.0f, overallProgress+miniStep)).result();
             auto prev = spline.evaluate(std::max(0.0f, overallProgress-miniStep)).result();
-            double angle = std::atan2(next[0] - prev[0], next[1] - prev[1]);
-            setOrientation(Parameters::Vec3Type(std::sin(angle), std::cos(angle), 0));
+            _yaw = std::atan2(next[0] - prev[0], next[1] - prev[1]);
+            setOrientation(Parameters::Vec3Type(std::sin(_yaw), std::cos(_yaw), 0));
     #else
             setOrientation(Parameters::Vec3Type(std::cos(rad), std::sin(rad), 0));
     #endif
@@ -239,6 +244,7 @@ public:
             std::vector<float> result = spline.evaluate(overallProgress).result();
             _splineVoxels.insert(_trueMap.coordToKey(result[0], result[1], 0.05));
         }
+        ROS_INFO("Selected spline %d with %d voxels.", (int)splineId, (int)_splineVoxels.size());
 #endif
     }
 
@@ -254,6 +260,7 @@ public:
 private:
     Parameters::Vec3Type _position;
     Parameters::Vec3Type _orientation;
+    Parameters::NumType _yaw;
     TrueMap _trueMap;
     SENSOR _sensor;
     bool _stopRequested;

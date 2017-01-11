@@ -189,6 +189,8 @@ bool BeliefMap::update(const Observation &observation, const TrueMap &trueMap)
 std::vector<double> BeliefMap::error(const TrueMap &trueMap) const
 {
     std::vector<double> err;
+    int all = 0, correct = 0;
+    double totalError = 0, correctError = 0;
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
     {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
@@ -200,11 +202,47 @@ std::vector<double> BeliefMap::error(const TrueMap &trueMap) const
                                        Parameters::zMin + z * Parameters::voxelSize);
                 auto trueVoxel = trueMap.query(point);
                 auto estimated = query(point);
-                err.push_back(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getValue()->mean());
+                double e = std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getValue()->mean();
+                err.push_back(e);
+                ++all;
+                if (std::abs(e) < 0.3)
+                {
+                    ++correct;
+                    correctError += std::abs(e);
+                }
+                totalError += e;
             }
         }
     }
+//    ROS_INFO("%d out of %d SMAP voxels are correct.", correct, all);
+//    ROS_INFO("Average SMAP error for correctly predicted voxels: %f", correctError / correct);
     return err;
+}
+
+std::vector<double> BeliefMap::stddev() const
+{
+    std::vector<double> std;
+    double total = 0;
+    int all = 0;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
+                                       Parameters::yMin + y * Parameters::voxelSize,
+                                       Parameters::zMin + z * Parameters::voxelSize);
+                auto estimated = query(point);
+                double s = std::sqrt(estimated.node()->getValue()->variance());
+                std.push_back(s);
+                total += s;
+                ++all;
+            }
+        }
+    }
+//    ROS_INFO("Average SMAP std dev: %f", total/all);
+    return std;
 }
 
 std::vector<double> BeliefMap::errorLastUpdated(const TrueMap &trueMap) const

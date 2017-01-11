@@ -21,6 +21,7 @@ public:
     bool update(const Observation &observation, const TrueMap &trueMap);
 
     std::vector<double> error(const TrueMap &trueMap) const;
+    std::vector<double> stddev() const;
     std::vector<double> errorLastUpdated(const TrueMap &trueMap) const;
 
     void reset();

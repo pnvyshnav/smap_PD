@@ -33,13 +33,13 @@ public:
     static constexpr float PointCloudResolution = 0.3f;
 
 #if defined(FAKE_2D)
-    static constexpr NumType voxelSize = 0.1;
-    static constexpr NumType xMin = (const NumType) (-1. + voxelSize * 0.5);
-    static constexpr NumType xMax = (const NumType) (1. + voxelSize * 0.5);
-    static constexpr NumType yMin = (const NumType) (-1. + voxelSize * 0.5);
-    static constexpr NumType yMax = (const NumType) (1. + voxelSize * 0.5);
-    static constexpr NumType zMin = 0;//(const NumType) (-1. - voxelSize / 2.);
-    static constexpr NumType zMax = voxelSize; //(const NumType) (1. + voxelSize / 2.);
+    static constexpr float voxelSize = 0.1;
+    static constexpr float xMin = -1. + voxelSize * 0.5;
+    static constexpr float xMax = 1. + voxelSize * 0.5;
+    static constexpr float yMin = -1. + voxelSize * 0.5;
+    static constexpr float yMax = 1. + voxelSize * 0.5;
+    static constexpr float zMin = 0;//(const NumType) (-1. - voxelSize / 2.);
+    static constexpr float zMax = voxelSize; //(const NumType) (1. + voxelSize / 2.);
 
     static constexpr NumType freeRadiusAroundCenter = 4 * voxelSize;
 
@@ -49,13 +49,13 @@ public:
 
     static constexpr double FakeRobotAngularVelocity = 1. * M_PI / 180.;
 #elif defined(FAKE_3D)
-    static constexpr NumType voxelSize = 0.125;
-    static constexpr NumType xMin = (const NumType) (-2. + voxelSize * 0.5);
-    static constexpr NumType xMax = (const NumType) (2. + voxelSize * 0.5);
-    static constexpr NumType yMin = (const NumType) (-2. + voxelSize * 0.5);
-    static constexpr NumType yMax = (const NumType) (2. + voxelSize * 0.5);
-    static constexpr NumType zMin = -2;//(const NumType) (-1. - voxelSize / 2.);
-    static constexpr NumType zMax = 2; //(const NumType) (1. + voxelSize / 2.);
+    static constexpr float voxelSize = 0.125;
+    static constexpr float xMin = -2. + voxelSize * 0.5;
+    static constexpr float xMax = 2. + voxelSize * 0.5;
+    static constexpr float yMin = -2. + voxelSize * 0.5;
+    static constexpr float yMax = 2. + voxelSize * 0.5;
+    static constexpr float zMin = -2;//(const NumType) (-1. - voxelSize / 2.);
+    static constexpr float zMax = 2; //(const NumType) (1. + voxelSize / 2.);
 
     static constexpr NumType freeRadiusAroundCenter = 1;
 

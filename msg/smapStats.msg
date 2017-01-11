@@ -58,6 +58,8 @@ float64 ismRampSlope
 #         Scenario of Trajectory Evaluation (Planning)          #
 #################################################################
 
+uint32 trajectoryId
+
 # Number of voxels per trajectory
 uint32 trajectoryVoxels
 
@@ -67,3 +69,8 @@ float64[] trajectoryOccupanciesLogOdds
 # Evolution of std dev predictions along each trajectory (size is maxStep*trajectoryVoxels)
 float64[] trajectoryStdDevsBelief
 float64[] trajectoryStdDevsLogOdds
+
+# trajectory 2d position, yaw angle (theta) at each step
+float64[] trajectoryX
+float64[] trajectoryY
+float64[] trajectoryT

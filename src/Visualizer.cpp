@@ -553,7 +553,7 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
         trajectoryVoxels.color.r = (float)colors[color][0];
         trajectoryVoxels.color.g = (float)colors[color][1];
         trajectoryVoxels.color.b = (float)colors[color][2];
-        robot->selectSpline(splineId);
+        //robot->selectSpline(splineId); // TODO messes up simulation
         for (auto &key : robot->currentSplinesVoxels())
         {
             auto coords = trueMap->keyToCoord(key);

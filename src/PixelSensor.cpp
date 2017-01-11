@@ -95,6 +95,7 @@ Parameters::NumType PixelSensor::likelihoodGivenCause(Measurement measurement, Q
             return 0;
 
         auto z_mostLikely = _observationGivenCause(causeVoxel, true);
+        // TODO std dev is different from sensor model
         auto tg = TruncatedGaussianDistribution(z_mostLikely.value, Parameters::sensorNoiseStd, 0, Parameters::sensorRange);
         return tg.pdfValue(measurement.value);
     }

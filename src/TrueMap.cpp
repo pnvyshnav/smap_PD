@@ -57,11 +57,12 @@ TrueMap TrueMap::generate(unsigned int seed)
     }
 #else
     auto center = Parameters::Vec3Type(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter);
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    // TODO note the <= instead of < here compared to LogOddsMap and BeliefMap
+    for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX; ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y <= Parameters::voxelsPerDimensionY; ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z <= Parameters::voxelsPerDimensionZ; ++z)
             {
                 octomap::point3d point(
                         Parameters::xMin + x * Parameters::voxelSize,
