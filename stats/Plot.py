@@ -48,6 +48,7 @@ class Results:
         self.axisCorrelation = self.fig_inconsistencies.add_subplot(111)
 
         self.fig_posNegDistance = plt.figure('Positive/Negative Distance between Error and Std')
+        self.fig_posNegDistance.suptitle("All Voxels where Prediction Error < 0.3")
         self.axisPosNegDistanceHybrid = self.fig_posNegDistance.add_subplot(211)
         self.axisPosNegDistanceLogOdds = self.fig_posNegDistance.add_subplot(212)
 
@@ -319,7 +320,7 @@ class Results:
         plt.xlabel("Steps")
         plt.ylabel("Absolute Distance")
 
-        return # TODO remove
+        #return # TODO remove
 
         def my_pearson(x, y):
             r, _ = pearsonr(x, y)
