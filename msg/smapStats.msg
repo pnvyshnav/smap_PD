@@ -74,3 +74,5 @@ float64[] trajectoryStdDevsLogOdds
 float64[] trajectoryX
 float64[] trajectoryY
 float64[] trajectoryT
+# slope of the spline
+float64[] trajectorySlope

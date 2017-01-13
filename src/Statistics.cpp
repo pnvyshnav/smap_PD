@@ -171,7 +171,7 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
 
 #ifdef PLANNER_2D_TEST
     _msg.trajectoryVoxels = (unsigned int) robot.currentSplinesVoxels().size();
-    ROS_INFO("Trajectory voxels: %d", (int)_msg.trajectoryVoxels);
+    //ROS_INFO("Trajectory voxels: %d", (int)_msg.trajectoryVoxels);
     for (auto &key: robot.currentSplinesVoxels())
     {
         _msg.trajectoryOccupanciesBelief.push_back(beliefMap.query(key).node()->getValue()->mean());
@@ -188,6 +188,7 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
     _msg.trajectoryY.push_back(robot.position().y());
     _msg.trajectoryT.push_back(robot.yaw());
     _msg.trajectoryId = robot.selectedSpline();
+//    _msg.trajectorySlope.push_back(robot.splines()[_msg.trajectoryId].derive().)
 #endif
 
     _publisher.publish(_msg);

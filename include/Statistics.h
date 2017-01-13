@@ -9,6 +9,22 @@
 #include "BeliefMap.h"
 #include "FakeRobot.hpp"
 
+struct VoxelStatistics
+{
+    double absError;
+    double stdDev;
+    QVoxel voxel;
+    VoxelStatistics(double absError, double stdDev, const QVoxel &voxel)
+            : absError(absError), stdDev(stdDev), voxel(voxel)
+    {}
+};
+
+class MapStatistics
+{
+public:
+    virtual std::vector<VoxelStatistics> getStatistics(const TrueMap &trueMap) = 0;
+};
+
 class Statistics
 {
 public:
