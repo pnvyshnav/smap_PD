@@ -215,7 +215,7 @@ public:
 
             double miniStep = _splineSmallStepSize / 5.;
     #ifdef EQUIDISTANT_ARC_LENGTH
-            miniStep *= 1e3;
+            miniStep *= 5e3;
     #endif
             auto next = spline.evaluate((float)std::min(1.0, current.u + miniStep)).result();
             auto prev = spline.evaluate((float)std::min(0.99999, std::max(0.0, current.u - miniStep))).result();
