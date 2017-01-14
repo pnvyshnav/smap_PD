@@ -7,7 +7,7 @@
 
 #define FAKE_2D
 #define PLANNER_2D_TEST
-#define SIMULATE_TIME
+//#define SIMULATE_TIME
 //#define FAKE_3D
 //#define MANY_STEPS
 
@@ -28,7 +28,7 @@ public:
     // Fake sensor measurements
     //
     static const bool deterministicSensorMeasurements = false;
-    static const unsigned int FakeRobotNumSteps = 60;
+    static const unsigned int FakeRobotNumSteps = 300;
 
     //
     // Real sensor measurements

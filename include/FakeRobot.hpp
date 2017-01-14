@@ -15,11 +15,19 @@
 #include "Robot.hpp"
 #include "LogOddsMap.h"
 
-struct Point
+struct SplineEvaluationResult
 {
     double x;
     double y;
+    double arcLength;
+    double u;
+    SplineEvaluationResult(double x, double y, double arcLength, double u)
+            : x(x), y(y), arcLength(arcLength), u(u)
+    {}
 };
+
+
+#define EQUIDISTANT_ARC_LENGTH
 
 
 /**
@@ -123,16 +131,54 @@ public:
     }
 
     /**
+     * Evaluates the selected spline at position u (u in [0,1]).
+     * @param u Relative position on spline in [0,1].
+     * @param splineId Id of spline to evaluate.
+     * @return Point on the spline.
+     */
+    SplineEvaluationResult evaluateSpline(double u, unsigned int splineId) const
+    {
+        auto lastResult = _splines[splineId].evaluate(0).result();
+        if (u <= 0)
+            return SplineEvaluationResult(lastResult[0], lastResult[1], 0., 0.);
+        if (u >= 1)
+        {
+            lastResult = _splines[splineId].evaluate(1).result();
+            return SplineEvaluationResult(lastResult[0], lastResult[1], _currentSplineArcLength, 1.);
+        }
+#ifdef EQUIDISTANT_ARC_LENGTH
+        //ROS_INFO("Evaluating spline at %f  stepsize is %f", u, _splineSmallStepSize);
+        double arcLength = 0;
+        for (double v = _splineSmallStepSize; v <= 1.; v += _splineSmallStepSize)
+        {
+            //ROS_INFO("V = %f,  a = %f", v, arcLength);
+            auto result = _splines[splineId].evaluate(v).result();
+            arcLength += std::sqrt(std::pow(result[0]-lastResult[0], 2.f)
+                                   + std::pow(result[1]-lastResult[1], 2.f));
+            if (arcLength / _currentSplineArcLength >= u)
+            {
+                //ROS_INFO("Arc length is %f", arcLength);
+                return SplineEvaluationResult(result[0], result[1], arcLength, v);
+            }
+            lastResult = result;
+        }
+        //ROS_INFO("TOTAL Arc length is %f   estimated: %f", arcLength, _currentSplineArcLength);
+
+        return SplineEvaluationResult(lastResult[0], lastResult[1], _currentSplineArcLength, 1.);
+#else
+        auto result = _splines[splineId].evaluate(u).result();
+        return SplineEvaluationResult(result[0], result[1], u * _currentSplineArcLength, u);
+#endif
+    }
+
+    /**
      * Evaluates the current spline at position u (u in [0,1]).
      * @param u Relative position on spline in [0,1].
      * @return Point on the spline.
      */
-    Point evaluateCurrentSpline(double u) const
+    SplineEvaluationResult evaluateSpline(double u) const
     {
-        if (_splineId == 0)
-        {
-
-        }
+        return evaluateSpline(u, _splineId);
     }
 
     void run()
@@ -164,11 +210,15 @@ public:
 #ifdef FAKE_2D
     #ifdef PLANNER_2D_TEST
             auto spline = _splines[_splineId];
-            float overallProgress = rad / maxRad;
+            double overallProgress = rad / maxRad;
+            auto current = evaluateSpline(overallProgress);
 
-            float miniStep = 0.05f / maxRad;
-            auto next = spline.evaluate(std::min(1.0f, overallProgress+miniStep)).result();
-            auto prev = spline.evaluate(std::min(0.999f, std::max(0.0f, overallProgress-miniStep))).result();
+            double miniStep = _splineSmallStepSize / 5.;
+    #ifdef EQUIDISTANT_ARC_LENGTH
+            miniStep *= 1e3;
+    #endif
+            auto next = spline.evaluate((float)std::min(1.0, current.u + miniStep)).result();
+            auto prev = spline.evaluate((float)std::min(0.99999, std::max(0.0, current.u - miniStep))).result();
             _yaw = std::atan2(next[0] - prev[0], next[1] - prev[1]);
 
             if (_splineId == 0)
@@ -179,8 +229,7 @@ public:
                     _yaw = -M_PI / 2.;
             }
 
-            std::vector<float> result = spline.evaluate(overallProgress).result();
-            setPosition(Parameters::Vec3Type(result[0], result[1], 0.05));
+            setPosition(Parameters::Vec3Type(current.x, current.y, 0.05));
 
 //            int pos = (int)(rad / (2. * M_PI));
 //            double progress = rad / (2. * M_PI) - pos;
@@ -216,17 +265,18 @@ public:
                      futureStep < stepLimit;
                      ++futureStep)
                 {
-                    float overallProgress = futureStep * Parameters::FakeRobotAngularVelocity / maxRad;
-                    std::vector<float> result = spline.evaluate(overallProgress).result();
+                    double p = futureStep * Parameters::FakeRobotAngularVelocity / maxRad;
+                    auto result = evaluateSpline(p);
                     //_splineFutureVoxels.insert(_trueMap.coordToKey(result[0], result[1], 0.05));
 
                     // sample from the environment
                     for (int x = -1; x <= 1; ++x)
                     {
-                        for (int y = -1; y <= 1; ++y) {
+                        for (int y = -1; y <= 1; ++y)
+                        {
                             _splineFutureVoxels.insert(
-                                    _trueMap.coordToKey(result[0] + x * 0.5 * Parameters::voxelSize,
-                                                        result[1] + y * 0.5 * Parameters::voxelSize,
+                                    _trueMap.coordToKey(result.x + x * 0.5 * Parameters::voxelSize,
+                                                        result.y + y * 0.5 * Parameters::voxelSize,
                                                         0.05));
                         }
                     }
@@ -302,18 +352,32 @@ public:
         _splineId = splineId;
 
 #ifdef PLANNER_2D_TEST
-        _splineVoxels.clear();
         double maxRad = Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity;
-        auto spline = _splines[_splineId];
-        // update spline voxels
-        unsigned int ustep = 0;
-        for (auto rad = 0.;
-             !_stopRequested && ustep <= Parameters::FakeRobotNumSteps;
-             rad += Parameters::FakeRobotAngularVelocity, ++ustep)
+
+        _currentSplineArcLength = 0;
+        auto lastResult = _splines[_splineId].evaluate(0).result();
+#ifdef EQUIDISTANT_ARC_LENGTH
+        _splineSmallStepSize = 1e-3 / maxRad;
+#else
+        _splineSmallStepSize = 1. / maxRad;
+#endif
+        for (double u = _splineSmallStepSize; u <= 1.; u += _splineSmallStepSize)
         {
-            float overallProgress = rad / maxRad;
-            std::vector<float> result = spline.evaluate(overallProgress).result();
-            _splineVoxels.insert(_trueMap.coordToKey(result[0], result[1], 0.05));
+            auto result = _splines[_splineId].evaluate(u).result();
+            _currentSplineArcLength += std::sqrt(std::pow(result[0]-lastResult[0], 2.f)
+                                        + std::pow(result[1]-lastResult[1], 2.f));
+            lastResult = result;
+        }
+        ROS_INFO("Arc Length of Current Spline: %f", _currentSplineArcLength);
+
+        auto spline = _splines[_splineId];
+
+        // update spline voxels
+        _splineVoxels.clear();
+        for (double p = 0; p <= 1.; p += 1. / Parameters::FakeRobotNumSteps)
+        {
+            auto result = evaluateSpline(p);
+            _splineVoxels.insert(_trueMap.coordToKey(result.x, result.y, 0.05));
         }
         ROS_INFO("Selected spline %d with %d voxels.", (int)splineId, (int)_splineVoxels.size());
 
@@ -359,4 +423,6 @@ private:
     Parameters::KeySet _splineVoxels;
     Parameters::KeySet _splineFutureVoxels;
     std::vector<double> _currentSplineTiming;
+    double _currentSplineArcLength;
+    double _splineSmallStepSize;
 };

@@ -504,16 +504,6 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
         marker.color.r = (float)colors[color][0];
         marker.color.g = (float)colors[color][1];
         marker.color.b = (float)colors[color][2];
-        for (double x = 0; x <= 1.01; x += 0.015)
-        {
-            std::vector<float> result = spline.evaluate(std::min(1.0, x)).result();
-            geometry_msgs::Point p;
-            p.x = result[0];
-            p.y = result[1];
-            p.z = 0.5;
-            marker.points.push_back(p);
-        }
-        markers.markers.push_back(marker);
 
         visualization_msgs::Marker wayPoints;
         wayPoints.action = 0;
@@ -527,18 +517,19 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
         wayPoints.color.r = (float)colors[color][0];
         wayPoints.color.g = (float)colors[color][1];
         wayPoints.color.b = (float)colors[color][2];
-        double maxRad = Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity;
-        unsigned int step = 0;
-        for (auto rad = 0.; step <= Parameters::FakeRobotNumSteps; rad += Parameters::FakeRobotAngularVelocity, ++step)
+
+        for (double x = 0; x <= 1.01; x += 0.015)
         {
-            float overallProgress = (float) (rad / maxRad);
-            std::vector<float> result = spline.evaluate(overallProgress).result();
+            auto result = robot->evaluateSpline(x, splineId);
             geometry_msgs::Point p;
-            p.x = result[0];
-            p.y = result[1];
+            p.x = result.x;
+            p.y = result.y;
+            p.z = 0.5;
+            marker.points.push_back(p);
             p.z = 0.51;
             wayPoints.points.push_back(p);
         }
+        markers.markers.push_back(marker);
         markers.markers.push_back(wayPoints);
 
         // visualize all trajectory voxels
