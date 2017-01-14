@@ -15,6 +15,16 @@ public:
 
     static bool insideMap(const Parameters::Vec3Type &point);
 
+    double getVoxelMean(QTrueVoxel &voxel) const
+    {
+        return std::round(voxel.node()->getOccupancy());
+    }
+
+    double getVoxelStd(QTrueVoxel &voxel) const
+    {
+        return 0;
+    }
+
 private:
     TrueMap();
 };

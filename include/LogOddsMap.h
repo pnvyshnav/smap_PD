@@ -6,6 +6,7 @@
 #include "QVoxel.hpp"
 #include "Observable.hpp"
 #include "Observation.hpp"
+#include "TrueMap.h"
 
 class LogOddsMap
         : public octomap::OcTree,
@@ -25,6 +26,17 @@ public:
     std::vector<double> errorLastUpdated(const TrueMap &trueMap) const;
 
     void reset();
+
+    double getVoxelMean(QTrueVoxel &voxel) const
+    {
+        return voxel.node()->getOccupancy();
+    }
+
+    double getVoxelStd(QTrueVoxel &voxel) const
+    {
+        double p = getVoxelMean(voxel);
+        return std::sqrt(p * (1. - p));
+    }
 
 private:
     struct InverseSensorModel

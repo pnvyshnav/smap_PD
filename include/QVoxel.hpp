@@ -1,17 +1,13 @@
 #pragma once
 
+#include <unordered_set>
 #include <octomap/OcTreeBaseImpl.h>
 #include <ros/console.h>
 
 #include "Parameters.hpp"
 #include "BeliefVoxel.h"
+#include "Observation.hpp"
 
-enum GeometryType
-{
-    GEOMETRY_VOXEL,
-    GEOMETRY_SPURIOUS,
-    GEOMETRY_HOLE
-};
 
 /**
  * QVoxel stands for a "queried" voxel, i.e. it might be a hole or spurious geometry
@@ -136,9 +132,23 @@ public:
         return vs;
     }
 
+    typename std::vector<QTypedVoxel<NODE> > voxels(const Parameters::KeySet &keys) const
+    {
+        std::vector<QTypedVoxel<NODE> > vs;
+        for (auto &key: keys)
+        {
+            vs.push_back(query(key));
+        }
+        return vs;
+    }
+
+    virtual double getVoxelMean(QTypedVoxel<NODE> &voxel) const = 0;
+    virtual double getVoxelStd(QTypedVoxel<NODE> &voxel) const = 0;
+
 protected:
     QVoxelMap(const octomap::OcTreeBaseImpl<NODE, I> *tree) : _tree(tree)
     {}
+
 
 private:
     const octomap::OcTreeBaseImpl<NODE, I> *_tree;

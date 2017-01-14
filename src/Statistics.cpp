@@ -170,9 +170,9 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
 #endif
 
 #ifdef PLANNER_2D_TEST
-    _msg.trajectoryVoxels = (unsigned int) robot.currentSplinesVoxels().size();
+    _msg.trajectoryVoxels = (unsigned int) robot.currentSplineVoxels().size();
     //ROS_INFO("Trajectory voxels: %d", (int)_msg.trajectoryVoxels);
-    for (auto &key: robot.currentSplinesVoxels())
+    for (auto &key: robot.currentSplineVoxels())
     {
         _msg.trajectoryOccupanciesBelief.push_back(beliefMap.query(key).node()->getValue()->mean());
         _msg.trajectoryStdDevsBelief.push_back(std::sqrt(beliefMap.query(key).node()->getValue()->variance()));
@@ -188,7 +188,17 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
     _msg.trajectoryY.push_back(robot.position().y());
     _msg.trajectoryT.push_back(robot.yaw());
     _msg.trajectoryId = robot.selectedSpline();
-//    _msg.trajectorySlope.push_back(robot.splines()[_msg.trajectoryId].derive().)
+
+    _msg.trajectoryTime.push_back(robot.time());
+
+    _msg.trajectoryFutureVoxels.push_back(robot.currentSplineFutureVoxels().size());
+    double reachability = 1;
+    for (auto &voxel : beliefMap.voxels(robot.currentSplineFutureVoxels()))
+    {
+        reachability *= 1. - beliefMap.getVoxelMean(voxel);
+    }
+    _msg.trajectoryFutureReachability.push_back(reachability);
+
 #endif
 
     _publisher.publish(_msg);
@@ -308,4 +318,10 @@ void Statistics::reset()
     _msg.trajectoryX.clear();
     _msg.trajectoryY.clear();
     _msg.trajectoryT.clear();
+    _msg.trajectoryTime.clear();
+
+    _msg.trajectoryFutureSteps.clear();
+    _msg.trajectoryFutureVoxels.clear();
+    _msg.trajectoryFutureReachability.clear();
+    _msg.trajectoryFutureSafety.clear();
 }

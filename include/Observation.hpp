@@ -4,7 +4,13 @@
 #include <memory>
 
 #include "Parameters.hpp"
-#include "TrueMap.h"
+
+enum GeometryType
+{
+    GEOMETRY_VOXEL,
+    GEOMETRY_SPURIOUS,
+    GEOMETRY_HOLE
+};
 
 class Sensor;
 struct Measurement

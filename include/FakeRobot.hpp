@@ -15,6 +15,12 @@
 #include "Robot.hpp"
 #include "LogOddsMap.h"
 
+struct Point
+{
+    double x;
+    double y;
+};
+
 
 /**
  * Representation of a robot in a given pose and having a sensor.
@@ -116,6 +122,19 @@ public:
         return _sensor;
     }
 
+    /**
+     * Evaluates the current spline at position u (u in [0,1]).
+     * @param u Relative position on spline in [0,1].
+     * @return Point on the spline.
+     */
+    Point evaluateCurrentSpline(double u) const
+    {
+        if (_splineId == 0)
+        {
+
+        }
+    }
+
     void run()
     {
         ROS_INFO("FakeRobot is running...");
@@ -149,7 +168,7 @@ public:
 
             float miniStep = 0.05f / maxRad;
             auto next = spline.evaluate(std::min(1.0f, overallProgress+miniStep)).result();
-            auto prev = spline.evaluate(std::max(0.0f, overallProgress-miniStep)).result();
+            auto prev = spline.evaluate(std::min(0.999f, std::max(0.0f, overallProgress-miniStep))).result();
             _yaw = std::atan2(next[0] - prev[0], next[1] - prev[1]);
 
             if (_splineId == 0)
@@ -181,11 +200,43 @@ public:
             {
                 if (_step >= _currentSplineTiming.size())
                     break;
+
                 double time = _currentSplineTiming[_step];
                 ROS_INFO("Time: %f", time);
+
+    #ifdef SIMULATE_TIME
                 ros::Rate publishing_rate((time - lastTime) + 2);
                 publishing_rate.sleep();
                 lastTime = time;
+    #endif
+
+                _splineFutureVoxels.clear();
+                double elapsedFuture = 0, lastFuture = time;
+                for (unsigned int futureStep = _step + 1;
+                     futureStep < stepLimit;
+                     ++futureStep)
+                {
+                    float overallProgress = futureStep * Parameters::FakeRobotAngularVelocity / maxRad;
+                    std::vector<float> result = spline.evaluate(overallProgress).result();
+                    //_splineFutureVoxels.insert(_trueMap.coordToKey(result[0], result[1], 0.05));
+
+                    // sample from the environment
+                    for (int x = -1; x <= 1; ++x)
+                    {
+                        for (int y = -1; y <= 1; ++y) {
+                            _splineFutureVoxels.insert(
+                                    _trueMap.coordToKey(result[0] + x * 0.5 * Parameters::voxelSize,
+                                                        result[1] + y * 0.5 * Parameters::voxelSize,
+                                                        0.05));
+                        }
+                    }
+
+                    double futureTime = _currentSplineTiming[futureStep];
+                    elapsedFuture += 1. / (futureTime - lastFuture);
+                    if (elapsedFuture > 1.5) //Parameters::EvaluateFutureTimespan)
+                        break;
+                    lastFuture = futureTime;
+                }
             }
     #else
             setOrientation(Parameters::Vec3Type(std::cos(rad), std::sin(rad), 0));
@@ -237,21 +288,13 @@ public:
         return _splineId;
     }
 
-    /**
-     * Computes the reachability of the current active trajectory at the current step.
-     * @return Reachability of voxels along the current trajectory.
-     */
-    double currentReachability(LogOddsMap &map) const
+    double time() const
     {
-        // TODO implement
-        unsigned int step = 0;
-        double maxRad = Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity;
-        for (auto rad = 0.; step <= Parameters::FakeRobotNumSteps;
-             rad += Parameters::FakeRobotAngularVelocity, ++step)
-        {
-
-        }
-        return -1;
+        if (_currentSplineTiming.empty())
+            return -1;
+        if (_step < _currentSplineTiming.size())
+            return _currentSplineTiming[_step];
+        return _currentSplineTiming.back();
     }
 
     void selectSpline(unsigned int splineId)
@@ -289,9 +332,18 @@ public:
      * Returns the keys to the voxels covered by the current spline.
      * @return Set of distinct OcTreeKeys.
      */
-    const std::unordered_set<octomap::OcTreeKey, octomap::OcTreeKey::KeyHash> &currentSplinesVoxels() const
+    const Parameters::KeySet &currentSplineVoxels() const
     {
         return _splineVoxels;
+    }
+
+    /**
+     * Returns the keys to the voxels covered within the next Parameters::EvaluateFutureSteps by the current spline.
+     * @return Set of distinct OcTreeKeys.
+     */
+    const Parameters::KeySet &currentSplineFutureVoxels() const
+    {
+        return _splineFutureVoxels;
     }
 
 private:
@@ -304,6 +356,7 @@ private:
     unsigned int _step;
     std::vector<ts::BSpline> _splines;
     unsigned int _splineId;
-    std::unordered_set<octomap::OcTreeKey, octomap::OcTreeKey::KeyHash> _splineVoxels;
+    Parameters::KeySet _splineVoxels;
+    Parameters::KeySet _splineFutureVoxels;
     std::vector<double> _currentSplineTiming;
 };

@@ -12,6 +12,8 @@
 #include "BeliefVoxel.h"
 #include "QVoxel.hpp"
 #include "Observation.hpp"
+#include "Observable.hpp"
+#include "TrueMap.h"
 
 class InverseCauseModel;
 class BeliefMap
@@ -49,6 +51,16 @@ public:
     std::vector<double> errorLastUpdated(const TrueMap &trueMap) const;
 
     void reset();
+
+    double getVoxelMean(QBeliefVoxel &voxel) const
+    {
+        return voxel.node()->getValue()->mean();
+    }
+
+    double getVoxelStd(QBeliefVoxel &voxel) const
+    {
+        return std::sqrt(voxel.node()->getValue()->variance());
+    }
 
 private:
     BeliefVoxel *_updateNodeRecurs(BeliefVoxel* node, bool node_just_created,

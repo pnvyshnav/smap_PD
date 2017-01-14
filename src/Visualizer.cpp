@@ -541,20 +541,21 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
         }
         markers.markers.push_back(wayPoints);
 
+        // visualize all trajectory voxels
         visualization_msgs::Marker trajectoryVoxels;
         trajectoryVoxels.action = 0;
-        trajectoryVoxels.id = (int) visualizable->observableId() + counter++;
+        trajectoryVoxels.id = (int) robot->selectedSpline();
         trajectoryVoxels.type = visualization_msgs::Marker::POINTS;
         trajectoryVoxels.header.frame_id = "map";
         trajectoryVoxels.scale.x = 0.1;
         trajectoryVoxels.scale.y = 0.1;
         trajectoryVoxels.scale.z = 0.1;
-        trajectoryVoxels.color.a = 0.8;
+        trajectoryVoxels.color.a = 0.5;
         trajectoryVoxels.color.r = (float)colors[color][0];
         trajectoryVoxels.color.g = (float)colors[color][1];
         trajectoryVoxels.color.b = (float)colors[color][2];
         //robot->selectSpline(splineId); // TODO messes up simulation
-        for (auto &key : robot->currentSplinesVoxels())
+        for (auto &key : robot->currentSplineVoxels())
         {
             auto coords = trueMap->keyToCoord(key);
             geometry_msgs::Point p;
@@ -563,7 +564,32 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
             p.z = 0.51;
             trajectoryVoxels.points.push_back(p);
         }
-        allTrajectoryVoxels.markers.push_back(trajectoryVoxels);
+        //allTrajectoryVoxels.markers.push_back(trajectoryVoxels);
+
+        // visualize all trajectory voxels
+        visualization_msgs::Marker trajectoryFutureVoxels;
+        trajectoryFutureVoxels.action = 0;
+        trajectoryFutureVoxels.id = (int) robot->selectedSpline() + 10;
+        trajectoryFutureVoxels.type = visualization_msgs::Marker::POINTS;
+        trajectoryFutureVoxels.header.frame_id = "map";
+        trajectoryFutureVoxels.scale.x = 0.1;
+        trajectoryFutureVoxels.scale.y = 0.1;
+        trajectoryFutureVoxels.scale.z = 0.1;
+        trajectoryFutureVoxels.color.a = 0.6;
+        trajectoryFutureVoxels.color.r = 0.8;
+        trajectoryFutureVoxels.color.g = 0.6;
+        trajectoryFutureVoxels.color.b = 0.0;
+        //robot->selectSpline(splineId); // TODO messes up simulation
+        for (auto &key : robot->currentSplineFutureVoxels())
+        {
+            auto coords = trueMap->keyToCoord(key);
+            geometry_msgs::Point p;
+            p.x = coords.x();
+            p.y = coords.y();
+            p.z = 0.52;
+            trajectoryFutureVoxels.points.push_back(p);
+        }
+        allTrajectoryVoxels.markers.push_back(trajectoryFutureVoxels);
 
         ++splineId;
     }

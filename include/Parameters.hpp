@@ -1,11 +1,13 @@
 #pragma once
 
 #include <cmath>
+#include <unordered_set>
 
 #include <octomap/OcTree.h>
 
 #define FAKE_2D
 #define PLANNER_2D_TEST
+#define SIMULATE_TIME
 //#define FAKE_3D
 //#define MANY_STEPS
 
@@ -17,6 +19,7 @@ public:
 
     typedef double NumType;
     typedef octomap::point3d Vec3Type;
+    typedef std::unordered_set<octomap::OcTreeKey, octomap::OcTreeKey::KeyHash> KeySet;
 
     static constexpr NumType equalityThreshold = 1e-16;
 
@@ -31,6 +34,11 @@ public:
     // Real sensor measurements
     //
     static constexpr float PointCloudResolution = 0.3f;
+
+    //
+    // Trajectory evaluation
+    //
+    static constexpr double EvaluateFutureTimespan = 400;
 
 #if defined(FAKE_2D)
     static constexpr float voxelSize = 0.1;
@@ -89,7 +97,7 @@ public:
 
 #if defined(PLANNER_2D_TEST)
     static const unsigned int StereoCameraHorizontalPixels = 8;
-    static constexpr double StereoCameraHorizontalFOV = 40. * M_PI / 180.;
+    static constexpr double StereoCameraHorizontalFOV = 120. * M_PI / 180.;
 #endif
 
     static constexpr NumType xCenter = (const NumType) ((xMax + xMin) / 2.0);
