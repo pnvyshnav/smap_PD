@@ -39,6 +39,8 @@ public:
     // Trajectory evaluation
     //
     static constexpr double EvaluateFutureTimespan = 400;
+    static const bool EquidistantArcLengthSampling = true;
+    static const unsigned int VelocityPlanningPoints = 250;
 
 #if defined(FAKE_2D)
     static constexpr float voxelSize = 0.1;

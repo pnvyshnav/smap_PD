@@ -9,6 +9,7 @@
 #include "../include/Drone.h"
 #include "../include/LogOddsMap.h"
 #include "../include/Statistics.h"
+#include "../include/TrajectoryPlanner.h"
 
 TrueMap trueMap = TrueMap::generate(123); // TODO leave out seed value
 BeliefMap beliefMap;
@@ -23,6 +24,8 @@ FakeRobot<> robot(
         Parameters::Vec3Type(0, 1, 0),
 #endif
         trueMap);
+
+TrajectoryPlanner planner(trueMap, beliefMap);
 
 
 std::vector<double> logOddsErrors, beliefErrors;
