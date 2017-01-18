@@ -8,50 +8,7 @@
 #include "LogOddsMap.h"
 #include "BeliefMap.h"
 #include "FakeRobot.hpp"
-#include "QVoxel.hpp"
 
-class QVoxel;
-class TrueMap;
-struct VoxelStatistics
-{
-    double absError;
-    double stdDev;
-    const QVoxel *voxel;
-    VoxelStatistics(double absError, double stdDev, const QVoxel *voxel)
-            : absError(absError), stdDev(stdDev), voxel(voxel)
-    {}
-};
-
-
-class MapStatistics
-{
-public:
-    template <class NODE, class I>
-    static std::vector<VoxelStatistics> stats(const TrueMap &trueMap, const QVoxelMap<NODE, I> &map)
-    {
-        std::vector<VoxelStatistics> stats;
-        for (auto &voxel : map.voxels())
-        {
-            QTrueVoxel trueVoxel = trueMap.query(voxel.key);
-            double error = std::abs(trueMap.getVoxelMean(trueVoxel) - map.getVoxelMean(voxel));
-            stats.push_back(VoxelStatistics(error, map.getVoxelStd(voxel), &voxel));
-        }
-        return stats;
-    }
-
-    template <class NODE, class I>
-    static std::vector<VoxelStatistics> stats(const TrueMap &trueMap, const QVoxelMap<NODE, I> &map, const Parameters::KeySet &keys)
-    {
-        std::vector<VoxelStatistics> stats;
-        for (auto &voxel : map.voxels(keys))
-        {
-            QTrueVoxel trueVoxel = trueMap.query(voxel.key);
-            double error = std::abs(trueMap.getVoxelMean(trueVoxel) - map.getVoxelMean(voxel));
-            stats.push_back(VoxelStatistics(error, map.getVoxelStd(voxel), &voxel));
-        }
-        return stats;
-    }
-};
 
 class Statistics
 {
@@ -61,7 +18,7 @@ public:
 
     void update(const LogOddsMap &logOddsMap,
                 const BeliefMap &beliefMap,
-                const FakeRobot<> &robot);
+                FakeRobot<> &robot);
 
     void saveToFile(std::string filename = "statistics.bag") const;
 
@@ -76,6 +33,11 @@ public:
     static double avg_distance(const std::vector<double> &xs, const std::vector<double> &ys);
 
     void reset();
+
+    const smap::smapStats stats() const
+    {
+        return _msg;
+    }
 
 private:
     ros::Publisher _publisher;

@@ -12,9 +12,15 @@ public:
     Trajectory replan(Point start, Point end);
     Trajectory replan(Point start, Point end, const Trajectory &basis);
 
+
+    std::vector<Trajectory> generateTrajectories() const;
+
+    void evaluate(Trajectory &trajectory, BeliefMap &map, const smap::smapStats &stats);
+
 private:
     TrueMap &_trueMap;
     BeliefMap &_beliefMap;
+
 };
 
 

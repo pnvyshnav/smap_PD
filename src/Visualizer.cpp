@@ -139,7 +139,7 @@ void Visualizer::publishLogOddsMap(const Observable *visualizable)
     //loop_rate.sleep();
 
     visualization_msgs::MarkerArray cells;
-    for (auto &voxel : logOddsMap->lastUpdatedVoxels)
+    for (auto &voxel : logOddsMap->updatedVoxels())
     {
         visualization_msgs::Marker cell;
         // TODO do not remove voxels by z position
@@ -192,7 +192,7 @@ void Visualizer::publishBeliefMap(const Observable *visualizable)
     //loop_rate.sleep();
 
     visualization_msgs::MarkerArray cells;
-    for (auto &voxel : beliefMap->lastUpdatedVoxels)
+    for (auto &voxel : beliefMap->updatedVoxels())
     {
         visualization_msgs::Marker cell;
         // TODO do not remove voxels by z position
@@ -485,12 +485,13 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
         {0, 0, 1}
     };
 
+#if defined(PLANNER_2D_TEST)
     visualization_msgs::MarkerArray allTrajectoryVoxels;
 
     int counter = 0;
     unsigned int splineId = 0;
-    for (auto &spline : robot->splines())
-    {
+//    for (auto &spline : robot->splines())
+//    {
         visualization_msgs::Marker marker;
         marker.action = 0;
         marker.id = (int) visualizable->observableId() + counter++;
@@ -518,12 +519,13 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
         wayPoints.color.g = (float)colors[color][1];
         wayPoints.color.b = (float)colors[color][2];
 
-        for (double x = 0; x <= 1.01; x += 0.015)
+        auto trajectory = Trajectory(robot->trajectory());
+        for (double x = 0; x <= 1.01; x += 0.05)
         {
-            auto result = robot->evaluateSpline(x, splineId);
+            auto result = trajectory.evaluate(x);
             geometry_msgs::Point p;
-            p.x = result.x;
-            p.y = result.y;
+            p.x = result.point.x;
+            p.y = result.point.y;
             p.z = 0.5;
             marker.points.push_back(p);
             p.z = 0.51;
@@ -535,7 +537,7 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
         // visualize all trajectory voxels
         visualization_msgs::Marker trajectoryVoxels;
         trajectoryVoxels.action = 0;
-        trajectoryVoxels.id = (int) robot->selectedSpline();
+        trajectoryVoxels.id = (int) 5;
         trajectoryVoxels.type = visualization_msgs::Marker::POINTS;
         trajectoryVoxels.header.frame_id = "map";
         trajectoryVoxels.scale.x = 0.1;
@@ -546,21 +548,20 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
         trajectoryVoxels.color.g = (float)colors[color][1];
         trajectoryVoxels.color.b = (float)colors[color][2];
         //robot->selectSpline(splineId); // TODO messes up simulation
-        for (auto &key : robot->currentSplineVoxels())
+        for (auto &coords : robot->trajectory().splineVoxelPositions(*trueMap))
         {
-            auto coords = trueMap->keyToCoord(key);
             geometry_msgs::Point p;
             p.x = coords.x();
             p.y = coords.y();
             p.z = 0.51;
             trajectoryVoxels.points.push_back(p);
         }
-        //allTrajectoryVoxels.markers.push_back(trajectoryVoxels);
+        allTrajectoryVoxels.markers.push_back(trajectoryVoxels);
 
         // visualize all trajectory voxels
         visualization_msgs::Marker trajectoryFutureVoxels;
         trajectoryFutureVoxels.action = 0;
-        trajectoryFutureVoxels.id = (int) robot->selectedSpline() + 10;
+        trajectoryFutureVoxels.id = (int) 10;
         trajectoryFutureVoxels.type = visualization_msgs::Marker::POINTS;
         trajectoryFutureVoxels.header.frame_id = "map";
         trajectoryFutureVoxels.scale.x = 0.1;
@@ -583,10 +584,12 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
         allTrajectoryVoxels.markers.push_back(trajectoryFutureVoxels);
 
         ++splineId;
-    }
+//    }
 
     splinePublisher.publish(markers);
     trajectoryVoxelsPublisher.publish(allTrajectoryVoxels);
+
+#endif
 
     ros::spinOnce();
 }

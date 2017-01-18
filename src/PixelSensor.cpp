@@ -11,7 +11,7 @@ PixelSensor::PixelSensor(Parameters::Vec3Type position, Parameters::Vec3Type ori
 // TODO this is a hack
 Parameters::NumType scaledOccupancy(Parameters::NumType occupancy)
 {
-    // TrueMap occupancy values are either 0.4 (free) or 0.7 (occupied).
+    // TrueMap occupancy values are either 0.4 (free) or 0.7 (occupied). // TODO this is incorrect, can be < 0.4
     // The true mean is therefore 0.55.
     auto dd = occupancy - 0.575; //TODO explain this value
     return occupancy += dd * 1.7;
@@ -46,7 +46,8 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
                 if (voxel.type != GEOMETRY_VOXEL)
                     continue;
                 auto sample = UniformDistribution::sample();
-                if (sample < scaledOccupancy(voxel.node()->getOccupancy()))
+                // TODO this basically always yields the true cause voxel
+                if (sample < std::round(voxel.node()->getOccupancy()))
                 {
 #ifdef LOG_DETAILS
                     ROS_INFO("Cause Voxel is %d/%d.  %f < %f", i, (int)positions.size(), sample,
@@ -56,14 +57,64 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
                     return _observationGivenCause(voxel);
                 }
             }
-            // TODO avoid sensing a hole by returning last position
-            // TODO but only if it is at distance == Parameters::sensorRange
-//            if (!positions.empty() && positions.back().distance(position()) >= Parameters::sensorRange-2*Parameters::voxelSize)
-//            {
-//                QTrueVoxel voxel = trueMap.query(positions.back());
-//                return _observationGivenCause(voxel);
-//            }
         }
+    }
+
+#ifdef LOG_DETAILS
+    ROS_WARN_STREAM("Sensor " << _position << " -> " << _orientation << " observed a hole.");
+#endif
+    return Measurement::hole(std::make_shared<Sensor>(*this));
+}
+
+Observation PixelSensor::observeImaginary(BeliefMap &beliefMap) const
+{
+    std::vector<octomap::point3d> positions;
+    octomap::point3d end_ray = _position + _orientation * Parameters::sensorRange;
+    if (!beliefMap.computeRay(_position, end_ray, positions) || positions.empty())
+    {
+        ROS_ERROR("Voxels on ray could not be computed.");
+        return Measurement::hole(std::make_shared<Sensor>(*this));
+    }
+    else
+    {
+        // pick the most likely cause voxel that maximizes eq. (27)
+        std::valarray<double> scms(positions.size());
+        unsigned int i = 0;
+        double reachability = 1.;
+        for (auto &pos : positions)
+        {
+            QBeliefVoxel voxel = beliefMap.query(pos);
+            if (voxel.type != GEOMETRY_VOXEL)
+            {
+                scms[i] = 0;
+                continue;
+            }
+            double scm = voxel.node()->getValue()->mean() * reachability;
+            scms[i] = scm;
+            reachability *= 1. - voxel.node()->getValue()->mean();
+            ++i;
+            if (i >= positions.size())
+                break;
+        }
+
+        // probability that no voxel was occupied on ray
+        double infinityCause = 1. - scms.sum();
+
+        // find argmax(scms)
+        unsigned int argmax = 0;
+        for (unsigned int j = 1; j < scms.size(); ++j)
+        {
+            if (scms[j] > scms[argmax])
+                argmax = j;
+        }
+
+        if (scms[argmax] < infinityCause)
+        {
+            ROS_INFO("Sensor observed a hole.");
+            return Measurement::hole(std::make_shared<Sensor>(*this));
+        }
+
+        return _observationGivenCause(beliefMap.query(positions[argmax]), true);
     }
 
 #ifdef LOG_DETAILS
@@ -95,7 +146,7 @@ Parameters::NumType PixelSensor::likelihoodGivenCause(Measurement measurement, Q
             return 0;
 
         auto z_mostLikely = _observationGivenCause(causeVoxel, true);
-        // TODO std dev is different from sensor model
+        // TODO try scenario where std dev is different from sensor model
         auto tg = TruncatedGaussianDistribution(z_mostLikely.value, Parameters::sensorNoiseStd, 0, Parameters::sensorRange);
         return tg.pdfValue(measurement.value);
     }

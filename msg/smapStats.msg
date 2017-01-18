@@ -76,8 +76,15 @@ float64[] trajectoryY
 float64[] trajectoryT
 float64[] trajectoryTime
 
-# future measurements
+# Future predictions
+# reachability of voxels within time span
 float64[] trajectoryFutureReachability
-float64[] trajectoryFutureSafety
-uint32[] trajectoryFutureSteps
+# number of future voxels to be considered
 uint32[] trajectoryFutureVoxels
+
+# Evolution of occupancies of future voxels (size is maxStep*sum(trajectoryFutureVoxels))
+float64[] trajectoryFutureOccupanciesBelief
+#float64[] trajectoryFutureOccupanciesLogOdds
+# Evolution of std devs of future voxels (size is maxStep*sum(trajectoryFutureVoxels))
+float64[] trajectoryFutureStdDevsBelief
+#float64[] trajectoryFutureStdDevsLogOdds

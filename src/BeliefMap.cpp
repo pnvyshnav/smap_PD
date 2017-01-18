@@ -8,7 +8,7 @@
 class registerTreeType;
 
 BeliefMap::BeliefMap() : octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractOcTree>(Parameters::voxelSize),
-                         QVoxelMap(this)
+                         StatisticsMap(this)
 {
     octomap::AbstractOcTree::registerTreeType(this);
 
@@ -34,11 +34,6 @@ BeliefMap::BeliefMap() : octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractO
 
     ROS_INFO("Belief map range: (%.2f %.2f %.2f) to (%.2f %.2f %.2f)", min_value[0], min_value[1], min_value[2],
              max_value[0], max_value[1], max_value[2]);
-}
-
-std::string BeliefMap::getTreeType() const
-{
-    return "BeliefMap";
 }
 
 BeliefMap *BeliefMap::create() const
@@ -91,7 +86,7 @@ std::valarray<Parameters::NumType> BeliefMap::reachingProbabilitiesOnRay(
 
 bool BeliefMap::update(const Observation &observation, const TrueMap &trueMap)
 {
-    lastUpdatedVoxels.clear();
+    _lastUpdatedVoxels.clear();
     int fails = 0;
     for (auto &measurement : observation.measurements())
     {
@@ -156,7 +151,7 @@ bool BeliefMap::update(const Observation &observation, const TrueMap &trueMap)
 #endif
 
             if (!obstacleReached)
-                lastUpdatedVoxels.push_back(qBeliefVoxel);
+                _lastUpdatedVoxels.push_back(qBeliefVoxel);
 
             // TODO for evaluation purposes, only take voxels that lie in front of an obstacle
             auto trueVoxel = trueMap.query(qBeliefVoxel.key);
@@ -184,83 +179,6 @@ bool BeliefMap::update(const Observation &observation, const TrueMap &trueMap)
     updateSubscribers();
 
     return true;
-}
-
-std::vector<double> BeliefMap::error(const TrueMap &trueMap) const
-{
-    std::vector<double> err;
-    int all = 0, correct = 0;
-    double totalError = 0, correctError = 0;
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
-    {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
-        {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
-            {
-                octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
-                                       Parameters::yMin + y * Parameters::voxelSize,
-                                       Parameters::zMin + z * Parameters::voxelSize);
-                auto trueVoxel = trueMap.query(point);
-                auto estimated = query(point);
-                double e = std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getValue()->mean();
-                err.push_back(e);
-                ++all;
-                if (std::abs(e) < 0.3)
-                {
-                    ++correct;
-                    correctError += std::abs(e);
-                }
-                totalError += e;
-            }
-        }
-    }
-//    ROS_INFO("%d out of %d SMAP voxels are correct.", correct, all);
-//    ROS_INFO("Average SMAP error for correctly predicted voxels: %f", correctError / correct);
-    return err;
-}
-
-std::vector<double> BeliefMap::stddev() const
-{
-    std::vector<double> std;
-    double total = 0;
-    int all = 0;
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
-    {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
-        {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
-            {
-                octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
-                                       Parameters::yMin + y * Parameters::voxelSize,
-                                       Parameters::zMin + z * Parameters::voxelSize);
-                auto estimated = query(point);
-                double s = std::sqrt(estimated.node()->getValue()->variance());
-                std.push_back(s);
-                total += s;
-                ++all;
-            }
-        }
-    }
-//    ROS_INFO("Average SMAP std dev: %f", total/all);
-    return std;
-}
-
-std::vector<double> BeliefMap::errorLastUpdated(const TrueMap &trueMap) const
-{
-    std::vector<double> err;
-    for (auto &v : lastUpdatedVoxels)
-    {
-        auto trueVoxel = trueMap.query(v.position);
-        auto estimated = query(v.position);
-        if (!trueVoxel.node() || !estimated.node())
-        {
-            ROS_WARN("Skipping error last updated computation for belief.");
-            err.push_back(0.5);
-            continue;
-        }
-        err.push_back(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getValue()->mean());
-    }
-    return err;
 }
 
 BeliefVoxel *BeliefMap::updateNode(const octomap::point3d &position, const Belief &belief)

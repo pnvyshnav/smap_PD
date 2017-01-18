@@ -11,6 +11,7 @@
 //#define FAKE_3D
 //#define MANY_STEPS
 
+
 class Parameters
 {
 public:
@@ -20,6 +21,20 @@ public:
     typedef double NumType;
     typedef octomap::point3d Vec3Type;
     typedef std::unordered_set<octomap::OcTreeKey, octomap::OcTreeKey::KeyHash> KeySet;
+
+    // Provides a hash function on octomap point3d
+    struct PositionHash
+    {
+        size_t operator()(const octomap::point3d& position) const
+        {
+            int x = (int)(position.x() / Parameters::voxelSize);
+            int y = (int)(position.y() / Parameters::voxelSize);
+            int z = (int)(position.z() / Parameters::voxelSize);
+            // a hashing function (same as octomap::OcTreeKey::KeyHash)
+            return (size_t) (x + 1337 * y + 345637 * z);
+        }
+    };
+    typedef std::unordered_set<octomap::point3d, PositionHash> PositionSet;
 
     static constexpr NumType equalityThreshold = 1e-16;
 
@@ -38,7 +53,6 @@ public:
     //
     // Trajectory evaluation
     //
-    static constexpr double EvaluateFutureTimespan = 400;
     static const bool EquidistantArcLengthSampling = true;
     static const unsigned int VelocityPlanningPoints = 250;
 
@@ -114,7 +128,8 @@ public:
 
     static constexpr NumType spuriousMeasurementProbability = 0; //TODO cannot be > 0 for now
 
-    static constexpr NumType priorMean = .5; // TODO fix it
+    static constexpr NumType priorMean = .5;
+    static constexpr NumType priorStd = .5;
 
     //
     // Inverse Sensor Model

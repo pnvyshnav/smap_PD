@@ -3,39 +3,47 @@
 #include <valarray>
 #include <octomap/OcTree.h>
 #include "Parameters.hpp"
-#include "QVoxel.hpp"
+#include "StatisticsMap.hpp"
 #include "Observable.hpp"
 #include "Observation.hpp"
 #include "TrueMap.h"
 
 class LogOddsMap
         : public octomap::OcTree,
-          public QVoxelMap<octomap::OcTreeNode, octomap::AbstractOccupancyOcTree>,
+          public StatisticsMap<octomap::OcTreeNode, octomap::AbstractOccupancyOcTree>,
           public Observable
 {
 public:
     LogOddsMap();
 
-    std::vector<QTrueVoxel> lastUpdatedVoxels;
-
     // TODO remove trueMap argument
     bool update(const Observation &observation, const TrueMap &trueMap);
 
-    std::vector<double> error(const TrueMap &trueMap) const;
-    std::vector<double> stddev() const;
-    std::vector<double> errorLastUpdated(const TrueMap &trueMap) const;
-
     void reset();
+
+    std::vector<QTrueVoxel> updatedVoxels() const
+    {
+        return _lastUpdatedVoxels;
+    }
 
     double getVoxelMean(QTrueVoxel &voxel) const
     {
+        if (!voxel.node())
+            return Parameters::priorMean;
         return voxel.node()->getOccupancy();
     }
 
     double getVoxelStd(QTrueVoxel &voxel) const
     {
+        if (!voxel.node())
+            return Parameters::priorStd;
         double p = getVoxelMean(voxel);
         return std::sqrt(p * (1. - p));
+    }
+
+    std::string mapType() const
+    {
+        return "LogOdds";
     }
 
 private:
@@ -46,4 +54,5 @@ private:
     };
 
     InverseSensorModel *_computeInverseSensorModel(const Measurement &measurement);
+    std::vector<QTrueVoxel> _lastUpdatedVoxels;
 };

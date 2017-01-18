@@ -51,6 +51,14 @@ Observation StereoCameraSensor::observe(TrueMap &trueMap) const
     return Observation(measurements);
 }
 
+Observation StereoCameraSensor::observeImaginary(BeliefMap &beliefMap) const
+{
+    std::vector<Measurement> measurements;
+    for (auto &sensor : _pixelSensors)
+        measurements.push_back(sensor.observeImaginary(beliefMap).measurements().front());
+    return Observation(measurements);
+}
+
 std::vector<PixelSensor> StereoCameraSensor::pixels() const
 {
     return _pixelSensors;
@@ -88,5 +96,6 @@ void StereoCameraSensor::setOrientation(const Parameters::Vec3Type &orientation)
         po = transform * po;
         pixel._orientation = Parameters::Vec3Type(po.x(), po.y(), po.z());
     }
+    publish();
 }
 

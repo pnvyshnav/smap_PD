@@ -10,7 +10,7 @@
 
 #include "Parameters.hpp"
 #include "BeliefVoxel.h"
-#include "QVoxel.hpp"
+#include "StatisticsMap.hpp"
 #include "Observation.hpp"
 #include "Observable.hpp"
 #include "TrueMap.h"
@@ -18,13 +18,11 @@
 class InverseCauseModel;
 class BeliefMap
         : public octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractOcTree>,
-          public QVoxelMap<BeliefVoxel, octomap::AbstractOcTree>,
+          public StatisticsMap<BeliefVoxel, octomap::AbstractOcTree>,
           public Observable
 {
 public:
     BeliefMap();
-
-    std::string getTreeType() const;
 
     BeliefMap *create() const;
 
@@ -44,13 +42,13 @@ public:
     bool update(const Observation &observation, const TrueMap &trueMap);
 
     InverseCauseModel *icm;
-    std::vector<QBeliefVoxel> lastUpdatedVoxels;
-
-    std::vector<double> error(const TrueMap &trueMap) const;
-    std::vector<double> stddev() const;
-    std::vector<double> errorLastUpdated(const TrueMap &trueMap) const;
 
     void reset();
+
+    std::vector<QBeliefVoxel> updatedVoxels() const
+    {
+        return _lastUpdatedVoxels;
+    }
 
     double getVoxelMean(QBeliefVoxel &voxel) const
     {
@@ -62,7 +60,13 @@ public:
         return std::sqrt(voxel.node()->getValue()->variance());
     }
 
+    std::string mapType() const
+    {
+        return "Belief";
+    }
+
 private:
+    std::vector<QBeliefVoxel> _lastUpdatedVoxels;
     BeliefVoxel *_updateNodeRecurs(BeliefVoxel* node, bool node_just_created,
                                    const octomap::OcTreeKey& key,
                                    unsigned int depth, const Belief &belief);

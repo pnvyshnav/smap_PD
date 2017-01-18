@@ -4,7 +4,7 @@
 
 #include <set>
 
-LogOddsMap::LogOddsMap() : octomap::OcTree(Parameters::voxelSize), QVoxelMap(this)
+LogOddsMap::LogOddsMap() : octomap::OcTree(Parameters::voxelSize), StatisticsMap(this)
 {
 }
 
@@ -18,7 +18,7 @@ struct OctoMapKeyComparator
 
 bool LogOddsMap::update(const Observation &observation, const TrueMap &trueMap)
 {
-    lastUpdatedVoxels.clear();
+    _lastUpdatedVoxels.clear();
     std::set<octomap::OcTreeKey, OctoMapKeyComparator> updatedKeys;
     for (auto &measurement : observation.measurements())
     {
@@ -36,7 +36,7 @@ bool LogOddsMap::update(const Observation &observation, const TrueMap &trueMap)
             updateNode(ism->ray[i], (float) ism->causeProbabilitiesOnRay[i]);
             updatedKeys.insert(ism->ray[i]);
             if (!obstacleReached)
-                lastUpdatedVoxels.push_back(query(ism->ray[i]));
+                _lastUpdatedVoxels.push_back(query(ism->ray[i]));
 
             // TODO for evaluation purposes, only take voxels that lie in front of an obstacle
             auto trueVoxel = trueMap.query(ism->ray[i]);
@@ -126,81 +126,6 @@ LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Mea
     }
 
     return ism;
-}
-
-std::vector<double> LogOddsMap::error(const TrueMap &trueMap) const
-{
-    std::vector<double> err;
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
-    {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
-        {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
-            {
-                octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
-                                       Parameters::yMin + y * Parameters::voxelSize,
-                                       Parameters::zMin + z * Parameters::voxelSize);
-                auto trueVoxel = trueMap.query(point);
-                auto estimated = query(point);
-                if (estimated.type == GEOMETRY_VOXEL)
-                    err.push_back(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getOccupancy());
-                else
-                    // TODO consider holes as voxels with 0.5 occupancy
-                    err.push_back(std::round(trueVoxel.node()->getOccupancy()) - Parameters::priorMean);
-            }
-        }
-    }
-    return err;
-}
-
-std::vector<double> LogOddsMap::stddev() const
-{
-    std::vector<double> std;
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
-    {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
-        {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
-            {
-                octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
-                                       Parameters::yMin + y * Parameters::voxelSize,
-                                       Parameters::zMin + z * Parameters::voxelSize);
-                auto estimated = query(point);
-                double p = estimated.node() == NULL ? Parameters::priorMean : estimated.node()->getOccupancy();
-                // Bernoulli variance
-                std.push_back(std::sqrt(p * (1. - p)));
-            }
-        }
-    }
-    return std;
-}
-
-std::vector<double> LogOddsMap::errorLastUpdated(const TrueMap &trueMap) const
-{
-    std::vector<double> err;
-    for (auto &v : lastUpdatedVoxels)
-    {
-        auto trueVoxel = trueMap.query(v.position);
-        auto estimated = query(v.position);
-        if (!trueVoxel.node() || !estimated.node())
-        {
-            ROS_WARN("Skipping error last updated computation for log odds.");
-            ROS_WARN_STREAM("Position: " << v.position);
-            ROS_WARN_STREAM("Inside True Map? " << TrueMap::insideMap(v.position));
-            if (!trueVoxel.node())
-                ROS_WARN("TrueMap is the problem.");
-            if (!estimated.node())
-                ROS_WARN("LogOddsMap is the problem.");
-            err.push_back(0.5);
-            continue;
-        }
-        if (estimated.type == GEOMETRY_VOXEL)
-            err.push_back(std::round(trueVoxel.node()->getOccupancy())-estimated.node()->getOccupancy());
-        else
-            // TODO consider holes as voxels with 0.5 occupancy
-            err.push_back(std::round(trueVoxel.node()->getOccupancy()) - Parameters::priorMean);
-    }
-    return err;
 }
 
 void LogOddsMap::reset()

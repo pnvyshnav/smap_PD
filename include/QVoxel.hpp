@@ -113,7 +113,7 @@ public:
         return QTypedVoxel<NODE>::voxel(node, position, key);
     }
 
-    typename std::vector<QTypedVoxel<NODE> > voxels() const
+    std::vector<QTypedVoxel<NODE> > voxels() const
     {
         std::vector<QTypedVoxel<NODE> > vs;
         for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
@@ -132,7 +132,7 @@ public:
         return vs;
     }
 
-    typename std::vector<QTypedVoxel<NODE> > voxels(const Parameters::KeySet &keys) const
+    std::vector<QTypedVoxel<NODE> > voxels(const Parameters::KeySet &keys) const
     {
         std::vector<QTypedVoxel<NODE> > vs;
         for (auto &key: keys)
@@ -148,7 +148,6 @@ public:
 protected:
     QVoxelMap(const octomap::OcTreeBaseImpl<NODE, I> *tree) : _tree(tree)
     {}
-
 
 private:
     const octomap::OcTreeBaseImpl<NODE, I> *_tree;

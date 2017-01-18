@@ -4,6 +4,9 @@
 #include <smap/smapStats.h>
 #include <rosbag/bag.h>
 
+#include <algorithm>
+#include <iterator>
+
 
 
 Statistics::Statistics(const TrueMap &trueMap) : _trueMap(trueMap)
@@ -24,56 +27,54 @@ std::vector<OUT> convertVector(const std::vector<IN> &input)
     return output;
 };
 
-void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap, const FakeRobot<> &robot)
+void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap, FakeRobot<> &robot)
 {
     _msg.step = robot.currentStep();
     _msg.maxStep = Parameters::FakeRobotNumSteps;
 
-    _msg.errorLogOdds = logOddsMap.error(_trueMap);
-    _msg.errorBelief = beliefMap.error(_trueMap);
+    auto beliefCompleteStats = beliefMap.stats(_trueMap);
+    auto logOddsCompleteStats = logOddsMap.stats(_trueMap);
 
-    _msg.stdLogOdds = logOddsMap.stddev();
-    _msg.stdBelief = beliefMap.stddev();
+    auto beliefUpdatedPositions = beliefMap.updatedPositions();
+    auto logOddsUpdatedPositions = logOddsMap.updatedPositions();
+    std::vector<octomap::point3d> updatedPositions;
+    for (auto &key : beliefUpdatedPositions)
+    {
+        if (std::find(logOddsUpdatedPositions.begin(), logOddsUpdatedPositions.end(), key) != logOddsUpdatedPositions.end())
+        {
+            updatedPositions.push_back(key);
+        }
+    }
+
+//    ROS_INFO("Selected %d updated keys (%d from BeliefMap / %d from LogOddsMap are missing)",
+//             (int)updatedPositions.size(),
+//             (int)(beliefUpdatedPositions.size() - updatedPositions.size()),
+//             (int)(logOddsUpdatedPositions.size() - updatedPositions.size()));
+
+    auto beliefUpdatedStats = beliefMap.stats(_trueMap, updatedPositions);
+    auto logOddsUpdatedStats = logOddsMap.stats(_trueMap, updatedPositions);
+
+    _msg.errorLogOdds = VoxelStatistics::selectError(logOddsCompleteStats);
+    _msg.errorBelief = VoxelStatistics::selectError(beliefCompleteStats);
+
+    _msg.stdLogOdds = VoxelStatistics::selectStd(logOddsCompleteStats);
+    _msg.stdBelief = VoxelStatistics::selectStd(beliefCompleteStats);
 
     assert(_msg.errorLogOdds.size() == _msg.errorBelief.size());
 
     _msg.voxels = _msg.errorBelief.size();
 
-    std::vector<double> errorUpdatedBelief = beliefMap.errorLastUpdated(_trueMap);
-    std::vector<double> errorUpdatedLogOdds = logOddsMap.errorLastUpdated(_trueMap);
+    auto errorUpdatedBelief = VoxelStatistics::selectError(beliefUpdatedStats);
+    auto errorUpdatedLogOdds = VoxelStatistics::selectError(logOddsUpdatedStats);
     assert(errorUpdatedBelief.size() == errorUpdatedLogOdds.size());
-    _msg.updatedVoxels.push_back(beliefMap.lastUpdatedVoxels.size());
+    _msg.updatedVoxels.push_back(beliefMap.updatedVoxels().size());
 
-    assert(beliefMap.lastUpdatedVoxels.size() == logOddsMap.lastUpdatedVoxels.size());
-    assert(beliefMap.lastUpdatedVoxels.size() == errorUpdatedBelief.size());
+    // TODO these assertions aren't necessary if we only consider intersection of updated voxels
+    //assert(beliefMap.updatedVoxels().size() == logOddsMap.updatedVoxels().size());
+    //assert(beliefMap.updatedVoxels().size() == errorUpdatedBelief.size());
 
-    std::vector<double> stdUpdatedBelief, stdUpdatedLogOdds;
-    //ROS_INFO("Updated Voxels: %d", (int)beliefMap.lastUpdatedVoxels.size());
-    for (auto &v : beliefMap.lastUpdatedVoxels)
-    {
-        if (v.type != GEOMETRY_VOXEL)
-        {
-            ROS_WARN("Skipped std belief");
-            continue;
-        }
-        stdUpdatedBelief.push_back(std::sqrt(v.node()->getValue()->variance()));
-    }
-    for (auto &v : logOddsMap.lastUpdatedVoxels)
-    {
-        if (v.type != GEOMETRY_VOXEL)
-        {
-            ROS_WARN("Skipped std log odds");
-            continue;
-        }
-        double p = v.node() == NULL ? Parameters::priorMean : v.node()->getOccupancy();
-        // Bernoulli variance
-        double std = std::sqrt(p * (1. - p));
-        if (std > 0.5)
-        {
-            ROS_ERROR("Std = %f for p = %f", std, p);
-        }
-        stdUpdatedLogOdds.push_back(std::sqrt(p * (1. - p)));
-    }
+    auto stdUpdatedBelief = VoxelStatistics::selectStd(beliefUpdatedStats);
+    auto stdUpdatedLogOdds = VoxelStatistics::selectStd(logOddsUpdatedStats);
 
     std::vector<double> absErrorUpdatedBelief = errorUpdatedBelief;
     std::vector<double> absErrorUpdatedLogOdds = errorUpdatedLogOdds;
@@ -142,23 +143,8 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
     evolutionBelief /= _msg.errorBelief.size();
     _msg.errorEvolutionBelief.push_back(evolutionBelief);
 
-    _msg.stdLogOdds.clear();
-    for (auto &voxel : logOddsMap.voxels())
-    {
-        if (voxel.type != GEOMETRY_VOXEL)
-            continue;
-        double pdf = voxel.node() == NULL ? Parameters::priorMean : voxel.node()->getOccupancy();
-        // Bernoulli variance
-        _msg.stdLogOdds.push_back(std::sqrt(pdf * (1. - pdf)));
-    }
-
-    _msg.stdBelief.clear();
-    for (auto &voxel : beliefMap.voxels())
-    {
-        if (voxel.type != GEOMETRY_VOXEL)
-            continue;
-        _msg.stdBelief.push_back(std::sqrt(voxel.node()->getValue()->variance()));
-    }
+    _msg.stdLogOdds = VoxelStatistics::selectStd(logOddsCompleteStats);
+    _msg.stdBelief = VoxelStatistics::selectStd(beliefCompleteStats);
 
     // append current std devs to complete std dev vectors
     _msg.stdCompleteLogOdds.insert(_msg.stdCompleteLogOdds.end(),
@@ -170,24 +156,23 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
 #endif
 
 #ifdef PLANNER_2D_TEST
-    _msg.trajectoryVoxels = (unsigned int) robot.currentSplineVoxels().size();
+    _msg.trajectoryVoxels = (unsigned int) robot.trajectory().splineVoxelKeys(_trueMap).size();
     //ROS_INFO("Trajectory voxels: %d", (int)_msg.trajectoryVoxels);
-    for (auto &key: robot.currentSplineVoxels())
+    for (auto &position: robot.trajectory().splineVoxelPositions(_trueMap))
     {
-        _msg.trajectoryOccupanciesBelief.push_back(beliefMap.query(key).node()->getValue()->mean());
-        _msg.trajectoryStdDevsBelief.push_back(std::sqrt(beliefMap.query(key).node()->getValue()->variance()));
-        double occLogOdds = Parameters::priorMean;
-        if (logOddsMap.query(key).node())
-            occLogOdds = logOddsMap.query(key).node()->getOccupancy();
-        _msg.trajectoryOccupanciesLogOdds.push_back(occLogOdds);
-        _msg.trajectoryStdDevsLogOdds.push_back(std::sqrt(occLogOdds * (1. - occLogOdds)));
+        auto beliefVoxel = beliefMap.query(position);
+        _msg.trajectoryOccupanciesBelief.push_back(beliefMap.getVoxelMean(beliefVoxel));
+        _msg.trajectoryStdDevsBelief.push_back(beliefMap.getVoxelStd(beliefVoxel));
+        auto logOddsVoxel = logOddsMap.query(position);
+        _msg.trajectoryOccupanciesLogOdds.push_back(logOddsMap.getVoxelMean(logOddsVoxel));
+        _msg.trajectoryStdDevsLogOdds.push_back(logOddsMap.getVoxelStd(logOddsVoxel));
     }
 
     // add trajectory position / angle
     _msg.trajectoryX.push_back(robot.position().x());
     _msg.trajectoryY.push_back(robot.position().y());
     _msg.trajectoryT.push_back(robot.yaw());
-    _msg.trajectoryId = robot.selectedSpline();
+//    _msg.trajectoryId = robot.selectedSpline();
 
     _msg.trajectoryTime.push_back(robot.time());
 
@@ -196,6 +181,8 @@ void Statistics::update(const LogOddsMap &logOddsMap, const BeliefMap &beliefMap
     for (auto &voxel : beliefMap.voxels(robot.currentSplineFutureVoxels()))
     {
         reachability *= 1. - beliefMap.getVoxelMean(voxel);
+        _msg.trajectoryFutureOccupanciesBelief.push_back(beliefMap.getVoxelMean(voxel));
+        _msg.trajectoryFutureStdDevsBelief.push_back(beliefMap.getVoxelStd(voxel));
     }
     _msg.trajectoryFutureReachability.push_back(reachability);
 
@@ -320,8 +307,10 @@ void Statistics::reset()
     _msg.trajectoryT.clear();
     _msg.trajectoryTime.clear();
 
-    _msg.trajectoryFutureSteps.clear();
     _msg.trajectoryFutureVoxels.clear();
     _msg.trajectoryFutureReachability.clear();
-    _msg.trajectoryFutureSafety.clear();
+    _msg.trajectoryFutureOccupanciesBelief.clear();
+    //_msg.trajectoryFutureOccupanciesLogOdds.clear();
+    _msg.trajectoryFutureStdDevsBelief.clear();
+    //_msg.trajectoryFutureStdDevsLogOdds.clear();
 }

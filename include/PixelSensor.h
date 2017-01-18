@@ -36,6 +36,14 @@ public:
     Observation observe(TrueMap &trueMap) const;
 
     /**
+     * @brief Simulates an imaginary range sensor measurement given the belief map.
+     *
+     * @param beliefMap The belief map.
+     * @return @see Observation.
+     */
+    Observation observeImaginary(BeliefMap &beliefMap) const;
+
+    /**
      * @brief Computes the likelihood of the measurement given the true voxel that caused the measurement.
      * @param measurement The measurement.
      * @param causeVoxel The true cause voxel.

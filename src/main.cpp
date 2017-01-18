@@ -23,7 +23,8 @@ FakeRobot<> robot(
 #else
         Parameters::Vec3Type(0, 1, 0),
 #endif
-        trueMap);
+        trueMap,
+        beliefMap);
 
 TrajectoryPlanner planner(trueMap, beliefMap);
 
@@ -80,15 +81,18 @@ int main(int argc, char **argv)
     robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
     robot.registerObserver(&handleObservation);
     #if defined(PLANNER_2D_TEST)
-        for (unsigned int splineId = 0; splineId < robot.splines().size(); splineId++)
+    unsigned int splineId = 0;
+        for (auto &trajectory : planner.generateTrajectories())
         {
             ROS_INFO("Evaluating spline %d...", (int)splineId);
             beliefMap.reset();
             logOddsMap.reset();
-            robot.selectSpline(splineId);
+            robot.setTrajectory(trajectory);
             robot.run();
-            stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/splines/spline_" + std::to_string(splineId) + ".bag");
+            planner.evaluate(trajectory, beliefMap, stats->stats());
+            stats->saveToFile("trajeval/trajectory_" + std::to_string(splineId) + ".bag");
             stats->reset();
+            ++splineId;
         }
     #else
         robot.run();
@@ -97,7 +101,15 @@ int main(int argc, char **argv)
     trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
     robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
     robot.registerObserver(&handleObservation);
-    robot.run();
+    for (unsigned int round = 0; round < 10; ++round)
+    {
+        beliefMap.reset();
+        logOddsMap.reset();
+        robot.run();
+        stats->saveToFile("repeated_fake_3d/stats_" + std::to_string(round) + ".bag");
+        stats->reset();
+        ROS_INFO("Completed round %d", (int)round);
+    }
 #else
     Drone drone;
     drone.registerObserver(&handleObservation);
@@ -111,8 +123,10 @@ int main(int argc, char **argv)
     stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/stats.bag");
 #endif
 
-    saveErrors((std::string)"belief_errors.txt", beliefErrors);
-    saveErrors((std::string)"logOdds_errors.txt", logOddsErrors);
+    delete stats;
+
+//    saveErrors((std::string)"belief_errors.txt", beliefErrors);
+//    saveErrors((std::string)"logOdds_errors.txt", logOddsErrors);
 
     visualizer->render();
 

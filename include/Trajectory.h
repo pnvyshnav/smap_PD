@@ -50,12 +50,17 @@ struct VelocityPlanningParameters
     {}
 };
 
+/**
+ * Trajectory planning using cubic splines.
+ */
 class Trajectory
 {
     friend class TrajectoryPlanner;
 public:
+    Trajectory();
+    Trajectory(const Trajectory &trajectory);
+
     TrajectoryEvaluationResult evaluate(double u, bool computeTime = false);
-    double evaluateCurvature(double u);
 
     struct VelocityPlanningPoint
     {
@@ -85,18 +90,27 @@ public:
      */
     std::valarray<double> computeTimeProfile();
 
+    bool saveProfile(const std::string &csvfilename);
+
     /**
      * Returns keys of the voxels which are visited by the trajectory.
      * @param trueMap OctoMap as reference for voxel key generation.
      * @return Set of OctoMap voxel keys.
      */
-    Parameters::KeySet computeSplineVoxels(TrueMap &trueMap);
+    Parameters::KeySet splineVoxelKeys(const TrueMap &trueMap);
+
+    /**
+     * Returns positions of the voxels which are visited by the trajectory.
+     * @param trueMap OctoMap as reference for voxel key generation.
+     * @return Set of OctoMap 3d vertices.
+     */
+    Parameters::PositionSet splineVoxelPositions(const TrueMap &trueMap);
 
     /**
      * Returns the control points of this spline.
      * @return Spline control points.
      */
-    const std::vector<Point> controlPoints();
+    const std::vector<Point> controlPoints() const;
 
     /**
      * Returns the keys to the voxels covered by the current spline.
@@ -131,9 +145,18 @@ public:
         return _relativeTotalTime;
     }
 
+    const bool empty() const
+    {
+        return _empty;
+    }
+
 private:
     Trajectory(std::initializer_list<Point> points, unsigned int degree = 2);
     ts::BSpline _spline;
+
+    bool _empty;
+
+    double _computeCurvature(double u, VelocityPlanningPoint &vpp);
 
     double _computeYaw(double u);
     bool _yawWasPi;
@@ -149,6 +172,7 @@ private:
     double _miniStep;
 
     Parameters::KeySet _splineVoxels;
+    Parameters::PositionSet _splineVoxelPositions;
     Parameters::KeySet _splineFutureVoxels;
 
     std::vector<VelocityPlanningPoint> _planningPoints;

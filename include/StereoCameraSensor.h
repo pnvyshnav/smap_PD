@@ -17,6 +17,7 @@ public:
                        Parameters::Vec3Type orientation);
 
     virtual Observation observe(TrueMap &trueMap) const;
+    virtual Observation observeImaginary(BeliefMap &beliefMap) const;
 
     std::vector<PixelSensor> pixels() const;
 
