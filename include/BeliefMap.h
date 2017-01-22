@@ -26,6 +26,8 @@ public:
 
     BeliefMap *create() const;
 
+    BeliefMap copy() const;
+
     Belief *belief(const octomap::OcTreeKey &key) const;
 
     BeliefVoxel *updateNode(const octomap::point3d& position, const Belief &belief);

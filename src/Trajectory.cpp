@@ -26,7 +26,7 @@ Trajectory::Trajectory(std::initializer_list<Point> points, unsigned int degree)
     if (Parameters::EquidistantArcLengthSampling)
     {
         auto lastResult = _spline.evaluate(0).result();
-        _miniStep = 1. / _maxRad;
+        _miniStep = 0.5 / _maxRad;
         _smallStep = 1e-2 / _maxRad;
         for (double u = _smallStep; u <= 1.; u += _smallStep)
         {
@@ -75,7 +75,9 @@ TrajectoryEvaluationResult Trajectory::evaluate(double u, bool computeTime)
     auto lastResult = _spline.evaluate(0).result();
     if (u <= 0)
     {
-        auto r = TrajectoryEvaluationResult(Point(lastResult[0], lastResult[1]), _computeYaw(0), 0., 0.);
+        auto r = TrajectoryEvaluationResult(Point(lastResult[0], lastResult[1]),
+                                            _computeYaw(0), 0., 0., 0.,
+                                            _planningPoints.front().velocity);
         if (computeTime)
         {
             r.time = 0;
@@ -86,7 +88,9 @@ TrajectoryEvaluationResult Trajectory::evaluate(double u, bool computeTime)
     if (u >= 1)
     {
         lastResult = _spline.evaluate(1).result();
-        auto r = TrajectoryEvaluationResult(Point(lastResult[0], lastResult[1]), _computeYaw(1), _totalArcLength, 1.);
+        auto r = TrajectoryEvaluationResult(Point(lastResult[0], lastResult[1]),
+                                            _computeYaw(1), _totalArcLength, 1., 1.,
+                                            _planningPoints.back().velocity);
         if (computeTime)
         {
             r.time = _totalTime;
@@ -107,7 +111,9 @@ TrajectoryEvaluationResult Trajectory::evaluate(double u, bool computeTime)
             if (arcLength / _totalArcLength >= u)
             {
 //                ROS_INFO("Arc length is %f", arcLength);
-                auto r = TrajectoryEvaluationResult(Point(result[0], result[1]), _computeYaw(v), arcLength, v);
+                auto r = TrajectoryEvaluationResult(Point(result[0], result[1]),
+                                                    _computeYaw(v), arcLength,
+                                                    arcLength / _totalArcLength, v, 0);
                 if (computeTime)
                 {
                     unsigned int ppi = (unsigned int)std::floor(v * _planningPoints.size());
@@ -125,7 +131,9 @@ TrajectoryEvaluationResult Trajectory::evaluate(double u, bool computeTime)
         }
 
         //ROS_INFO("TOTAL Arc length is %f   estimated: %f", arcLength, _totalArcLength);
-        auto r = TrajectoryEvaluationResult(Point(lastResult[0], lastResult[1]), _computeYaw(1), _totalArcLength, 1.);
+        auto r = TrajectoryEvaluationResult(Point(lastResult[0], lastResult[1]),
+                                            _computeYaw(1), _totalArcLength, 1., 1.,
+                                            _planningPoints.back().velocity);
         if (computeTime)
         {
             r.time = _totalTime;
@@ -136,7 +144,7 @@ TrajectoryEvaluationResult Trajectory::evaluate(double u, bool computeTime)
     else
     {
         auto result = _spline.evaluate(u).result();
-        auto r = TrajectoryEvaluationResult(Point(result[0], result[1]), _computeYaw(u), u * _totalArcLength, u);
+        auto r = TrajectoryEvaluationResult(Point(result[0], result[1]), _computeYaw(u), u * _totalArcLength, u, u, 0);
         if (computeTime)
         {
             unsigned int ppi = (unsigned int)std::floor(u * _planningPoints.size());
@@ -149,6 +157,24 @@ TrajectoryEvaluationResult Trajectory::evaluate(double u, bool computeTime)
         }
         return r;
     }
+}
+
+TrajectoryEvaluationResult Trajectory::evaluateAtTime(double time)
+{
+    if (time <= 0.)
+        return evaluate(0, true);
+
+    for (unsigned int i = 0; i < Parameters::VelocityPlanningPoints; ++i)
+    {
+        auto &current = _planningPoints[i];
+        auto &next = _planningPoints[i + 1];
+        if (time >= current.time && time <= next.time)
+        {
+            double alpha = (time - current.time) / (next.time - current.time);
+            return evaluate(current.u * alpha + next.u * (1. - alpha));
+        }
+    }
+    return evaluate(1, true);
 }
 
 Parameters::KeySet Trajectory::splineVoxelKeys(const TrueMap &trueMap)
@@ -189,8 +215,8 @@ Parameters::PositionSet Trajectory::splineVoxelPositions(const TrueMap &trueMap)
 
 double Trajectory::_computeYaw(double u)
 {
-    auto next = _spline.evaluate((float) std::min(1.0, std::max(_smallStep, u + _miniStep))).result();
-    auto prev = _spline.evaluate((float) std::min(1. - _smallStep, std::max(0.0, u - _miniStep))).result();
+    auto next = _spline.evaluate((float) std::min(1., std::max(_miniStep/1., u + _miniStep/1.))).result();
+    auto prev = _spline.evaluate((float) std::min(1. - _miniStep/1., std::max(0.0, u - _miniStep/1.))).result();
     double t = std::atan2(next[0] - prev[0], next[1] - prev[1]);
     if (t > 2.9)
         _yawWasPi = true;
@@ -215,14 +241,13 @@ const std::vector<Point> Trajectory::controlPoints() const
     return points;
 }
 
-std::vector<Trajectory::VelocityPlanningPoint> Trajectory::computeVelocities(const VelocityPlanningParameters &parameters)
+std::vector<Trajectory::VelocityPlanningPoint> Trajectory::computeVelocities(
+        const VelocityPlanningParameters &parameters)
 {
     _planningPoints.resize(Parameters::VelocityPlanningPoints + 1);
 
     // arc length between equidistant planning points
     double deltaArc = _totalArcLength / Parameters::VelocityPlanningPoints;
-
-    double maxRotationalVelocity = parameters.maxVelocity;
 
     // compute equidistant planning points
     for (unsigned int i = 0; i <= Parameters::VelocityPlanningPoints; ++i)
@@ -230,13 +255,15 @@ std::vector<Trajectory::VelocityPlanningPoint> Trajectory::computeVelocities(con
         Trajectory::VelocityPlanningPoint vpp;
         vpp.u = i * 1. / Parameters::VelocityPlanningPoints;
         auto evaluation = evaluate(vpp.u);
+        vpp.splineU = evaluation.splineU;
         vpp.point = evaluation.point;
-        double curvature = _computeCurvature(vpp.u, vpp);
+        double curvature = _computeCurvature(evaluation.splineU, vpp);
         vpp.maxVelocity = parameters.maxVelocity;
         if (curvature > 0.4)
             vpp.maxVelocity = 0;
         else if (curvature > 0)
-            vpp.maxVelocity = std::min(vpp.maxVelocity, maxRotationalVelocity / (curvature * 6.));
+            vpp.maxVelocity = std::min(vpp.maxVelocity, parameters.maxRotationalVelocity / curvature);
+        vpp.maxVelocity = std::max(parameters.minVelocity, vpp.maxVelocity);
 
 //        double leftFirstDerivative = std::abs(_computeYaw(vpp.u) - _computeYaw(vpp.u - _miniStep)) / (10. * _miniStep);
 //        double rightFirstDerivative = std::abs(_computeYaw(vpp.u + _miniStep) - _computeYaw(vpp.u)) / (10. * _miniStep);
@@ -309,9 +336,13 @@ std::valarray<double> Trajectory::computeTimeProfile()
         }
         _totalTime += deltaTime;
         _relativeTotalTime += p.velocity;
-        _times[i] = _relativeTotalTime;
+        _times[i] = _totalTime; //_relativeTotalTime;
     }
-    _times *= _totalTime / _relativeTotalTime;
+
+    //_times *= _totalTime / _relativeTotalTime;
+    for (unsigned int i = 0; i <= Parameters::VelocityPlanningPoints; ++i)
+        _planningPoints[i].time = _times[i];
+
     return _times;
 }
 
@@ -326,7 +357,7 @@ bool Trajectory::saveProfile(const std::string &csvfilename)
     for (unsigned int i = 0; i <= Parameters::VelocityPlanningPoints; ++i)
     {
         auto &p = _planningPoints[i];
-        f << _computeYaw(p.u) << "," << p.firstDerivative << ","
+        f << _computeYaw(p.splineU) << "," << p.firstDerivative << ","
           << p.secondDerivative << "," << p.curvature << ","
           << p.velocity << "," << p.maxVelocity << ","
           << p.point.x << "," << p.point.y

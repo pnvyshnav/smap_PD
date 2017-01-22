@@ -31,6 +31,7 @@ public:
 
     void setPosition(const Parameters::Vec3Type &position);
     void setOrientation(const Parameters::Vec3Type &orientation);
+    void resetOrientation(const Parameters::Vec3Type &orientation);
 
 private:
 	std::vector<PixelSensor> _pixelSensors;

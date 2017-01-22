@@ -12,7 +12,7 @@
 class Robot
 {
 public:
-    typedef void (*ObservationHandler)(const Observation &);
+    typedef std::function<void(const Observation &)> ObservationHandler;
 
     virtual void run() = 0;
     virtual void stop() = 0;
@@ -31,7 +31,7 @@ protected:
     void publishObservation(const Observation &observation)
     {
         for (auto &handler : _observers)
-            (*handler)(observation);
+            handler(observation);
     }
 
 private:

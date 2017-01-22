@@ -7,7 +7,7 @@
 
 #define FAKE_2D
 #define PLANNER_2D_TEST
-//#define SIMULATE_TIME
+#define SIMULATE_TIME
 //#define FAKE_3D
 //#define MANY_STEPS
 
@@ -43,7 +43,7 @@ public:
     // Fake sensor measurements
     //
     static const bool deterministicSensorMeasurements = false;
-    static const unsigned int FakeRobotNumSteps = 300;
+    static const unsigned int FakeRobotNumSteps = 600;
 
     //
     // Real sensor measurements
@@ -55,6 +55,8 @@ public:
     //
     static const bool EquidistantArcLengthSampling = true;
     static const unsigned int VelocityPlanningPoints = 250;
+    static constexpr double SimulationTimeStep = 0.05;
+    static constexpr double SimulationFinalTime = 5.0;
 
 #if defined(FAKE_2D)
     static constexpr float voxelSize = 0.1;
@@ -112,8 +114,8 @@ public:
 #endif
 
 #if defined(PLANNER_2D_TEST)
-    static const unsigned int StereoCameraHorizontalPixels = 8;
-    static constexpr double StereoCameraHorizontalFOV = 120. * M_PI / 180.;
+    static const unsigned int StereoCameraHorizontalPixels = 1;
+    static constexpr double StereoCameraHorizontalFOV = 30. * M_PI / 180.;
 #endif
 
     static constexpr NumType xCenter = (const NumType) ((xMax + xMin) / 2.0);

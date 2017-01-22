@@ -24,6 +24,11 @@ float64[] errorCompleteLogOdds
 # number of updated voxels at each step
 uint64[] updatedVoxels
 
+# positions of updated voxels (size is sum of updatedVoxels)
+int32[] updatedVoxelsX
+int32[] updatedVoxelsY
+int32[] updatedVoxelsZ
+
 # error for each updated voxel over all steps (size is sum of updatedVoxels)
 float64[] errorCompleteUpdatedBelief
 float64[] errorCompleteUpdatedLogOdds
@@ -62,6 +67,8 @@ uint32 trajectoryId
 
 # Number of voxels per trajectory
 uint32 trajectoryVoxels
+float64[] trajectoryVoxelX
+float64[] trajectoryVoxelY
 
 # Evolution of occupancy predictions along each trajectory (size is maxStep*trajectoryVoxels)
 float64[] trajectoryOccupanciesBelief

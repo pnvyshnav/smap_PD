@@ -26,17 +26,23 @@ StereoCameraSensor::StereoCameraSensor(Parameters::Vec3Type position, Parameters
         }
     }
 #elif defined(PLANNER_2D_TEST)
-    auto direction = Eigen::Vector3f(orientation.x(), orientation.y(), orientation.z());
-
-    double hFactor = Parameters::StereoCameraHorizontalFOV / Parameters::StereoCameraHorizontalPixels;
-    for (unsigned int hp = 0; hp < Parameters::StereoCameraHorizontalPixels; ++hp)
+    if (Parameters::StereoCameraHorizontalPixels == 1)
     {
-        double angleH = -Parameters::StereoCameraHorizontalFOV/2. + hp * hFactor;
-        auto rotHorizontal = Eigen::AngleAxis<float>((float) angleH, Eigen::Vector3f(0, 0, 1));
-        Eigen::Vector3f rotated = rotHorizontal * (direction);
-        _pixelSensors.push_back(PixelSensor(position, Parameters::Vec3Type(
-                rotated.x(), rotated.y(), rotated.z()
-        )));
+        _pixelSensors.push_back(PixelSensor(position, orientation));
+    }
+    else
+    {
+        auto direction = Eigen::Vector3f(orientation.x(), orientation.y(), orientation.z());
+        const double hFactor = Parameters::StereoCameraHorizontalFOV / (Parameters::StereoCameraHorizontalPixels-1);
+        for (unsigned int hp = 0; hp < Parameters::StereoCameraHorizontalPixels; ++hp)
+        {
+            double angleH = -Parameters::StereoCameraHorizontalFOV/2. + hp * hFactor;
+            auto rotHorizontal = Eigen::AngleAxis<float>((float) angleH, Eigen::Vector3f(0, 0, 1));
+            Eigen::Vector3f rotated = rotHorizontal * (direction);
+            _pixelSensors.push_back(PixelSensor(position, Parameters::Vec3Type(
+                    rotated.x(), rotated.y(), rotated.z()
+            )));
+        }
     }
 #else
     _pixelSensors.push_back(PixelSensor(position, orientation));
@@ -82,19 +88,24 @@ void StereoCameraSensor::setPosition(const Parameters::Vec3Type &position)
 
 void StereoCameraSensor::setOrientation(const Parameters::Vec3Type &orientation)
 {
-    auto oldOrientation = Eigen::Vector3f(Sensor::orientation().x(),
-                                          Sensor::orientation().y(),
-                                          Sensor::orientation().z());
-    auto newOrientation = Eigen::Vector3f(orientation.x(), orientation.y(), orientation.z());
-    auto rotation = Eigen::Quaternionf().setFromTwoVectors(oldOrientation, newOrientation);
-    auto transform = Eigen::AngleAxis<float>(rotation);
-
     Sensor::setOrientation(orientation);
-    for (auto &pixel : _pixelSensors)
+    if (Parameters::StereoCameraHorizontalPixels == 1)
     {
-        Eigen::Vector3f po = Eigen::Vector3f(pixel._orientation.x(), pixel._orientation.y(), pixel._orientation.z());
-        po = transform * po;
-        pixel._orientation = Parameters::Vec3Type(po.x(), po.y(), po.z());
+        _pixelSensors[0].setOrientation(orientation);
+    }
+    else
+    {
+        auto direction = Eigen::Vector3f(orientation.x(), orientation.y(), orientation.z());
+        const double hFactor = Parameters::StereoCameraHorizontalFOV / (Parameters::StereoCameraHorizontalPixels-1);
+        for (unsigned int hp = 0; hp < Parameters::StereoCameraHorizontalPixels; ++hp)
+        {
+            double angleH = -Parameters::StereoCameraHorizontalFOV/2. + hp * hFactor;
+            auto rotHorizontal = Eigen::AngleAxis<float>((float) angleH, Eigen::Vector3f(0, 0, 1));
+            Eigen::Vector3f rotated = rotHorizontal * (direction);
+            _pixelSensors[hp].setOrientation(Parameters::Vec3Type(
+                    rotated.x(), rotated.y(), rotated.z()
+            ));
+        }
     }
     publish();
 }

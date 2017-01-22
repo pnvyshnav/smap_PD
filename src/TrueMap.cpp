@@ -34,7 +34,7 @@ TrueMap TrueMap::generate(unsigned int seed)
 
     std::vector<Rectangle> obstacles = std::vector<Rectangle> {
             Rectangle(-1.0, -1.0, -0.1, -0.1),
-            Rectangle(-1.0,  0.1, -0.1,  1.0)
+            Rectangle(-1.0,  0.2, -0.1,  1.0)
     };
 
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)

@@ -69,9 +69,9 @@ Parameters::NumType Belief::variance()
         Parameters::NumType exp = 0;
         for (unsigned int i = 0; i < Parameters::numParticles; ++i)
         {
-            exp += std::pow(particles[i], 2) * pdf[i];
+            exp += std::pow(particles[i], 2.) * pdf[i];
         }
-        _variance = exp - std::pow(mean(), 2);
+        _variance = exp - std::pow(mean(), 2.);
         _recomputeVariance = false;
     }
     return _variance;

@@ -26,11 +26,10 @@ FakeRobot<> robot(
         trueMap,
         beliefMap);
 
-TrajectoryPlanner planner(trueMap, beliefMap);
+TrajectoryPlanner planner(trueMap, beliefMap, logOddsMap);
 
 
-std::vector<double> logOddsErrors, beliefErrors;
-Statistics *stats;
+Statistics<> *stats;
 
 void handleObservation(const Observation &observation)
 {
@@ -50,22 +49,11 @@ void handleObservation(const Observation &observation)
 #endif
 }
 
-void saveErrors(std::string filename, std::vector<double> errors)
-{
-    std::ofstream file(filename, std::ios_base::trunc);
-    for (auto e : errors)
-    {
-        file << e << '\n';
-    }
-    file.close();
-    ROS_INFO_STREAM("Saved errors to " << filename);
-}
-
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "SMAP");
     ros::Time::init();
-    stats = new Statistics(trueMap);
+    stats = new Statistics<>(trueMap);
     //trueMap.writeBinary("simple_tree.bt");
 
     Visualizer *visualizer = new Visualizer;
@@ -73,6 +61,12 @@ int main(int argc, char **argv)
     beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
     logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMap, visualizer, std::placeholders::_1));
     robot.subscribe(std::bind(&Visualizer::publishFakeRobot, visualizer, std::placeholders::_1, &trueMap));
+    planner.subscribe(std::bind(&Visualizer::publishTrajectoryPlanner, visualizer, std::placeholders::_1));
+
+    robot.setReplanningHandler(std::bind(&TrajectoryPlanner::replan, planner,
+                                         std::placeholders::_1,
+                                         std::placeholders::_2,
+                                         std::placeholders::_3));
 
     trueMap.publish();
 
@@ -81,7 +75,7 @@ int main(int argc, char **argv)
     robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
     robot.registerObserver(&handleObservation);
     #if defined(PLANNER_2D_TEST)
-    unsigned int splineId = 0;
+        unsigned int splineId = 0;
         for (auto &trajectory : planner.generateTrajectories())
         {
             ROS_INFO("Evaluating spline %d...", (int)splineId);
@@ -124,9 +118,6 @@ int main(int argc, char **argv)
 #endif
 
     delete stats;
-
-//    saveErrors((std::string)"belief_errors.txt", beliefErrors);
-//    saveErrors((std::string)"logOdds_errors.txt", logOddsErrors);
 
     visualizer->render();
 

@@ -6,6 +6,7 @@
 #include "../include/Parameters.hpp"
 #include "../include/StereoCameraSensor.h"
 #include "../include/FakeRobot.hpp"
+#include "../include/TrajectoryPlanner.h"
 
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -38,6 +39,7 @@ Visualizer::Visualizer()
     stereoCameraSensorPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("stereo_cam", 10);
     rayVoxelPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("ray_voxels", 10);
     splinePublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("trajectories", 10);
+    evaluationPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("eval_trajectories", 10);
     trajectoryVoxelsPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("trajectoryVoxels", 10);
 }
 
@@ -46,14 +48,14 @@ Visualizer::~Visualizer()
     delete nodeHandle;
 }
 
-void Visualizer::publishTrueMap(const Observable *visualizable) {
+void Visualizer::publishTrueMap(const Observable *visualizable)
+{
     if (!visualizable)
         return;
 
     //ROS_INFO("Publishing True Map");
 
     auto trueMap = (TrueMap *) visualizable;
-    _lastTrueMap = trueMap;
     ros::Rate loop_rate(PaintRate);
     loop_rate.sleep();
 
@@ -96,7 +98,6 @@ void Visualizer::publishTrueMap2dSlice(const Observable *visualizable, unsigned 
         return;
 
     auto trueMap = (TrueMap*) visualizable;
-    _lastTrueMap = trueMap;
     ros::Rate loop_rate(PaintRate);
     loop_rate.sleep();
 
@@ -187,7 +188,6 @@ void Visualizer::publishBeliefMap(const Observable *visualizable)
         return;
 
     auto beliefMap = (BeliefMap*) visualizable;
-    _lastBeliefMap = beliefMap;
     //ros::Rate loop_rate(PaintRate);
     //loop_rate.sleep();
 
@@ -285,7 +285,6 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
         return;
 
     auto beliefMap = (BeliefMap*) visualizable;
-    _lastBeliefMap = beliefMap;
     ros::Rate loop_rate(PaintRate);
     loop_rate.sleep();
 
@@ -520,9 +519,13 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
         wayPoints.color.b = (float)colors[color][2];
 
         auto trajectory = Trajectory(robot->trajectory());
+#ifdef SIMULATION_TIME
+        for (double x = 0; x <= Parameters::SimulationFinalTime; x += Parameters::SimulationTimeStep)
+#else
         for (double x = 0; x <= 1.01; x += 0.05)
+#endif
         {
-            auto result = trajectory.evaluate(x);
+            auto result = trajectory.evaluateAtTime(x);
             geometry_msgs::Point p;
             p.x = result.point.x;
             p.y = result.point.y;
@@ -591,5 +594,40 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
 
 #endif
 
+    ros::spinOnce();
+}
+
+void Visualizer::publishTrajectoryPlanner(const Observable *visualizable)
+{
+    ros::Rate loop_rate(PaintRate);
+
+    loop_rate.sleep();
+    visualization_msgs::MarkerArray markers;
+
+    auto trajectoryPlanner = (TrajectoryPlanner*) visualizable;
+    visualization_msgs::Marker wayPoints;
+    wayPoints.action = 0;
+    wayPoints.id = (int) visualizable->observableId();
+    wayPoints.type = visualization_msgs::Marker::LINE_STRIP;
+    wayPoints.header.frame_id = "map";
+    wayPoints.scale.x = 0.02;
+    wayPoints.scale.y = 0.02;
+    wayPoints.scale.z = 0.02;
+    wayPoints.color.a = 1;
+    wayPoints.color.r = 0.9f;
+    wayPoints.color.g = 0.7f;
+    wayPoints.color.b = 0.0f;
+
+    for (double x = 0; x <= 1.01; x += 0.1)
+    {
+        auto result = trajectoryPlanner->currentEvaluationCandidate().evaluate(x);
+        geometry_msgs::Point p;
+        p.x = result.point.x;
+        p.y = result.point.y;
+        p.z = 0.51;
+        wayPoints.points.push_back(p);
+    }
+    markers.markers.push_back(wayPoints);
+    evaluationPublisher.publish(markers);
     ros::spinOnce();
 }

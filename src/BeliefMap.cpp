@@ -41,6 +41,31 @@ BeliefMap *BeliefMap::create() const
     return new BeliefMap();
 }
 
+BeliefMap BeliefMap::copy() const
+{
+    BeliefMap map;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
+                                       Parameters::yMin + y * Parameters::voxelSize,
+                                       Parameters::zMin + z * Parameters::voxelSize);
+                auto *voxel = search(point);
+                if (voxel != NULL)
+                    map.updateNode(point, *(voxel->getValue().get()));
+#ifdef LOG_DETAILS
+                else
+                    ROS_WARN_STREAM("Belief voxel at " << point << " could not be found during copying.");
+#endif
+            }
+        }
+    }
+    return map;
+}
+
 Belief *BeliefMap::belief(const octomap::OcTreeKey &key) const
 {
     BeliefVoxel *voxel = search(key);

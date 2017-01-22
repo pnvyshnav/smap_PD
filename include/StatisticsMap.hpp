@@ -51,8 +51,10 @@ public:
         {
             if (voxel.type != GEOMETRY_VOXEL)
             {
-                ROS_WARN_STREAM("Skipped stats computation for a voxel in " << mapType());
-                stats.push_back(VoxelStatistics(0.5, 0.5, &voxel));
+//                ROS_WARN_STREAM("Skipped stats computation for a voxel in "
+//                                        << mapType() << " at position: " << voxel.position);
+                double bernoulliStd = std::sqrt(Parameters::priorMean * (1. - Parameters::priorMean));
+                stats.push_back(VoxelStatistics(Parameters::priorMean, bernoulliStd, &voxel));
                 continue;
             }
             QTrueVoxel trueVoxel = trueMap.query(voxel.key);
@@ -69,8 +71,9 @@ public:
         {
             if (voxel.type != GEOMETRY_VOXEL)
             {
-                ROS_WARN_STREAM("Skipped keyed stats computation for a voxel in " << mapType());
-                stats.push_back(VoxelStatistics(0.5, 0.5, &voxel));
+                //ROS_WARN_STREAM("Skipped keyed stats computation for a voxel in " << mapType());
+                double bernoulliStd = std::sqrt(Parameters::priorMean * (1. - Parameters::priorMean));
+                stats.push_back(VoxelStatistics(Parameters::priorMean, bernoulliStd, &voxel));
                 continue;
             }
             QTrueVoxel trueVoxel = trueMap.query(voxel.key);
@@ -89,7 +92,8 @@ public:
             if (voxel.type != GEOMETRY_VOXEL)
             {
                 ROS_WARN_STREAM("Skipped keyed stats computation for a voxel in " << mapType());
-                stats.push_back(VoxelStatistics(0.5, 0.5, &voxel));
+                double bernoulliStd = std::sqrt(Parameters::priorMean * (1. - Parameters::priorMean));
+                stats.push_back(VoxelStatistics(Parameters::priorMean, bernoulliStd, &voxel));
                 continue;
             }
             QTrueVoxel trueVoxel = trueMap.query(voxel.key);
@@ -107,7 +111,8 @@ public:
             if (voxel.type != GEOMETRY_VOXEL)
             {
                 //ROS_WARN(("Skipped updated stats computation for a voxel in " + mapType()).c_str());
-                stats.push_back(VoxelStatistics(0.5, 0.5, &voxel));
+                double bernoulliStd = std::sqrt(Parameters::priorMean * (1. - Parameters::priorMean));
+                stats.push_back(VoxelStatistics(Parameters::priorMean, bernoulliStd, &voxel));
                 continue;
             }
             QTrueVoxel trueVoxel = trueMap.query(voxel.key);

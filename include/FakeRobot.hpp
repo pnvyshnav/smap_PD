@@ -25,6 +25,9 @@ template <class SENSOR = StereoCameraSensor>
 class FakeRobot : public Robot, public Observable
 {
 public:
+    // start, end, currentVelocity
+    typedef std::function<Trajectory(Point, Point, double)> PlanningSubscriber;
+
     FakeRobot(Parameters::Vec3Type position,
           Parameters::Vec3Type orientation,
           TrueMap &trueMap, BeliefMap &beliefMap)
@@ -88,9 +91,12 @@ public:
         };
 
         double lastTime = 0;
-        unsigned int stepLimit = Parameters::FakeRobotNumSteps;
-
-        double maxRad = stepLimit * Parameters::FakeRobotAngularVelocity;
+        unsigned int stepLimit;
+#ifdef SIMULATE_TIME
+        stepLimit = (unsigned int)(Parameters::SimulationFinalTime / Parameters::SimulationTimeStep);
+#else
+        stepLimit = Parameters::FakeRobotNumSteps;
+#endif
 
         for (auto rad = 0.;
              !_stopRequested && _step <= stepLimit;
@@ -101,9 +107,16 @@ public:
             //ROS_INFO("Trajectory empty? %d", (int) _trajectory.empty());
             if (!_trajectory.empty())
             {
+                TrajectoryEvaluationResult current;
+    #ifdef SIMULATE_TIME
+                double time = _step * Parameters::SimulationTimeStep;
+                //ROS_INFO("Computing trajectory at time = %f", time);
+                current = _trajectory.evaluateAtTime(time);
+    #else
                 double u = _step * 1. / stepLimit;
                 //ROS_INFO("Computing trajectory at u = %f", u);
-                auto current = _trajectory.evaluate(u, true);
+                current = _trajectory.evaluate(u, true);
+    #endif
 
                 _yaw = current.yaw;
 
@@ -123,26 +136,32 @@ public:
 
                 setOrientation(Parameters::Vec3Type(std::sin(_yaw), std::cos(_yaw), 0));
 
-                if (u >= 1.)
+                if (current.u >= 1. || current.time >= _trajectory.totalTime())
                     break;
 
-                double time = current.time;
                 //ROS_INFO("Current Robot Time: %f", time);
 
     #ifdef SIMULATE_TIME
-                ros::Rate publishing_rate((time - lastTime) + 2);
-                publishing_rate.sleep();
-                lastTime = time;
+//                ros::Rate publishing_rate((time - lastTime) + 2);
+//                publishing_rate.sleep();
+//                lastTime = time;
     #endif
 
                 _splineFutureVoxels.clear();
-                double elapsedFuture = 0, lastFuture = time;
                 for (unsigned int futureStep = _step + 1;
                      futureStep < stepLimit;
                      ++futureStep)
                 {
+                    TrajectoryEvaluationResult fresult;
+    #ifdef SIMULATE_TIME
+                    double ftime = futureStep * Parameters::SimulationTimeStep;
+                    //ROS_INFO("Computing trajectory at time = %f", time);
+                    fresult = _trajectory.evaluateAtTime(ftime);
+    #else
                     double p = futureStep * 1. / stepLimit;
-                    auto fresult = _trajectory.evaluate(p, true);
+                    fresult = _trajectory.evaluate(p, true);
+    #endif
+
                     //_splineFutureVoxels.insert(_trueMap.coordToKey(fresult[0], fresult[1], 0.05));
 
                     // sample from the environment
@@ -157,14 +176,27 @@ public:
                         }
                     }
 
-                    double futureTime = fresult.time;
-                    elapsedFuture += futureTime - lastFuture;
-                    if (elapsedFuture > 0.3) //Parameters::EvaluateFutureTimespan)
+                    double elapsedFuture = fresult.time - current.time;
+                    if (elapsedFuture > 4. * Parameters::SimulationTimeStep) //Parameters::EvaluateFutureTimespan)
                         break;
-                    lastFuture = futureTime;
+                }
+
+                // TODO check if replanning is necessary
+                double reachability = 0.;
+                for (auto &voxel : _splineFutureVoxels)
+                {
+                    auto beliefVoxel = _beliefMap.query(voxel);
+                    reachability *= 1. - _beliefMap.getVoxelMean(beliefVoxel);
+                }
+                reachability = 1. - reachability;
+                auto replanningNecessary = reachability < 0.5;
+                if (_replanningHandler != nullptr && replanningNecessary)
+                {
+                    setTrajectory(_replanningHandler(current.point, _trajectory.controlPoints().back(), current.velocity));
                 }
 
                 _lastTime = time;
+                _lastVelocity = current.velocity;
             }
     #else
             setOrientation(Parameters::Vec3Type(std::cos(rad), std::sin(rad), 0));
@@ -211,6 +243,11 @@ public:
         return _lastTime;
     }
 
+    double velocity() const
+    {
+        return _lastVelocity;
+    }
+
     Trajectory &trajectory()
     {
         return _trajectory;
@@ -219,6 +256,11 @@ public:
     void setTrajectory(const Trajectory &trajectory)
     {
         _trajectory = trajectory;
+    }
+
+    void setReplanningHandler(PlanningSubscriber handler)
+    {
+        _replanningHandler = handler;
     }
 
     /**
@@ -244,4 +286,7 @@ private:
 
     Trajectory _trajectory;
     double _lastTime;
+    double _lastVelocity;
+
+    PlanningSubscriber _replanningHandler;
 };
