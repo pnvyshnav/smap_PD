@@ -1,8 +1,10 @@
 # Confidence Aware Occupancy Grid Mapping
-ROS package implementing 3D mapping using octomap.
+ROS package implementing 3D mapping and planning using SMAP.
 
-![Octomap](https://github.com/Lolu28/smap/raw/octomap/error_plot.png)
+![Replanning](replanning.gif)
 
-Evolution of error from SMAP and Log-Odds-based mapping over 500 iterations. The voxels of size 0.125 are aligned in a 32 x 32 x 32 occupancy grid.
-SMAP is using a forward sensor model with std dev of 0.15.
+Example scenario showing replanning. The robot has only a single pixel (range) sensor (red arrow)
+and executes the current trajectory (blue). When the estimated reachability goes below a certain threshold
+within the next 5 time steps, the best trajectory is chosen from a set of trajectory candidates (green).
+The robot's position trace is highlighted in yellow.
 
