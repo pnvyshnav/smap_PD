@@ -84,7 +84,7 @@ TrajectoryPlanner::TrajectoryPlanner(TrueMap &trueMap, BeliefMap &beliefMap, Log
 //    trajectory2.evaluate(0.5);
 }
 
-std::vector<Trajectory> TrajectoryPlanner::generateTrajectories() const
+std::vector<Trajectory> TrajectoryPlanner::generateTrajectories()
 {
 //    std::vector<Trajectory> trajectories;
 //    double shift = Parameters::voxelSize/2.;
@@ -139,27 +139,39 @@ std::vector<Trajectory> TrajectoryPlanner::generateTrajectories() const
 
 
 std::vector<Trajectory> TrajectoryPlanner::generateTrajectories(Point start, Point end,
-                                                                VelocityPlanningParameters parameters) const
+                                                                VelocityPlanningParameters parameters)
 {
     const double stepSize = 0.25;
+    const double scaling = 2.0;
 
     unsigned int count = 0;
     std::vector<Trajectory> trajectories;
+
+    // scale control point sampling rectangle beyond start / end
+    double scaledWidth = std::abs(end.x - start.x) / 2.0 * scaling;
+    double scaledHeight = std::abs(end.y - start.y) / 2.0 * scaling;
+    double midX = (start.x + end.x) / 2.0;
+    double midY = (start.y + end.y) / 2.0;
+
     // generate splines with 1 intermediary point
-    for (double x = std::min(start.x, end.x); x <= std::max(start.x, end.x); x += stepSize)
+    for (double x = midX - scaledWidth; x <= midX + scaledWidth; x += stepSize)
     {
-        for (double y = std::min(start.y, end.y); y <= std::max(start.y, end.y); y += stepSize)
+        for (double y = midY - scaledHeight; y <= midY + scaledHeight; y += stepSize)
         {
-            Trajectory trajectory({start,
-                                   Point(x, y),
-                                   end});
+            Trajectory trajectory({start, Point(x, y), end});
+            trajectory._end = end;
             trajectory.computeVelocities();
-            ROS_INFO("TOTAL ARC LENGTH: %f", trajectory.totalArcLength());
+            if (!trajectory.isValid())
+            {
+                ROS_WARN("Skipped invalid trajectory");
+                continue;
+            }
             trajectory.computeTimeProfile();
-            ROS_INFO("TOTAL TIME:       %f", trajectory.totalTime());
+            ROS_INFO("Generated trajectory %i \t(arc length: %f, \ttime: %f)",
+                     (int)count, trajectory.totalArcLength(), trajectory.totalTime());
             //trajectory.saveProfile("trajectories/trajectory_" + std::to_string(count) + ".csv");
             trajectories.push_back(trajectory);
-//            ++count;
+            ++count;
 //                    if (count >= 10) // TODO remove?
 //                    {
 //                        ROS_INFO("%d trajectories were generated. Stopping.", (int)count);
@@ -173,15 +185,36 @@ std::vector<Trajectory> TrajectoryPlanner::generateTrajectories(Point start, Poi
 
 double TrajectoryPlanner::evaluate(Trajectory &trajectory, BeliefMap &map, const smap::smapStats &stats)
 {
-    double reachability = 1;
+    double reachability = 1.;
     auto startIndex = stats.trajectoryOccupanciesBelief.size() - stats.trajectoryVoxels;
+    double reachLeft = 1., reachRight = 1.;
     for (auto i = startIndex; i < stats.trajectoryOccupanciesBelief.size(); ++i)
     {
-        reachability *= 1. - stats.trajectoryOccupanciesBelief[i];
+        auto beliefVoxel = _beliefMap.query(Parameters::Vec3Type(stats.trajectoryVoxelX[i%stats.trajectoryVoxels], stats.trajectoryVoxelY[i%stats.trajectoryVoxels], 0.05));
+        if (!beliefVoxel.node())
+            continue;
+
+        double var = std::pow(stats.trajectoryStdDevsBelief[i], 2.);
+        double imOcc = stats.trajectoryOccupanciesBelief[i];
+//        if (std::abs(imOcc - 0.5) < 0.1)
+//            imOcc = 0.2;
+        double reOcc = _beliefMap.getVoxelMean(beliefVoxel);
+        if (std::abs(reOcc - 0.5) < 0.1)
+            reOcc = 0.1;
+
+        double mean = 1. - 0.5 * (imOcc + reOcc); // do we take the belief map or imaginary reachability?
+        //ROS_INFO("Trajectory 1-mean: %f", mean);
+        reachability *= 1. - reOcc;
+        double meanSq = std::pow(mean, 2.);
+        reachLeft *= var + meanSq;
+        reachRight *= meanSq;
     }
-    reachability = 1. - reachability;
+    double stdReachability = std::sqrt(reachLeft - reachRight);
+    //reachability = 1. - reachability;
     // TODO compute reach - std(reach)
-    return reachability;
+    ROS_INFO("Reachability: %f \tStd(Reachability): %f", reachability, stdReachability);
+    double kappa = 3.5; // stdReachability currently doesn't have a big influence
+    return reachability - kappa * stdReachability;
 }
 
 Trajectory TrajectoryPlanner::replan(Point start, Point end, double startVelocity)
@@ -189,27 +222,34 @@ Trajectory TrajectoryPlanner::replan(Point start, Point end, double startVelocit
     VelocityPlanningParameters parameters;
     parameters.startVelocity = startVelocity;
     auto trajectories = generateTrajectories(start, end, parameters);
-    double optimalCost = 0.;
+    double optimalUtility = 0.;
     unsigned int i = 0, optimalIdx = 0;
     for (auto &candidate : trajectories)
     {
         _candidate = candidate;
         updateSubscribers();
 
-        auto imaginaryMap = _beliefMap.copy();
+        _imaginaryMap = BeliefMap(_beliefMap);
+//        auto further = candidate.evaluate(0.4);
+//        _simulationBot = new FakeRobot<PixelSensor>(Parameters::Vec3Type((float)further.point.x, (float)further.point.y, 0.05),
+//                                             Parameters::Vec3Type(1, 0, 0),
+//                                             _trueMap, _imaginaryMap);
         _simulationBot = new FakeRobot<PixelSensor>(Parameters::Vec3Type((float)start.x, (float)start.y, 0.05),
-                                             Parameters::Vec3Type(0, 0, 0),
-                                             _trueMap, imaginaryMap);
+                                                    Parameters::Vec3Type(1, 0, 0),
+                                                    _trueMap, _imaginaryMap);
+        _simulationBot->setObservationMode(OBSERVE_ONLY_IMAGINARY);
         _simulationBot->registerObserver(std::bind(&TrajectoryPlanner::_handleObservation,
                                                  this,
                                                  std::placeholders::_1));
 
         _simulationBot->setTrajectory(candidate);
+        _simulationBot->_step = 20;
         _simulationBot->run();
-        auto cost = evaluate(candidate, imaginaryMap, _stats.stats());
-        if (cost > optimalCost)
+        auto utility = evaluate(candidate, _imaginaryMap, _stats.stats());
+        ROS_INFO("Trajectory %d has utility: %.10f", (int)i, utility);
+        if (utility > optimalUtility)
         {
-            optimalCost = cost;
+            optimalUtility = utility;
             optimalIdx = i;
         }
         _stats.reset();
@@ -217,12 +257,22 @@ Trajectory TrajectoryPlanner::replan(Point start, Point end, double startVelocit
         ++i;
     }
 
+    ROS_INFO("Trajectory %i has the best utility.", (int)optimalIdx);
     return trajectories[optimalIdx];
 }
 
 void TrajectoryPlanner::_handleObservation(const Observation &observation)
 {
-    _stats.update(_logOddsMap, _beliefMap, *_simulationBot);
+    _imaginaryMap.update(observation, _trueMap);
+    _stats.update(_logOddsMap, _imaginaryMap, *_simulationBot);
+}
+
+Trajectory TrajectoryPlanner::generateInitialDirectTrajectory(Point start, Point end)
+{
+    Trajectory trajectory({start, Point((start.x + end.x) / 2., (start.y + end.y) / 2.), end});
+    trajectory.computeVelocities();
+    trajectory.computeTimeProfile();
+    return trajectory;
 }
 
 

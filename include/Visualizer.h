@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ros/ros.h>
+#include <visualization_msgs/MarkerArray.h>
 
 #include "Observable.hpp"
 #include "TrueMap.h"
@@ -29,6 +30,7 @@ public:
     static const int PaintRate = 200;
 
 private:
+    int _counter;
     ros::NodeHandle *nodeHandle;
     ros::Publisher trueMapPublisher;
     ros::Publisher trueMap2dPublisher;
@@ -40,4 +42,5 @@ private:
     ros::Publisher splinePublisher;
     ros::Publisher evaluationPublisher;
     ros::Publisher trajectoryVoxelsPublisher;
+    ros::Publisher finalTrajectoryPublisher;
 };

@@ -36,6 +36,31 @@ BeliefMap::BeliefMap() : octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractO
              max_value[0], max_value[1], max_value[2]);
 }
 
+BeliefMap::BeliefMap(const BeliefMap &map) :
+        octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractOcTree>(Parameters::voxelSize),
+        StatisticsMap(this)
+{
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
+                                       Parameters::yMin + y * Parameters::voxelSize,
+                                       Parameters::zMin + z * Parameters::voxelSize);
+                auto *voxel = map.search(point);
+                if (voxel != NULL)
+                    updateNode(point, *(voxel->getValue().get()));
+#ifdef LOG_DETAILS
+                else
+                    ROS_WARN_STREAM("Belief voxel at " << point << " could not be found in copy contructor.");
+#endif
+            }
+        }
+    }
+}
+
 BeliefMap *BeliefMap::create() const
 {
     return new BeliefMap();
@@ -64,6 +89,30 @@ BeliefMap BeliefMap::copy() const
         }
     }
     return map;
+}
+
+BeliefMap &BeliefMap::operator=(const BeliefMap &map)
+{
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
+                                       Parameters::yMin + y * Parameters::voxelSize,
+                                       Parameters::zMin + z * Parameters::voxelSize);
+                auto *voxel = map.search(point);
+                if (voxel != NULL)
+                    updateNode(point, *(voxel->getValue().get()));
+#ifdef LOG_DETAILS
+                else
+                    ROS_WARN_STREAM("Belief voxel at " << point << " could not be found in copy contructor.");
+#endif
+            }
+        }
+    }
+    return *this;
 }
 
 Belief *BeliefMap::belief(const octomap::OcTreeKey &key) const

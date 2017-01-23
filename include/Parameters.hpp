@@ -8,6 +8,7 @@
 #define FAKE_2D
 #define PLANNER_2D_TEST
 #define SIMULATE_TIME
+#define REPLANNING
 //#define FAKE_3D
 //#define MANY_STEPS
 

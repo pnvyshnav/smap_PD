@@ -23,10 +23,13 @@ class BeliefMap
 {
 public:
     BeliefMap();
+    BeliefMap(const BeliefMap &map);
 
     BeliefMap *create() const;
 
     BeliefMap copy() const;
+
+    BeliefMap &operator=(const BeliefMap &map);
 
     Belief *belief(const octomap::OcTreeKey &key) const;
 

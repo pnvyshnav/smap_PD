@@ -20,13 +20,13 @@ class Statistics
 public:
     Statistics(const TrueMap &trueMap) : _trueMap(trueMap)
     {
-        _nh = new ros::NodeHandle;
-        _publisher = _nh->advertise<smap::smapStats>("stats", 1);
+        //_nh = new ros::NodeHandle;
+        //_publisher = _nh->advertise<smap::smapStats>("stats", 1);
     }
 
     ~Statistics()
     {
-        delete _nh;
+        //delete _nh;
     }
 
     void update(const LogOddsMap &logOddsMap,
@@ -199,7 +199,7 @@ public:
 
 #endif
 
-        _publisher.publish(_msg);
+        //_publisher.publish(_msg);
 
         // TODO wait some time to ensure data is plotted
         //ros::Rate publishing_rate(29);

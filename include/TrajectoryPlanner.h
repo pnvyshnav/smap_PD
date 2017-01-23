@@ -16,11 +16,13 @@ public:
 
     Trajectory replan(Point start, Point end, double startVelocity = 0.0);
 
-    std::vector<Trajectory> generateTrajectories() const;
-    std::vector<Trajectory> generateTrajectories(Point start, Point end,
-                                                 VelocityPlanningParameters parameters = VelocityPlanningParameters()) const;
+    static Trajectory generateInitialDirectTrajectory(Point start, Point end);
 
-    static double evaluate(Trajectory &trajectory, BeliefMap &map, const smap::smapStats &stats);
+    static std::vector<Trajectory> generateTrajectories();
+    static std::vector<Trajectory> generateTrajectories(Point start, Point end,
+                                                 VelocityPlanningParameters parameters = VelocityPlanningParameters());
+
+    double evaluate(Trajectory &trajectory, BeliefMap &map, const smap::smapStats &stats);
 
     Trajectory currentEvaluationCandidate() const
     {
@@ -30,6 +32,7 @@ public:
 private:
     TrueMap &_trueMap;
     BeliefMap &_beliefMap;
+    BeliefMap _imaginaryMap;
     LogOddsMap &_logOddsMap;
     Trajectory _candidate;
     Statistics<FakeRobot<PixelSensor> > _stats;

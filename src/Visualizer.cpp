@@ -9,7 +9,6 @@
 #include "../include/TrajectoryPlanner.h"
 
 #include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
 #include <nav_msgs/GridCells.h>
 
 void Visualizer::render()
@@ -28,7 +27,7 @@ void Visualizer::render()
     ros::spin();
 }
 
-Visualizer::Visualizer()
+Visualizer::Visualizer() : _counter(0)
 {
     nodeHandle = new ros::NodeHandle;
     trueMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("true_map", 10);
@@ -41,6 +40,7 @@ Visualizer::Visualizer()
     splinePublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("trajectories", 10);
     evaluationPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("eval_trajectories", 10);
     trajectoryVoxelsPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("trajectoryVoxels", 10);
+    finalTrajectoryPublisher = nodeHandle->advertise<visualization_msgs::Marker>("hist_positions", 10);
 }
 
 Visualizer::~Visualizer()
@@ -479,6 +479,7 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
     visualization_msgs::MarkerArray markers;
 
     auto colors = std::vector<std::vector<double> > {
+        {0, 0, 1}, // TODO remove
         {1, 0, 0},
         {0, 0.4, 0},
         {0, 0, 1}
@@ -521,11 +522,13 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
         auto trajectory = Trajectory(robot->trajectory());
 #ifdef SIMULATION_TIME
         for (double x = 0; x <= Parameters::SimulationFinalTime; x += Parameters::SimulationTimeStep)
-#else
-        for (double x = 0; x <= 1.01; x += 0.05)
-#endif
         {
             auto result = trajectory.evaluateAtTime(x);
+#else
+        for (double x = 0; x <= 1.01; x += 0.05)
+        {
+            auto result = trajectory.evaluate(x);
+#endif
             geometry_msgs::Point p;
             p.x = result.point.x;
             p.y = result.point.y;
@@ -592,6 +595,22 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
     splinePublisher.publish(markers);
     trajectoryVoxelsPublisher.publish(allTrajectoryVoxels);
 
+    visualization_msgs::Marker robotPosition;
+    robotPosition.action = 0;
+    robotPosition.id = 3473 + _counter++;
+    robotPosition.type = visualization_msgs::Marker::SPHERE;
+    robotPosition.header.frame_id = "map";
+    robotPosition.pose.position.x = robot->position().x();
+    robotPosition.pose.position.y = robot->position().y();
+    robotPosition.pose.position.z = 0.6;
+    robotPosition.scale.x = 0.02;
+    robotPosition.scale.y = 0.02;
+    robotPosition.scale.z = 0.02;
+    robotPosition.color.a = 1.0;
+    robotPosition.color.r = 0.9;
+    robotPosition.color.g = 0.7;
+    robotPosition.color.b = 0.0;
+    finalTrajectoryPublisher.publish(robotPosition);
 #endif
 
     ros::spinOnce();
@@ -610,21 +629,21 @@ void Visualizer::publishTrajectoryPlanner(const Observable *visualizable)
     wayPoints.id = (int) visualizable->observableId();
     wayPoints.type = visualization_msgs::Marker::LINE_STRIP;
     wayPoints.header.frame_id = "map";
-    wayPoints.scale.x = 0.02;
-    wayPoints.scale.y = 0.02;
-    wayPoints.scale.z = 0.02;
+    wayPoints.scale.x = 0.01;
+    wayPoints.scale.y = 0.01;
+    wayPoints.scale.z = 0.01;
     wayPoints.color.a = 1;
-    wayPoints.color.r = 0.9f;
-    wayPoints.color.g = 0.7f;
+    wayPoints.color.r = 0.4f;
+    wayPoints.color.g = 0.8f;
     wayPoints.color.b = 0.0f;
 
-    for (double x = 0; x <= 1.01; x += 0.1)
+    for (double x = 0; x <= 1.01; x += 0.05)
     {
         auto result = trajectoryPlanner->currentEvaluationCandidate().evaluate(x);
         geometry_msgs::Point p;
         p.x = result.point.x;
         p.y = result.point.y;
-        p.z = 0.51;
+        p.z = 0.55;
         wayPoints.points.push_back(p);
     }
     markers.markers.push_back(wayPoints);

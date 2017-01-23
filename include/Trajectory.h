@@ -166,6 +166,18 @@ public:
         return _empty;
     }
 
+    bool isValid() const;
+
+    const Point start() const
+    {
+        return _start;
+    }
+
+    const Point end() const
+    {
+        return _end;
+    }
+
 private:
     Trajectory(std::initializer_list<Point> points, unsigned int degree = 2);
     ts::BSpline _spline;
@@ -193,4 +205,7 @@ private:
 
     std::vector<VelocityPlanningPoint> _planningPoints;
     std::valarray<double> _times;
+
+    Point _start;
+    Point _end;
 };

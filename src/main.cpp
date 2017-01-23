@@ -26,8 +26,6 @@ FakeRobot<> robot(
         trueMap,
         beliefMap);
 
-TrajectoryPlanner planner(trueMap, beliefMap, logOddsMap);
-
 
 Statistics<> *stats;
 
@@ -54,6 +52,8 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "SMAP");
     ros::Time::init();
     stats = new Statistics<>(trueMap);
+
+    TrajectoryPlanner planner(trueMap, beliefMap, logOddsMap);
     //trueMap.writeBinary("simple_tree.bt");
 
     Visualizer *visualizer = new Visualizer;
@@ -75,19 +75,26 @@ int main(int argc, char **argv)
     robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
     robot.registerObserver(&handleObservation);
     #if defined(PLANNER_2D_TEST)
-        unsigned int splineId = 0;
-        for (auto &trajectory : planner.generateTrajectories())
-        {
-            ROS_INFO("Evaluating spline %d...", (int)splineId);
-            beliefMap.reset();
-            logOddsMap.reset();
-            robot.setTrajectory(trajectory);
+        #if defined(REPLANNING)
+            //robot.setTrajectory(planner.replan(Point(0.05, -0.95), Point(-0.95, 0.05), 0.0));
+            robot.setTrajectory(TrajectoryPlanner::generateInitialDirectTrajectory(Point(0.05, -0.95), Point(-0.95, 0.05)));
             robot.run();
-            planner.evaluate(trajectory, beliefMap, stats->stats());
-            stats->saveToFile("trajeval/trajectory_" + std::to_string(splineId) + ".bag");
-            stats->reset();
-            ++splineId;
-        }
+            stats->saveToFile("replanning/replanning.bag");
+        #else
+            unsigned int splineId = 0;
+            for (auto &trajectory : planner.generateTrajectories())
+            {
+                ROS_INFO("Evaluating spline %d...", (int)splineId);
+                beliefMap.reset();
+                logOddsMap.reset();
+                robot.setTrajectory(trajectory);
+                robot.run();
+                planner.evaluate(trajectory, beliefMap, stats->stats());
+                stats->saveToFile("trajeval/trajectory_" + std::to_string(splineId) + ".bag");
+                stats->reset();
+                ++splineId;
+            }
+        #endif
     #else
         robot.run();
     #endif

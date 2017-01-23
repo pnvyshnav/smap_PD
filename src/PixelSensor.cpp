@@ -69,7 +69,7 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
 Observation PixelSensor::observeImaginary(BeliefMap &beliefMap) const
 {
     // TODO remove?
-    return Measurement::hole(std::make_shared<Sensor>(*this));
+//    return Measurement::hole(std::make_shared<Sensor>(*this));
 
     std::vector<octomap::point3d> positions;
     octomap::point3d end_ray = _position + _orientation * Parameters::sensorRange;

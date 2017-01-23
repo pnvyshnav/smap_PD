@@ -20,6 +20,10 @@ Trajectory::Trajectory(std::initializer_list<Point> points, unsigned int degree)
     }
     _spline.setCtrlp(ctrlpts);
 
+    _start = *points.begin();
+    _end = Point(ctrlpts[ctrlpts.size()-2], ctrlpts[ctrlpts.size()-1]);
+//    ROS_INFO("Trajectory end: %f %f", _end.x, _end.y);
+
     _totalArcLength = 0;
     _maxRad = Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity;
 
@@ -369,5 +373,21 @@ bool Trajectory::saveProfile(const std::string &csvfilename)
 
     f.close();
     ROS_INFO_STREAM("Saved profile to " << csvfilename);
+    return true;
+}
+
+bool Trajectory::isValid() const
+{
+    for (auto &vpp : _planningPoints)
+    {
+        if (vpp.point.x < Parameters::xMin || vpp.point.x > Parameters::xMax)
+            return false;
+        if (vpp.point.y < Parameters::yMin || vpp.point.y > Parameters::yMax)
+            return false;
+#if (DIMENSIONS == 3)
+        if (vpp.point.z < Parameters::zMin || vpp.point.z > Parameters::zMax)
+            return false;
+#endif
+    }
     return true;
 }
