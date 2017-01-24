@@ -9,13 +9,13 @@ PixelSensor::PixelSensor(Parameters::Vec3Type position, Parameters::Vec3Type ori
 {}
 
 // TODO this is a hack
-Parameters::NumType scaledOccupancy(Parameters::NumType occupancy)
-{
-    // TrueMap occupancy values are either 0.4 (free) or 0.7 (occupied). // TODO this is incorrect, can be < 0.4
-    // The true mean is therefore 0.55.
-    auto dd = occupancy - 0.575; //TODO explain this value
-    return occupancy += dd * 1.7;
-}
+//Parameters::NumType scaledOccupancy(Parameters::NumType occupancy)
+//{
+//    // TrueMap occupancy values are either 0.4 (free) or 0.7 (occupied). // TODO this is incorrect, can be < 0.4
+//    // The true mean is therefore 0.55.
+//    auto dd = occupancy - 0.575; //TODO explain this value
+//    return occupancy += dd * 1.7;
+//}
 
 Observation PixelSensor::observe(TrueMap &trueMap) const
 {
@@ -46,7 +46,7 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
                 if (voxel.type != GEOMETRY_VOXEL)
                     continue;
                 auto sample = UniformDistribution::sample();
-                // TODO this basically always yields the true cause voxel
+                // XXX this basically always yields the true cause voxel
                 if (sample < std::round(voxel.node()->getOccupancy()))
                 {
 #ifdef LOG_DETAILS
@@ -113,7 +113,9 @@ Observation PixelSensor::observeImaginary(BeliefMap &beliefMap) const
 
         if (scms[argmax] < infinityCause)
         {
+#ifdef LOG_DETAILS
             ROS_INFO("Sensor observed a hole.");
+#endif
             return Measurement::hole(std::make_shared<Sensor>(*this));
         }
 

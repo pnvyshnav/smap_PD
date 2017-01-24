@@ -97,7 +97,9 @@ public:
     {
 //        ROS_INFO("FakeRobot is running...");
         _stopRequested = false;
-//        _step = 0;
+#ifndef REPLANNING
+        _step = 0;
+#endif
         ecl::StopWatch stopWatch;
 
         std::vector<Parameters::Vec3Type> positions = std::vector<Parameters::Vec3Type> {
@@ -114,8 +116,8 @@ public:
         stepLimit = Parameters::FakeRobotNumSteps;
 #endif
 
-        for (auto rad = 0.;
-             !_stopRequested && _step <= stepLimit;
+        for (double rad = 0.;
+             !_stopRequested && _step < stepLimit;
              rad += Parameters::FakeRobotAngularVelocity, ++_step)
         {
 #ifdef FAKE_2D
@@ -241,27 +243,33 @@ public:
     #endif
 #else
             const static Parameters::NumType radius = 0.7;
-            setOrientation(Parameters::Vec3Type(-std::sin(-rad), -std::cos(rad), 0));
+            setOrientation(Parameters::Vec3Type(std::sin(-rad), std::cos(rad), 0));
             // let the orientation "lag behind" the position to see more from the side
-            setPosition(Parameters::Vec3Type(
-                    radius * std::cos(rad + 1.5*Parameters::FakeRobotAngularVelocity),
-                    radius * std::sin(rad + 1.5*Parameters::FakeRobotAngularVelocity), 0));
+//            setPosition(Parameters::Vec3Type(
+//                    radius * std::cos(rad + 1.5*Parameters::FakeRobotAngularVelocity),
+//                    radius * std::sin(rad + 1.5*Parameters::FakeRobotAngularVelocity), 0));
+
+            Robot::publishObservation(observe());
 #endif
 
-//            if (_step % 20 == 0)
-//                ROS_INFO("Robot step %i / %i", (int)_step+1, (int)Parameters::FakeRobotNumSteps);
+#ifdef FAKE_3D
+            if (_step % 20 == 0)
+                ROS_INFO("Robot step %i / %i", (int)_step+1, (int)Parameters::FakeRobotNumSteps);
+#endif
         }
 
-//        if (_stopRequested)
-//            ROS_INFO("Robot stopped after %g full rounds in %d steps.",
-//                     (Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity)/(2. * M_PI),
-//                     (int)_step);
-//        else
-//            ROS_INFO("Robot completed %g full rounds in %d steps.",
-//                     (Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity)/(2. * M_PI),
-//                     (int)_step);
-//
-//        ROS_INFO_STREAM("Elapsed time: " << stopWatch.elapsed() << " seconds");
+#ifdef FAKE_3D
+        if (_stopRequested)
+            ROS_INFO("Robot stopped after %g full rounds in %d steps.",
+                     (Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity)/(2. * M_PI),
+                     (int)_step);
+        else
+            ROS_INFO("Robot completed %g full rounds in %d steps.",
+                     (Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity)/(2. * M_PI),
+                     (int)_step);
+
+        ROS_INFO_STREAM("Elapsed time: " << stopWatch.elapsed() << " seconds");
+#endif
     }
 
     void stop()

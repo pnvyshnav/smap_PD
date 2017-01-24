@@ -8,10 +8,10 @@
 #include "../include/Visualizer.h"
 #include "../include/Drone.h"
 #include "../include/LogOddsMap.h"
-#include "../include/Statistics.h"
+#include "../include/Statistics.hpp"
 #include "../include/TrajectoryPlanner.h"
 
-TrueMap trueMap = TrueMap::generate(123); // TODO leave out seed value
+TrueMap trueMap = TrueMap::generate(123); // use a fixed seed value
 BeliefMap beliefMap;
 LogOddsMap logOddsMap;
 FakeRobot<> robot(
@@ -38,9 +38,6 @@ void handleObservation(const Observation &observation)
 
     stats->update(logOddsMap, beliefMap, robot);
 
-//    beliefErrors.push_back(beliefMap.error(trueMap));
-//    logOddsErrors.push_back(logOddsMap.error(trueMap));
-
 #if defined(FAKE_2D) || defined(FAKE_3D)
     if (!ros::ok())
         robot.stop();
@@ -56,26 +53,33 @@ int main(int argc, char **argv)
     TrajectoryPlanner planner(trueMap, beliefMap, logOddsMap);
     //trueMap.writeBinary("simple_tree.bt");
 
+#ifdef ENABLE_VISUALIZATION
     Visualizer *visualizer = new Visualizer;
     trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
+#ifdef FAKE_2D
     beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
+#else
+    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMap, visualizer, std::placeholders::_1));
+#endif
     logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMap, visualizer, std::placeholders::_1));
     robot.subscribe(std::bind(&Visualizer::publishFakeRobot, visualizer, std::placeholders::_1, &trueMap));
     planner.subscribe(std::bind(&Visualizer::publishTrajectoryPlanner, visualizer, std::placeholders::_1));
 
-    robot.setReplanningHandler(std::bind(&TrajectoryPlanner::replan, planner,
+    trueMap.publish();
+
+    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
+    robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
+#endif
+
+    robot.registerObserver(&handleObservation);
+
+#if defined(FAKE_2D)
+    #if defined(PLANNER_2D_TEST)
+        #if defined(REPLANNING)
+            robot.setReplanningHandler(std::bind(&TrajectoryPlanner::replan, planner,
                                          std::placeholders::_1,
                                          std::placeholders::_2,
                                          std::placeholders::_3));
-
-    trueMap.publish();
-
-#if defined(FAKE_2D)
-    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
-    robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
-    robot.registerObserver(&handleObservation);
-    #if defined(PLANNER_2D_TEST)
-        #if defined(REPLANNING)
             //robot.setTrajectory(planner.replan(Point(0.05, -0.95), Point(-0.95, 0.05), 0.0));
             robot.setTrajectory(TrajectoryPlanner::generateInitialDirectTrajectory(Point(0.05, -0.95), Point(-0.95, 0.05)));
             robot.run();
@@ -99,26 +103,29 @@ int main(int argc, char **argv)
         robot.run();
     #endif
 #elif defined(FAKE_3D)
-    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
-    robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
-    robot.registerObserver(&handleObservation);
-    for (unsigned int round = 0; round < 10; ++round)
-    {
-        beliefMap.reset();
-        logOddsMap.reset();
+    #ifdef ENABLE_VISUALIZATION
+        trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
+        robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
+    #endif
+
+    #if defined(REPEATED_RUNS)
+        for (unsigned int round = 0; round < 10; ++round)
+        {
+            beliefMap.reset();
+            logOddsMap.reset();
+            robot.run();
+            stats->saveToFile("repeated_fake_3d/stats_" + std::to_string(round) + ".bag");
+            stats->reset();
+            ROS_INFO("Completed round %d", (int)round);
+        }
+    #else
         robot.run();
-        stats->saveToFile("repeated_fake_3d/stats_" + std::to_string(round) + ".bag");
-        stats->reset();
-        ROS_INFO("Completed round %d", (int)round);
-    }
+    #endif
 #else
     Drone drone;
     drone.registerObserver(&handleObservation);
     drone.run();
 #endif
-
-    //stats->update(logOddsMap, beliefMap, robot);
-    // TODO reactivate
 
 #ifndef PLANNER_2D_TEST
     stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/stats.bag");
@@ -126,7 +133,9 @@ int main(int argc, char **argv)
 
     delete stats;
 
+#ifdef ENABLE_VISUALIZATION
     visualizer->render();
+#endif
 
     return EXIT_SUCCESS;
 }

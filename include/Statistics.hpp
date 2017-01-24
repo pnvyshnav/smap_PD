@@ -20,20 +20,24 @@ class Statistics
 public:
     Statistics(const TrueMap &trueMap) : _trueMap(trueMap)
     {
-        //_nh = new ros::NodeHandle;
-        //_publisher = _nh->advertise<smap::smapStats>("stats", 1);
+#ifdef PUBLISH_STATS
+        _nh = new ros::NodeHandle;
+        _publisher = _nh->advertise<smap::smapStats>("stats", 1);
+#endif
     }
 
     ~Statistics()
     {
-        //delete _nh;
+#ifdef PUBLISH_STATS
+        delete _nh;
+#endif
     }
 
     void update(const LogOddsMap &logOddsMap,
                 const BeliefMap &beliefMap,
                 ROBOT &robot)
     {
-        _msg.step = robot.currentStep();
+        _msg.step = robot.currentStep() + 1;
         _msg.maxStep = Parameters::FakeRobotNumSteps;
 
         auto beliefCompleteStats = beliefMap.stats(_trueMap);
@@ -47,9 +51,9 @@ public:
             if (std::find(logOddsUpdatedPositions.begin(), logOddsUpdatedPositions.end(), position) != logOddsUpdatedPositions.end())
             {
                 updatedPositions.push_back(position);
-                _msg.updatedVoxelsX.push_back((int)(position.x() * 100. / Parameters::voxelSize));
-                _msg.updatedVoxelsY.push_back((int)(position.y() * 100. / Parameters::voxelSize));
-                _msg.updatedVoxelsZ.push_back((int)(position.z() * 100. / Parameters::voxelSize));
+                _msg.updatedVoxelsX.push_back(position.x());
+                _msg.updatedVoxelsY.push_back(position.y());
+                _msg.updatedVoxelsZ.push_back(position.z());
             }
         }
 
@@ -76,7 +80,7 @@ public:
         assert(errorUpdatedBelief.size() == errorUpdatedLogOdds.size());
         _msg.updatedVoxels.push_back(beliefMap.updatedVoxels().size());
 
-        // TODO these assertions aren't necessary if we only consider intersection of updated voxels
+        // XXX these assertions aren't necessary if we only consider intersection of updated voxels
         //assert(beliefMap.updatedVoxels().size() == logOddsMap.updatedVoxels().size());
         //assert(beliefMap.updatedVoxels().size() == errorUpdatedBelief.size());
 
@@ -127,9 +131,9 @@ public:
                                               stdUpdatedLogOdds.end());
 #else
         _msg.errorCompleteUpdatedBelief = errorUpdatedBelief;
-    _msg.errorCompleteUpdatedLogOdds = errorUpdatedLogOdds;
-    _msg.stdCompleteUpdatedBelief = stdUpdatedBelief;
-    _msg.stdCompleteUpdatedLogOdds = stdUpdatedLogOdds;
+        _msg.errorCompleteUpdatedLogOdds = errorUpdatedLogOdds;
+        _msg.stdCompleteUpdatedBelief = stdUpdatedBelief;
+        _msg.stdCompleteUpdatedLogOdds = stdUpdatedLogOdds;
 #endif
 
         _msg.noiseStd = Parameters::sensorNoiseStd;
@@ -138,7 +142,7 @@ public:
         _msg.ismTopSize = Parameters::invSensor_topSize;
         _msg.ismRampSlope = Parameters::invSensor_rampSlope;
 
-#ifndef MANY_STEPS
+        // error evolution
         double evolutionLogOdds = 0;
         for (double error : _msg.errorLogOdds)
             evolutionLogOdds += std::abs(error);
@@ -153,6 +157,19 @@ public:
         _msg.stdLogOdds = VoxelStatistics::selectStd(logOddsCompleteStats);
         _msg.stdBelief = VoxelStatistics::selectStd(beliefCompleteStats);
 
+        // std evolution
+        evolutionLogOdds = 0;
+        for (double std : _msg.stdLogOdds)
+            evolutionLogOdds += std::abs(std);
+        evolutionLogOdds /= _msg.stdLogOdds.size();
+        _msg.stdEvolutionLogOdds.push_back(evolutionLogOdds);
+        evolutionBelief = 0;
+        for (double std : _msg.stdBelief)
+            evolutionBelief += std::abs(std);
+        evolutionBelief /= _msg.stdBelief.size();
+        _msg.stdEvolutionBelief.push_back(evolutionBelief);
+
+#ifndef MANY_STEPS
         // append current std devs to complete std dev vectors
         _msg.stdCompleteLogOdds.insert(_msg.stdCompleteLogOdds.end(),
                                        _msg.stdLogOdds.begin(),
@@ -196,20 +213,22 @@ public:
             _msg.trajectoryFutureStdDevsBelief.push_back(beliefMap.getVoxelStd(voxel));
         }
         _msg.trajectoryFutureReachability.push_back(reachability);
-
 #endif
 
-        //_publisher.publish(_msg);
+#ifdef PUBLISH_STATS
+        _publisher.publish(_msg);
 
-        // TODO wait some time to ensure data is plotted
-        //ros::Rate publishing_rate(29);
-        //publishing_rate.sleep();
+        // wait some time to ensure data is plotted
+        ros::Rate publishing_rate(29);
+        publishing_rate.sleep();
+#endif
     }
 
     void saveToFile(std::string filename) const
     {
         rosbag::Bag bag;
         bag.open(filename, rosbag::bagmode::Write);
+        //bag.setCompression(rosbag::compression::BZ2);
         bag.write("stats", ros::Time::now(), _msg);
         bag.close();
         ROS_INFO_STREAM("Saved statistics ROS bag file to " << filename);
@@ -223,12 +242,10 @@ public:
      */
     double pcc(const std::vector<double> &xs, const std::vector<double> &ys)
     {
-        //ROS_INFO("Actually updated voxels: %i and %i", (int)xs.size(), (int)ys.size());
         assert(xs.size() == ys.size());
         if (xs.size() != ys.size())
             ROS_ERROR("Error during PCC computation: input arrays have different lengths.");
-        unsigned int n = xs.size();
-
+        int n = (int) xs.size();
         double meanX = 0, meanY = 0;
         for (unsigned int i = 0; i < n; ++i)
         {
@@ -242,37 +259,22 @@ public:
             stdX += std::pow(xs[i] - meanX, 2.);
             stdY += std::pow(ys[i] - meanY, 2.);
         }
-//    stdX = std::sqrt(stdX);
-//    stdY = std::sqrt(stdY);
+        stdX = std::sqrt(stdX / (n-1));
+        stdY = std::sqrt(stdY / (n-1));
 
-//    n = len(x)
-//    mx = x.mean()
-//    my = y.mean()
-//    xm, ym = x-mx, y-my
-//    r_num = np.add.reduce(xm * ym)
-//    r_den = np.sqrt(ss(xm) * ss(ym))
-//    r = r_num / r_den
-
-//    double ssp = 0.; // standard score product for x and y
-//    for (unsigned int i = 0; i < n; ++i)
-//        ssp += (xs[i] - meanX)/stdX * (ys[i] - meanY)/stdY;
-//    ssp /= n - 1;
         double ssp = 0.; // standard score product for x and y
         for (unsigned int i = 0; i < n; ++i)
-            ssp += (xs[i]-meanX) * (ys[i]-meanY);
-        //ssp -= n * meanX * meanY;
-        ssp /= std::sqrt(stdX * stdY);
-        return ssp;
+            ssp += ((xs[i]-meanX) / stdX) * ((ys[i]-meanY) / stdY);
+        return ssp / (n - 1);
     }
 
     double avg_distance(const std::vector<double> &xs, const std::vector<double> &ys)
     {
         assert(xs.size() == ys.size());
         if (xs.size() != ys.size())
-            ROS_ERROR("XS != YS!!!");
-        unsigned int n = xs.size();
-
-        double meanDst;
+            ROS_ERROR("Error during AVG distance computation: input arrays have different lengths.");
+        int n = (int) xs.size();
+        double meanDst = 0.;
         for (unsigned int i = 0; i < n; ++i)
         {
             meanDst += std::abs(xs[i] - ys[i]);
@@ -291,6 +293,8 @@ public:
         _msg.errorLogOdds.clear();
         _msg.errorEvolutionBelief.clear();
         _msg.errorEvolutionLogOdds.clear();
+        _msg.stdEvolutionBelief.clear();
+        _msg.stdEvolutionLogOdds.clear();
 
         _msg.errorCompleteBelief.clear();
         _msg.errorCompleteLogOdds.clear();

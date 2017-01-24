@@ -57,7 +57,7 @@ TrueMap TrueMap::generate(unsigned int seed)
     }
 #else
     auto center = Parameters::Vec3Type(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter);
-    // TODO note the <= instead of < here compared to LogOddsMap and BeliefMap
+    // XXX note the <= instead of < here compared to LogOddsMap and BeliefMap
     for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX; ++x)
     {
         for (unsigned int y = 0; y <= Parameters::voxelsPerDimensionY; ++y)

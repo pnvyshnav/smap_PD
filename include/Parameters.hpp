@@ -5,12 +5,17 @@
 
 #include <octomap/OcTree.h>
 
-#define FAKE_2D
-#define PLANNER_2D_TEST
-#define SIMULATE_TIME
-#define REPLANNING
-//#define FAKE_3D
+//#define FAKE_2D
+//#define PLANNER_2D_TEST
+//#define SIMULATE_TIME
+//#define REPLANNING
+#define FAKE_3D
+#define REPEATED_RUNS
 //#define MANY_STEPS
+
+//#define ENABLE_VISUALIZATION
+
+//#define PUBLISH_STATS // publish statistics via ROS topic
 
 
 class Parameters
@@ -139,8 +144,8 @@ public:
     //
     static constexpr NumType invSensor_prior = priorMean;
     static constexpr NumType invSensor_increment = 0.05;
-    static constexpr NumType invSensor_occupied = /*invSensor_prior +*/ invSensor_increment;
-    static constexpr NumType invSensor_free = /*invSensor_prior */- invSensor_increment;
+    static constexpr NumType invSensor_occupied = invSensor_increment;
+    static constexpr NumType invSensor_free = -invSensor_increment;
     static constexpr NumType invSensor_rampSize = voxelSize;
     static constexpr NumType invSensor_topSize = voxelSize;
     static constexpr NumType invSensor_rampSlope = (invSensor_occupied - invSensor_free)/invSensor_rampSize;

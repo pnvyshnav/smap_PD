@@ -9,8 +9,8 @@ StereoCameraSensor::StereoCameraSensor(Parameters::Vec3Type position, Parameters
 #if defined(FAKE_3D)
     auto direction = Eigen::Vector3f(orientation.x(), orientation.y(), orientation.z());
 
-    double vFactor = Parameters::StereoCameraVerticalFOV / Parameters::StereoCameraVerticalPixels;
-    double hFactor = Parameters::StereoCameraHorizontalFOV / Parameters::StereoCameraHorizontalPixels;
+    double vFactor = Parameters::StereoCameraVerticalFOV / (Parameters::StereoCameraVerticalPixels - 1);
+    double hFactor = Parameters::StereoCameraHorizontalFOV / (Parameters::StereoCameraHorizontalPixels - 1);
     for (unsigned int vp = 0; vp < Parameters::StereoCameraVerticalPixels; ++vp)
     {
         double angleV = -Parameters::StereoCameraVerticalFOV/2. + vp * vFactor;
@@ -72,7 +72,7 @@ std::vector<PixelSensor> StereoCameraSensor::pixels() const
 
 Parameters::NumType StereoCameraSensor::likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const
 {
-    // TODO improve architecture
+    // TODO improve architecture (should the Measurement own a Sensor?)
     PixelSensor pixelSensor(measurement.sensor->position(), measurement.sensor->orientation());
     return pixelSensor.likelihoodGivenCause(measurement, causeVoxel);
 }
@@ -95,16 +95,32 @@ void StereoCameraSensor::setOrientation(const Parameters::Vec3Type &orientation)
     }
     else
     {
-        auto direction = Eigen::Vector3f(orientation.x(), orientation.y(), orientation.z());
-        const double hFactor = Parameters::StereoCameraHorizontalFOV / (Parameters::StereoCameraHorizontalPixels-1);
-        for (unsigned int hp = 0; hp < Parameters::StereoCameraHorizontalPixels; ++hp)
+        // convert orientation to polar coordinates
+        Parameters::Vec3Type o = orientation.normalized();
+        double theta = std::acos(o.z());
+        double phi;
+        if (o.x() == 0.)
+            phi = o.y() < 0 ? -M_PI/2. : M_PI/2.;
+        else
+            phi = std::atan(o.y() / o.x());
+        if (o.x() < 0)
+            phi += M_PI;
+        double vFactor = Parameters::StereoCameraVerticalFOV / (Parameters::StereoCameraVerticalPixels - 1);
+        double hFactor = Parameters::StereoCameraHorizontalFOV / (Parameters::StereoCameraHorizontalPixels - 1);
+        unsigned int i = 0;
+        for (unsigned int vp = 0; vp < Parameters::StereoCameraVerticalPixels; ++vp)
         {
-            double angleH = -Parameters::StereoCameraHorizontalFOV/2. + hp * hFactor;
-            auto rotHorizontal = Eigen::AngleAxis<float>((float) angleH, Eigen::Vector3f(0, 0, 1));
-            Eigen::Vector3f rotated = rotHorizontal * (direction);
-            _pixelSensors[hp].setOrientation(Parameters::Vec3Type(
-                    rotated.x(), rotated.y(), rotated.z()
-            ));
+            double nTheta = theta - Parameters::StereoCameraVerticalFOV/2. + vp * vFactor;
+            for (unsigned int hp = 0; hp < Parameters::StereoCameraHorizontalPixels; ++hp, ++i)
+            {
+                double nPhi = phi - Parameters::StereoCameraHorizontalFOV/2. + hp * hFactor;
+
+                _pixelSensors[i].setOrientation(Parameters::Vec3Type(
+                        (float) (std::sin(nTheta) * std::cos(nPhi)),
+                        (float) (std::sin(nTheta) * std::sin(nPhi)),
+                        (float) std::cos(nTheta)
+                ));
+            }
         }
     }
     publish();

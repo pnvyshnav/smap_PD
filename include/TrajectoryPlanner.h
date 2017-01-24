@@ -7,7 +7,7 @@
 #include "FakeRobot.hpp"
 #include "PixelSensor.h"
 #include "Observation.hpp"
-#include "Statistics.h"
+#include "Statistics.hpp"
 
 class TrajectoryPlanner : public Observable
 {

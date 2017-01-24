@@ -17,6 +17,10 @@ float64[] errorLogOdds
 float64[] errorEvolutionBelief
 float64[] errorEvolutionLogOdds
 
+# std evolution, i.e. sum of stds for all steps
+float64[] stdEvolutionBelief
+float64[] stdEvolutionLogOdds
+
 # error for each voxel over all steps (size is step*voxels)
 float64[] errorCompleteBelief
 float64[] errorCompleteLogOdds
@@ -25,9 +29,9 @@ float64[] errorCompleteLogOdds
 uint64[] updatedVoxels
 
 # positions of updated voxels (size is sum of updatedVoxels)
-int32[] updatedVoxelsX
-int32[] updatedVoxelsY
-int32[] updatedVoxelsZ
+float64[] updatedVoxelsX
+float64[] updatedVoxelsY
+float64[] updatedVoxelsZ
 
 # error for each updated voxel over all steps (size is sum of updatedVoxels)
 float64[] errorCompleteUpdatedBelief
