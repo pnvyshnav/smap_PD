@@ -13,7 +13,7 @@
 
     <!--<node name="smap_tf_broadcaster" pkg="smap" type="dummy_transforms.py" respawn="false" output="log" />-->
 
-    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find smap)/smap.rviz"/>
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find smap)/smap2d.rviz"/>
 
     <!--<node pkg="smap" launch-prefix="xterm -e gdbserver localhost:10000" name="smap" type="smap" respawn="false" output="screen" required="true"/>-->
     <!-- <node pkg="smap" name="smap" type="smap" respawn="false" output="screen" required="true"/> -->
