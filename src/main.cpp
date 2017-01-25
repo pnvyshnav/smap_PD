@@ -55,13 +55,14 @@ int main(int argc, char **argv)
 
 #ifdef ENABLE_VISUALIZATION
     Visualizer *visualizer = new Visualizer;
-    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
+//    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
 #ifdef FAKE_2D
     beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
 #else
-    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMap, visualizer, std::placeholders::_1));
+    // todo reactivate
+//    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
+//    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMapFull, visualizer, std::placeholders::_1));
 #endif
-    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMap, visualizer, std::placeholders::_1));
     robot.subscribe(std::bind(&Visualizer::publishFakeRobot, visualizer, std::placeholders::_1, &trueMap));
     planner.subscribe(std::bind(&Visualizer::publishTrajectoryPlanner, visualizer, std::placeholders::_1));
 
@@ -128,6 +129,9 @@ int main(int argc, char **argv)
 #endif
 
 #ifndef PLANNER_2D_TEST
+//    visualizer->publishBeliefMapFull(&beliefMap);
+//    visualizer->publishLogOddsMapFull(&logOddsMap);
+//    visualizer->publishTrueMap(&trueMap);
     stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/stats.bag");
 #endif
 

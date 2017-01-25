@@ -49,7 +49,7 @@ public:
     // Fake sensor measurements
     //
     static const bool deterministicSensorMeasurements = false;
-    static const unsigned int FakeRobotNumSteps = 600;
+    static const unsigned int FakeRobotNumSteps = 300;
 
     //
     // Real sensor measurements

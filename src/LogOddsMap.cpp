@@ -6,6 +6,8 @@
 
 LogOddsMap::LogOddsMap() : octomap::OcTree(Parameters::voxelSize), StatisticsMap(this)
 {
+    this->setClampingThresMin(0.);
+    this->setClampingThresMax(1.);
 }
 
 struct OctoMapKeyComparator

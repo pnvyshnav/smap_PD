@@ -19,6 +19,7 @@ public:
     void publishTrueMap(const Observable *visualizable);
     void publishTrueMap2dSlice(const Observable *visualizable, unsigned int z = 0);
     void publishLogOddsMap(const Observable *visualizable);
+    void publishLogOddsMapFull(const Observable *visualizable);
     void publishBeliefMap(const Observable *visualizable);
     void publishBeliefMapFull(const Observable *visualizable);
     void publishSensor(const Observable *visualizable);
