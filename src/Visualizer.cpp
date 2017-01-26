@@ -31,7 +31,7 @@ Visualizer::Visualizer() : _counter(0)
 {
     nodeHandle = new ros::NodeHandle;
     trueMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("true_map", 1);
-    trueMap2dPublisher = nodeHandle->advertise<nav_msgs::GridCells>("true_map_2d", 0);
+    trueMap2dPublisher = nodeHandle->advertise<nav_msgs::GridCells>("true_map_2d", 10);
     logOddsMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("logodds_map", 10);
     beliefMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("belief_map", 10);
     sensorPublisher = nodeHandle->advertise<visualization_msgs::Marker>("sensor", 10);
@@ -60,21 +60,28 @@ void Visualizer::publishTrueMap(const Observable *visualizable)
     loop_rate.sleep();
 
     visualization_msgs::MarkerArray cells;
-
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x) {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y) {
-            for (unsigned int z = 0; z < 18 /*Parameters::voxelsPerDimensionZ*/; ++z) {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z) {
                 auto _x = Parameters::xMin + x * Parameters::voxelSize;
                 auto _y = Parameters::yMin + y * Parameters::voxelSize;
                 auto _z = Parameters::zMin + (z + 0.5) * Parameters::voxelSize;
                 QTrueVoxel voxel = trueMap->query(_x, _y, _z);
+                if (!voxel.node())
+                    continue;
 
                 visualization_msgs::Marker cell;
+#ifdef REAL_3D
+                if (trueMap->getVoxelMean(voxel) < 0.3)
+                    continue;
+#else
                 if (trueMap->getVoxelMean(voxel) < 0.5 && voxel.position.norm() < 1.5 || voxel.position.norm() < 0.6)
-                    // remove voxel
+                // remove voxel
                     cell.action = 2;
+#endif
                 else
                     cell.action = 0;
+
                 cell.id = (int) voxel.hash;
                 cell.type = visualization_msgs::Marker::CUBE;
                 cell.header.frame_id = "map";
@@ -82,9 +89,9 @@ void Visualizer::publishTrueMap(const Observable *visualizable)
                 cell.scale.y = Parameters::voxelSize;
                 cell.scale.z = Parameters::voxelSize;
                 cell.color.a = 0.9f;
-                cell.color.r = (int)(1. - trueMap->getVoxelMean(voxel));
-                cell.color.g = (int)(1. - trueMap->getVoxelMean(voxel)); //(int)std::round(voxel.node()->getOccupancy());
-                cell.color.b = (int)(1. - trueMap->getVoxelMean(voxel));
+                cell.color.r = (float)(1. - trueMap->getVoxelMean(voxel) * 0.5);
+                cell.color.g = (float)(1. - trueMap->getVoxelMean(voxel) * 0.5); //(int)std::round(voxel.node()->getOccupancy());
+                cell.color.b = (float)(1. - trueMap->getVoxelMean(voxel) * 0.5);
                 cell.pose.position.x = _x;
                 cell.pose.position.y = _y;
                 cell.pose.position.z = _z;
@@ -94,6 +101,7 @@ void Visualizer::publishTrueMap(const Observable *visualizable)
     }
 
     trueMapPublisher.publish(cells);
+    ROS_INFO("Published True Map");
 }
 
 void Visualizer::publishTrueMap2dSlice(const Observable *visualizable, unsigned int z)
@@ -110,7 +118,7 @@ void Visualizer::publishTrueMap2dSlice(const Observable *visualizable, unsigned 
     grid.cell_height = (float) Parameters::voxelSize;
     grid.cell_width = (float) Parameters::voxelSize;
 
-    auto _z = Parameters::zMin + (z + Parameters::voxelsPerDimensionZ/2) * Parameters::voxelSize;
+    auto _z = /*Parameters::zMin +*/ (z + Parameters::voxelsPerDimensionZ/2) * Parameters::voxelSize;
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
     {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
@@ -118,7 +126,7 @@ void Visualizer::publishTrueMap2dSlice(const Observable *visualizable, unsigned 
             auto _x = Parameters::xMin + x * Parameters::voxelSize;
             auto _y = Parameters::yMin + y * Parameters::voxelSize;
             QTrueVoxel voxel = trueMap->query(_x, _y, _z);
-            if (voxel.node()->getOccupancy() < 0.5)
+            if (!voxel.node() || trueMap->getVoxelMean(voxel) < 0.5)
                 continue;
 
             geometry_msgs::Point p;
@@ -203,7 +211,7 @@ void Visualizer::publishBeliefMap(const Observable *visualizable)
 #ifndef FAKE_2D
         if (voxel.node()->getValue()->mean() < 0.52
 #ifndef FAKE_3D
-            || voxel.position.z() < 0.4 || voxel.position.z() > 1.5
+//            || voxel.position.z() < 0.4 || voxel.position.z() > 1.5
 #endif
             )
         {
@@ -223,9 +231,9 @@ void Visualizer::publishBeliefMap(const Observable *visualizable)
             cell.scale.z = Parameters::voxelSize;
             cell.color.a = 1;
             float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
-            cell.color.r = intensity;
+            cell.color.r = intensity * 0.1f;
             cell.color.g = intensity;
-            cell.color.b = intensity;
+            cell.color.b = intensity * 0.1f;
             cell.pose.position.x = voxel.position.x();
             cell.pose.position.y = voxel.position.y();
             cell.pose.position.z = voxel.position.z();

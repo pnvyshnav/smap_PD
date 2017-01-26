@@ -10,8 +10,14 @@
 #include "../include/LogOddsMap.h"
 #include "../include/Statistics.hpp"
 #include "../include/TrajectoryPlanner.h"
+#include "../include/PointCloud.h"
 
-TrueMap trueMap = TrueMap::generate(123); // use a fixed seed value
+#ifdef REAL_3D
+    TrueMap trueMap = TrueMap::generateFromPointCloud("/home/eric/catkin_ws/src/smap/dataset/V1_01_easy/groundtruth_pcl.ply"); // use a fixed seed value
+#else
+    TrueMap trueMap = TrueMap::generate(123); // use a fixed seed value
+#endif
+
 BeliefMap beliefMap;
 LogOddsMap logOddsMap;
 FakeRobot<> robot(
@@ -31,14 +37,14 @@ Statistics<> *stats;
 
 void handleObservation(const Observation &observation)
 {
-    trueMap.publish();
-    robot.publish();
     beliefMap.update(observation, trueMap);
-    logOddsMap.update(observation, trueMap);
-
-    stats->update(logOddsMap, beliefMap, robot);
+//    logOddsMap.update(observation, trueMap);
+//
+//    stats->update(logOddsMap, beliefMap, robot);
 
 #if defined(FAKE_2D) || defined(FAKE_3D)
+    trueMap.publish();
+    robot.publish();
     if (!ros::ok())
         robot.stop();
 #endif
@@ -46,16 +52,42 @@ void handleObservation(const Observation &observation)
 
 int main(int argc, char **argv)
 {
+//    PointCloud cloud;
+//    cloud.loadPly("/home/eric/catkin_ws/src/smap/dataset/V1_01_easy/groundtruth_pcl.ply");
+//    cloud.visualize();
+
     ros::init(argc, argv, "SMAP");
     ros::Time::init();
+
+
+
+
     stats = new Statistics<>(trueMap);
 
+#ifdef PLANNER_2D_TEST
     TrajectoryPlanner planner(trueMap, beliefMap, logOddsMap);
-    //trueMap.writeBinary("simple_tree.bt");
+#endif
 
 #ifdef ENABLE_VISUALIZATION
     Visualizer *visualizer = new Visualizer;
 //    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
+#ifndef REAL_3D
+    robot.subscribe(std::bind(&Visualizer::publishFakeRobot, visualizer, std::placeholders::_1, &trueMap));
+#endif
+    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMap, visualizer, std::placeholders::_1));
+
+    //trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
+    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
+//
+//    for (int j = 0; j < 20; ++j)
+//        trueMap.publish();
+//
+//    visualizer->render();
+//    return 0;
+
+#ifdef PLANNER_2D_TEST
+    planner.subscribe(std::bind(&Visualizer::publishTrajectoryPlanner, visualizer, std::placeholders::_1));
+#endif
 #ifdef FAKE_2D
     beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
 #else
@@ -63,12 +95,6 @@ int main(int argc, char **argv)
 //    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
 //    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMapFull, visualizer, std::placeholders::_1));
 #endif
-    robot.subscribe(std::bind(&Visualizer::publishFakeRobot, visualizer, std::placeholders::_1, &trueMap));
-    planner.subscribe(std::bind(&Visualizer::publishTrajectoryPlanner, visualizer, std::placeholders::_1));
-
-    trueMap.publish();
-
-    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
     robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
 #endif
 

@@ -127,9 +127,9 @@ InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, Bel
     icm->posteriorInfinity = likelihoodGivenInfinity * causeProbabilityFromInfinityPrior;
 
     auto eta = icm->posteriorOnRay.sum() + icm->posteriorInfinity;
-    if (eta < 1e-20)
+    if (eta == 0.)
     {
-        //ROS_WARN("Inverse Cause Model: eta = %g", eta);
+//        ROS_WARN("Inverse Cause Model: eta = %g", eta);
         // TODO correct behavior?
         delete icm;
         return NULL;
@@ -142,7 +142,7 @@ InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, Bel
 
     if (!(std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.) < 1e-10))
     {
-        //ROS_WARN("ICM assertion failed. Test: %g < 1e-20", std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.));
+//        ROS_WARN("ICM assertion failed. Test: %g < 1e-20", std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.));
         delete icm;
         return NULL;
     }

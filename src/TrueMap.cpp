@@ -6,6 +6,7 @@
 #include <ros/console.h>
 
 #include "../include/TrueMap.h"
+#include "../include/PointCloud.h"
 
 TrueMap::TrueMap() : octomap::OcTree(Parameters::voxelSize), QVoxelMap(this)
 {
@@ -16,7 +17,7 @@ TrueMap TrueMap::generate(unsigned int seed)
     srand(seed);
     TrueMap map;
 
-#ifdef PLANNER_2D_TEST
+#if defined(PLANNER_2D_TEST)
     struct Rectangle
     {
         double x1, x2;
@@ -97,9 +98,41 @@ TrueMap TrueMap::generate(unsigned int seed)
     return map;
 }
 
-bool TrueMap::insideMap(const Parameters::Vec3Type &point)
+TrueMap TrueMap::generateFromPointCloud(std::string filename)
 {
-    return point.x() >= Parameters::xMin && point.x() <= Parameters::xMax
-            && point.y() >= Parameters::yMin && point.y() <= Parameters::yMax
-            && point.z() >= Parameters::zMin && point.z() <= Parameters::zMax;
+    TrueMap map;
+
+    // initialize all cells to be free
+    ROS_INFO("Setting all TrueMap cells to free.");
+    auto center = Parameters::Vec3Type(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter);
+    // XXX note the <= instead of < here compared to LogOddsMap and BeliefMap
+    for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y <= Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z <= Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(
+                        Parameters::xMin + x * Parameters::voxelSize,
+                        Parameters::yMin + y * Parameters::voxelSize,
+                        Parameters::zMin + z * Parameters::voxelSize);
+                map.updateNode(point, false);
+            }
+        }
+    }
+
+    PointCloud cloud;
+    cloud.loadPly(filename);
+    ROS_INFO("Updating TrueMap from point cloud ...");
+    const double rescale = Parameters::voxelSize * 0.5;
+    for (auto &cpoint : cloud.cloud())
+    {
+        octomap::point3d point(
+                (cpoint.x / rescale) * rescale,
+                (cpoint.y / rescale) * rescale,
+                (cpoint.z / rescale) * rescale);
+        map.updateNode(point, true);
+    }
+
+    return map;
 }

@@ -3,17 +3,22 @@
 #include <cmath>
 #include <unordered_set>
 
+#include <pcl/common/common_headers.h>
+#include <pcl/impl/point_types.hpp>
+
 #include <octomap/OcTree.h>
 
 //#define FAKE_2D
 //#define PLANNER_2D_TEST
 //#define SIMULATE_TIME
 //#define REPLANNING
-#define FAKE_3D
-#define REPEATED_RUNS
+//#define FAKE_3D
+//#define REPEATED_RUNS
 //#define MANY_STEPS
 
-//#define ENABLE_VISUALIZATION
+#define REAL_3D
+
+#define ENABLE_VISUALIZATION
 
 //#define PUBLISH_STATS // publish statistics via ROS topic
 
@@ -27,6 +32,7 @@ public:
     typedef double NumType;
     typedef octomap::point3d Vec3Type;
     typedef std::unordered_set<octomap::OcTreeKey, octomap::OcTreeKey::KeyHash> KeySet;
+    typedef pcl::PointXYZI PointType;
 
     // Provides a hash function on octomap point3d
     struct PositionHash
@@ -101,6 +107,27 @@ public:
     static const unsigned int StereoCameraVerticalPixels = 6;
     static constexpr double StereoCameraHorizontalFOV = 40. * M_PI / 180.;
     // quadratic pixels
+    static constexpr double StereoCameraVerticalFOV = StereoCameraHorizontalFOV * StereoCameraVerticalPixels *1. / StereoCameraHorizontalPixels *1.;
+#elif defined(REAL_3D)
+    static constexpr NumType voxelSize = 0.0625; //0.125;
+
+    static constexpr NumType xMin = -6.;
+    static constexpr NumType xMax =  4.5;
+    static constexpr NumType yMin = -5.6;
+    static constexpr NumType yMax =  7.8;
+    static constexpr NumType zMin = -0.1;
+    static constexpr NumType zMax =  4.5;
+
+    static const bool sensorTruncatedGaussianNoise = false;
+    static constexpr NumType sensorRange = (const NumType) 8;
+    static constexpr NumType sensorNoiseStd = (const NumType) 0.2;
+
+    static constexpr NumType freeRadiusAroundCenter = 0; // irrelevant
+    // IRRELEVANT:
+    static constexpr double FakeRobotAngularVelocity = 5. * M_PI / 180.;
+    static const unsigned int StereoCameraHorizontalPixels = 8;
+    static const unsigned int StereoCameraVerticalPixels = 6;
+    static constexpr double StereoCameraHorizontalFOV = 40. * M_PI / 180.;    // quadratic pixels
     static constexpr double StereoCameraVerticalFOV = StereoCameraHorizontalFOV * StereoCameraVerticalPixels *1. / StereoCameraHorizontalPixels *1.;
 #else
     static constexpr NumType voxelSize = 0.125;
