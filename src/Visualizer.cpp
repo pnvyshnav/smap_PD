@@ -101,7 +101,6 @@ void Visualizer::publishTrueMap(const Observable *visualizable)
     }
 
     trueMapPublisher.publish(cells);
-    ROS_INFO("Published True Map");
 }
 
 void Visualizer::publishTrueMap2dSlice(const Observable *visualizable, unsigned int z)

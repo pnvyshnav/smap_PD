@@ -11,12 +11,14 @@
 //#define FAKE_2D
 //#define PLANNER_2D_TEST
 //#define SIMULATE_TIME
+//#define ONLY_HANDCRAFTED_TRAJECTORIES
 //#define REPLANNING
-//#define FAKE_3D
+#define FAKE_3D
 //#define REPEATED_RUNS
-//#define MANY_STEPS
+#define ISM_RUNS
+#define MANY_STEPS
 
-#define REAL_3D
+//#define REAL_3D
 
 #define ENABLE_VISUALIZATION
 
@@ -51,16 +53,11 @@ public:
     static constexpr NumType equalityThreshold = 1e-16;
 
     static const unsigned int numParticles = 101;
-    //
+    //l
     // Fake sensor measurements
     //
     static const bool deterministicSensorMeasurements = false;
-    static const unsigned int FakeRobotNumSteps = 300;
-
-    //
-    // Real sensor measurements
-    //
-    static constexpr float PointCloudResolution = 0.3f;
+    static const unsigned int FakeRobotNumSteps = 800;
 
     //
     // Trajectory evaluation
@@ -109,7 +106,7 @@ public:
     // quadratic pixels
     static constexpr double StereoCameraVerticalFOV = StereoCameraHorizontalFOV * StereoCameraVerticalPixels *1. / StereoCameraHorizontalPixels *1.;
 #elif defined(REAL_3D)
-    static constexpr NumType voxelSize = 0.0625; //0.125;
+    static constexpr NumType voxelSize = 0.125; //0.0625; //0.125;
 
     static constexpr NumType xMin = -6.;
     static constexpr NumType xMax =  4.5;
@@ -119,7 +116,7 @@ public:
     static constexpr NumType zMax =  4.5;
 
     static const bool sensorTruncatedGaussianNoise = false;
-    static constexpr NumType sensorRange = (const NumType) 8;
+    static constexpr NumType sensorRange = (const NumType) 10;
     static constexpr NumType sensorNoiseStd = (const NumType) 0.2;
 
     static constexpr NumType freeRadiusAroundCenter = 0; // irrelevant
@@ -165,6 +162,11 @@ public:
 
     static constexpr NumType priorMean = .5;
     static constexpr NumType priorStd = .5;
+
+    //
+    // Real sensor measurements
+    //
+    static constexpr float PointCloudResolution = (float)voxelSize;
 
     //
     // Inverse Sensor Model

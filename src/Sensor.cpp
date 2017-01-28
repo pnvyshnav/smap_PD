@@ -140,7 +140,7 @@ InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, Bel
         icm->posteriorInfinity /= eta;
     }
 
-    if (!(std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.) < 1e-10))
+    if (std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.) >= 1e-10)
     {
 //        ROS_WARN("ICM assertion failed. Test: %g < 1e-20", std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.));
         delete icm;

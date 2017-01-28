@@ -10,6 +10,9 @@
 #include <pcl_ros/transforms.h>
 #include <pcl/filters/voxel_grid.h>
 
+#include <rosbag/bag.h>
+#include <rosbag/view.h>
+
 #include <tf/tf.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
@@ -54,10 +57,10 @@ void Drone::handleMeasurements(Drone::PointCloudMessage &pointsMsg, Drone::Trans
                     Parameters::PointCloudResolution,
                     Parameters::PointCloudResolution);
     sor.filter(*pointCloudFiltered);
-    pointCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(pointCloudFiltered);
 
     ROS_INFO("Point Cloud size reduced from %i to %i points.",
              (int)pointCloud->size(), (int)pointCloudFiltered->size());
+    pointCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(pointCloudFiltered);
 
 
     tf::StampedTransform stampedTransform;
@@ -208,5 +211,53 @@ void Drone::run()
 void Drone::stop()
 {
     _stopRequested = true;
+}
+
+bool queryBag(rosbag::ConnectionInfo const *connectionInfo)
+{
+    return (connectionInfo->topic == "tf_points" || connectionInfo->topic == "tf_drone");
+}
+
+void Drone::runOffline(std::string filename)
+{
+    rosbag::Bag bag;
+    bag.open(filename, rosbag::bagmode::Read);
+
+    std::vector<std::string> topics;
+    topics.push_back("tf_points");
+    //topics.push_back("tf_drone");
+    rosbag::View view(bag); //, rosbag::TopicQuery(topics));
+
+    ROS_INFO("Reading bag messages....");
+    ROS_INFO("View size: %d", (int)view.size());
+
+//    rosbag::View view(bag, std::bind(queryBag, std::placeholders::_1));
+    sensor_msgs::PointCloud2::ConstPtr points = NULL;
+    geometry_msgs::TransformStamped::ConstPtr transformation = NULL;
+    int step = 0;
+    for (rosbag::MessageInstance &msg : view)
+    {
+        if (msg.getTopic() == "/tf_points")
+        {
+            points = msg.instantiate<sensor_msgs::PointCloud2>();
+        }
+        else if (msg.getTopic() == "/tf_drone")
+        {
+            transformation = msg.instantiate<geometry_msgs::TransformStamped>();
+        }
+        if (points != NULL && transformation != NULL)
+        {
+            handleMeasurements(points, transformation);
+            points = NULL;
+            transformation = NULL;
+            if (step % 50 == 0)
+                ROS_INFO("Updated for message %d.", step);
+            ++step;
+            if (step >= 200)
+                break;
+        }
+    }
+
+    bag.close();
 }
 

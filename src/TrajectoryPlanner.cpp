@@ -86,13 +86,31 @@ TrajectoryPlanner::TrajectoryPlanner(TrueMap &trueMap, BeliefMap &beliefMap, Log
 
 std::vector<Trajectory> TrajectoryPlanner::generateTrajectories()
 {
-//    std::vector<Trajectory> trajectories;
-//    double shift = Parameters::voxelSize/2.;
-//    Trajectory t({Point(0.0 + shift, -0.9 + shift), Point(0.0 + shift, 0.9 + shift)}, 1);
-//    t.computeVelocities();
-//    t.computeTimeProfile();
-//    trajectories.push_back(t);
-//    return trajectories;
+    std::vector<Trajectory> trajectories;
+    double shift = Parameters::voxelSize / 2.; // make sure trajectory aligns at middle of voxel
+
+#ifdef ONLY_HANDCRAFTED_TRAJECTORIES
+    Point start(0.0 + shift, -0.9 + shift);
+    Point end(-0.9 + shift, 0.0 + shift);
+    Trajectory trajectory0({start, Point(0 + shift, 0 + shift), end}, 1);
+    trajectory0.computeVelocities();
+    trajectory0.computeTimeProfile();
+    trajectory0.saveProfile("handcrafted_trajectories/trajectory_0.csv");
+    trajectories.push_back(trajectory0);
+
+    Trajectory trajectory1({start, Point(0.5 + shift, -0.1 + shift), Point(0 + shift, 0 + shift), end}, 2);
+    trajectory1.computeVelocities();
+    trajectory1.computeTimeProfile();
+    trajectory1.saveProfile("handcrafted_trajectories/trajectory_1.csv");
+    trajectories.push_back(trajectory1);
+
+    Trajectory trajectory2({start, Point(0 + shift, 0.4 + shift), Point(0.4 + shift, 0 + shift), end}, 2);
+    trajectory2.computeVelocities();
+    trajectory2.computeTimeProfile();
+    trajectory2.saveProfile("handcrafted_trajectories/trajectory_2.csv");
+    trajectories.push_back(trajectory2);
+    return trajectories;
+#endif
 
     Point lowerBound1( 0.1, -0.2), upperBound1(0.7, 0.35);
     Point lowerBound2(-0.3, -0.2), upperBound2(0.2, 0.35);
@@ -103,8 +121,6 @@ std::vector<Trajectory> TrajectoryPlanner::generateTrajectories()
     const double stepSize = 0.25;
 
     unsigned int count = 0;
-    double shift = Parameters::voxelSize / 2.; // make sure trajectory aligns at middle of voxel
-    std::vector<Trajectory> trajectories;
     for (double x1 = lowerBound1.x; x1 <= upperBound1.x; x1 += stepSize)
     {
         for (double y1 = lowerBound1.y; y1 <= upperBound1.y; y1 += stepSize)
@@ -121,7 +137,7 @@ std::vector<Trajectory> TrajectoryPlanner::generateTrajectories()
                     ROS_INFO("TOTAL ARC LENGTH: %f", trajectory.totalArcLength());
                     trajectory.computeTimeProfile();
                     ROS_INFO("TOTAL TIME:       %f", trajectory.totalTime());
-                    trajectory.saveProfile("trajectories/trajectory_" + std::to_string(count) + ".csv");
+                    trajectory.saveProfile("handcrafted_trajectories/trajectory_" + std::to_string(count) + ".csv");
                     trajectories.push_back(trajectory);
                     ++count;
 //                    if (count >= 10) // TODO remove?
@@ -141,11 +157,12 @@ std::vector<Trajectory> TrajectoryPlanner::generateTrajectories()
 std::vector<Trajectory> TrajectoryPlanner::generateTrajectories(Point start, Point end,
                                                                 VelocityPlanningParameters parameters)
 {
+    std::vector<Trajectory> trajectories;
+
     const double stepSize = 0.25;
     const double scaling = 2.0;
 
     unsigned int count = 0;
-    std::vector<Trajectory> trajectories;
 
     // scale control point sampling rectangle beyond start / end
     double scaledWidth = std::abs(end.x - start.x) / 2.0 * scaling;

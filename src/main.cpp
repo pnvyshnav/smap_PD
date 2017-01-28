@@ -2,6 +2,8 @@
 
 #include <ros/ros.h>
 
+#include <ecl/time/stopwatch.hpp>
+
 #include "../include/BeliefVoxel.h"
 #include "../include/BeliefMap.h"
 #include "../include/FakeRobot.hpp"
@@ -35,12 +37,38 @@ FakeRobot<> robot(
 
 Statistics<> *stats;
 
+ecl::StopWatch stopWatch;
+
+int updated = 0;
 void handleObservation(const Observation &observation)
 {
+    stats->registerMeasurements((int)observation.measurements().size());
+    std::valarray<Parameters::NumType> rayLengths(observation.measurements().size());
+    unsigned int i = 0;
+    for (auto &measurement : observation.measurements())
+    {
+        rayLengths[i++] = measurement.value;
+    }
+    stats->registerRayStatistics(rayLengths.min(), rayLengths.max(), rayLengths.sum() / i);
+
+    stopWatch.restart();
     beliefMap.update(observation, trueMap);
-//    logOddsMap.update(observation, trueMap);
+    stats->registerStepTimeBelief(stopWatch.elapsed());
+    stopWatch.restart();
+    logOddsMap.update(observation, trueMap);
+    stats->registerStepTimeLogOdds(stopWatch.elapsed());
 //
-//    stats->update(logOddsMap, beliefMap, robot);
+    stats->update(logOddsMap, beliefMap, robot);
+
+#ifdef REAL_3D
+    if (updated > 0 && updated % 50 == 0)
+    {
+        // save stats continually
+        stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/stats_real3d_"
+                          + std::to_string(updated) + ".bag");
+    }
+#endif
+    ++updated;
 
 #if defined(FAKE_2D) || defined(FAKE_3D)
     trueMap.publish();
@@ -58,9 +86,6 @@ int main(int argc, char **argv)
 
     ros::init(argc, argv, "SMAP");
     ros::Time::init();
-
-
-
 
     stats = new Statistics<>(trueMap);
 
@@ -121,7 +146,11 @@ int main(int argc, char **argv)
                 robot.setTrajectory(trajectory);
                 robot.run();
                 planner.evaluate(trajectory, beliefMap, stats->stats());
+        #ifdef ONLY_HANDCRAFTED_TRAJECTORIES
+                stats->saveToFile("handcrafted_trajeval/trajectory_" + std::to_string(splineId) + ".bag");
+        #else
                 stats->saveToFile("trajeval/trajectory_" + std::to_string(splineId) + ".bag");
+        #endif
                 stats->reset();
                 ++splineId;
             }
@@ -141,9 +170,34 @@ int main(int argc, char **argv)
             beliefMap.reset();
             logOddsMap.reset();
             robot.run();
-            stats->saveToFile("repeated_fake_3d/stats_" + std::to_string(round) + ".bag");
+            stats->saveToFile("repeated_fullmap_noise0.2/stats_" + std::to_string(round) + ".bag");
             stats->reset();
             ROS_INFO("Completed round %d", (int)round);
+//            trueMap.shuffle();
+        }
+    #elif defined(ISM_RUNS)
+        std::vector<double> increments = {0.05, 0.2, 0.4};
+        std::vector<double> rampSizes = {0.05, 0.1, 0.3, 1};
+        std::vector<double> topSizes = {0.05, 0.1, 0.3};
+        unsigned int round = 0;
+        for (auto increment : increments)
+        {
+            for (auto rampSize : rampSizes)
+            {
+                for (auto topSize : topSizes)
+                {
+                    ROS_INFO("Running with ISM parameters: increment=%f rampSize=%f topSize=%f",
+                             increment, rampSize, topSize);
+                    LogOddsMap::parameters.increment = increment;
+                    LogOddsMap::parameters.rampSize = rampSize;
+                    LogOddsMap::parameters.topSize = topSize;
+                    beliefMap.reset();
+                    logOddsMap.reset();
+                    robot.run();
+                    stats->saveToFile("ism_runs/stats_" + std::to_string(round++) + ".bag");
+                    stats->reset();
+                }
+            }
         }
     #else
         robot.run();
@@ -151,7 +205,8 @@ int main(int argc, char **argv)
 #else
     Drone drone;
     drone.registerObserver(&handleObservation);
-    drone.run();
+//    drone.run();
+    drone.runOffline("/home/eric/catkin_ws/src/smap/dataset/V1_01_easy/droneflight.bag");
 #endif
 
 #ifndef PLANNER_2D_TEST

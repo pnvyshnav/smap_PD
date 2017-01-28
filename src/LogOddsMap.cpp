@@ -4,6 +4,8 @@
 
 #include <set>
 
+ISMParameters LogOddsMap::parameters;
+
 LogOddsMap::LogOddsMap() : octomap::OcTree(Parameters::voxelSize), StatisticsMap(this)
 {
     this->setClampingThresMin(0.);
@@ -93,19 +95,19 @@ LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Mea
         for (auto &causeVoxel : causeVoxels)
         {
             auto distance = causeVoxel.position.distance(measurement.sensor->position());
-            if (distance < measurement.value - Parameters::invSensor_rampSize / 2.)
+            if (distance < measurement.value - parameters.rampSize / 2.)
             {
-                ism->causeProbabilitiesOnRay[i] = Parameters::invSensor_free;
+                ism->causeProbabilitiesOnRay[i] = parameters.free;
             }
-            else if (distance < measurement.value + Parameters::invSensor_rampSize / 2.)
+            else if (distance < measurement.value + parameters.rampSize / 2.)
             {
-                auto point_x = measurement.value - Parameters::invSensor_rampSize / 2.;
-                auto point_y = Parameters::invSensor_free;
-                ism->causeProbabilitiesOnRay[i] = point_y + Parameters::invSensor_rampSlope * (distance - point_x);
+                auto point_x = measurement.value - parameters.rampSize / 2.;
+                auto point_y = parameters.free;
+                ism->causeProbabilitiesOnRay[i] = point_y + parameters.rampSlope * (distance - point_x);
             }
-            else if (distance < measurement.value + Parameters::invSensor_rampSize / 2. + Parameters::invSensor_topSize)
+            else if (distance < measurement.value + parameters.rampSize / 2. + parameters.topSize)
             {
-                ism->causeProbabilitiesOnRay[i] = Parameters::invSensor_occupied;
+                ism->causeProbabilitiesOnRay[i] = parameters.occupied;
             }
             else
             {
@@ -119,7 +121,7 @@ LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Mea
     }
     else if (measurement.geometry == GEOMETRY_HOLE)
     {
-        ism->causeProbabilitiesOnRay = -0.05;//Parameters::invSensor_free;
+        ism->causeProbabilitiesOnRay = parameters.free;
     }
     else
     {
@@ -132,21 +134,6 @@ LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Mea
 
 void LogOddsMap::reset()
 {
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
-    {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
-        {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
-            {
-                octomap::point3d point((float) (Parameters::xMin + x * Parameters::voxelSize),
-                                       (float) (Parameters::yMin + y * Parameters::voxelSize),
-                                       (float) (Parameters::zMin + z * Parameters::voxelSize));
-                auto voxel = search(point);
-                if (voxel == NULL)
-                    continue;
-                voxel->setValue((float) Parameters::priorMean);
-            }
-        }
-    }
+    this->clear();
     publish();
 }

@@ -138,7 +138,7 @@ Measurement PixelSensor::_observationGivenCause(QVoxel causeVoxel, bool determin
 	Parameters::NumType deterministicRange = (Parameters::NumType) causeVoxel.position.distance(_position);
 	if (deterministic)
 		return Measurement::voxel(std::make_shared<Sensor>(*this), deterministicRange);
-	auto tg = TruncatedGaussianDistribution(deterministicRange, Parameters::sensorNoiseStd * deterministicRange,
+	auto tg = TruncatedGaussianDistribution(deterministicRange, Parameters::sensorNoiseStd,
                                             0, Parameters::sensorRange);
 	return Measurement::voxel(std::make_shared<Sensor>(*this), tg.sample());
 }

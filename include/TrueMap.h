@@ -14,6 +14,11 @@ public:
     static TrueMap generate(unsigned int seed = (unsigned int) time(NULL));
     static TrueMap generateFromPointCloud(std::string filename);
 
+    /**
+     * Alters the map with a new random map.
+     */
+    void shuffle();
+
     static inline bool insideMap(const Parameters::Vec3Type &point)
     {
         return point.x() >= Parameters::xMin && point.x() <= Parameters::xMax
@@ -33,5 +38,6 @@ public:
 
 private:
     TrueMap();
+
 };
 

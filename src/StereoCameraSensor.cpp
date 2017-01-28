@@ -95,6 +95,19 @@ void StereoCameraSensor::setOrientation(const Parameters::Vec3Type &orientation)
     }
     else
     {
+#ifdef FAKE_2D
+        auto direction = Eigen::Vector3f(orientation.x(), orientation.y(), orientation.z());
+        const double hFactor = Parameters::StereoCameraHorizontalFOV / (Parameters::StereoCameraHorizontalPixels-1);
+        for (unsigned int hp = 0; hp < Parameters::StereoCameraHorizontalPixels; ++hp)
+        {
+            double angleH = -Parameters::StereoCameraHorizontalFOV/2. + hp * hFactor;
+            auto rotHorizontal = Eigen::AngleAxis<float>((float) angleH, Eigen::Vector3f(0, 0, 1));
+            Eigen::Vector3f rotated = rotHorizontal * (direction);
+            _pixelSensors[hp].setOrientation(Parameters::Vec3Type(
+                    rotated.x(), rotated.y(), rotated.z()
+            ));
+        }
+#else
         // convert orientation to polar coordinates
         Parameters::Vec3Type o = orientation.normalized();
         double theta = std::acos(o.z());
@@ -122,6 +135,7 @@ void StereoCameraSensor::setOrientation(const Parameters::Vec3Type &orientation)
                 ));
             }
         }
+#endif
     }
     publish();
 }

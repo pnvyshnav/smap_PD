@@ -9,6 +9,18 @@ uint32 maxStep
 # number of voxels
 uint64 voxels
 
+# computation time of single step
+float64[] timeBelief
+float64[] timeLogOdds
+
+# number of measurents per step
+int32[] measurements
+
+# ray length statistics over the measurements per step
+float64[] minRayLength
+float64[] maxRayLength
+float64[] avgRayLength
+
 # error for each voxel at current step
 float64[] errorBelief
 float64[] errorLogOdds

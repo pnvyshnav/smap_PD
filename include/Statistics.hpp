@@ -18,7 +18,7 @@ template<class ROBOT=FakeRobot<> >
 class Statistics
 {
 public:
-    Statistics(const TrueMap &trueMap) : _trueMap(trueMap)
+    Statistics(const TrueMap &trueMap) : _trueMap(trueMap), _step(0)
     {
 #ifdef PUBLISH_STATS
         _nh = new ros::NodeHandle;
@@ -37,8 +37,13 @@ public:
                 const BeliefMap &beliefMap,
                 ROBOT &robot)
     {
+#ifdef REAL_3D
+        _msg.step = _step++;
+        _msg.maxStep = _msg.step;
+#else
         _msg.step = robot.currentStep() + 1;
         _msg.maxStep = Parameters::FakeRobotNumSteps;
+#endif
 
         auto beliefCompleteStats = beliefMap.stats(_trueMap);
         auto logOddsCompleteStats = logOddsMap.stats(_trueMap);
@@ -137,10 +142,11 @@ public:
 #endif
 
         _msg.noiseStd = Parameters::sensorNoiseStd;
-        _msg.ismIncrement = Parameters::invSensor_increment;
-        _msg.ismRampSize = Parameters::invSensor_rampSize;
-        _msg.ismTopSize = Parameters::invSensor_topSize;
-        _msg.ismRampSlope = Parameters::invSensor_rampSlope;
+
+        _msg.ismIncrement = LogOddsMap::parameters.increment;
+        _msg.ismRampSize = LogOddsMap::parameters.rampSize;
+        _msg.ismTopSize = LogOddsMap::parameters.topSize;
+        _msg.ismRampSlope = LogOddsMap::parameters.rampSlope;
 
         // error evolution
         double evolutionLogOdds = 0;
@@ -283,11 +289,42 @@ public:
         return meanDst;
     }
 
+    void registerStepTimeBelief(double time)
+    {
+        _msg.timeBelief.push_back(time);
+    }
+
+    void registerStepTimeLogOdds(double time)
+    {
+        _msg.timeLogOdds.push_back(time);
+    }
+
+    void registerMeasurements(int measurements)
+    {
+        _msg.measurements.push_back(measurements);
+    }
+
+    void registerRayStatistics(double minLength, double maxLength, double avgLength)
+    {
+        _msg.minRayLength.push_back(minLength);
+        _msg.maxRayLength.push_back(maxLength);
+        _msg.avgRayLength.push_back(avgLength);
+    }
+
     void reset()
     {
+        _step = 0;
         _msg.step = 0;
         _msg.maxStep = 0;
         _msg.voxels = 0;
+
+        _msg.timeBelief.clear();
+        _msg.timeLogOdds.clear();
+        _msg.measurements.clear();
+
+        _msg.minRayLength.clear();
+        _msg.maxRayLength.clear();
+        _msg.avgRayLength.clear();
 
         _msg.errorBelief.clear();
         _msg.errorLogOdds.clear();
@@ -352,4 +389,5 @@ private:
     ros::NodeHandle *_nh;
     smap::smapStats _msg;
     const TrueMap &_trueMap;
+    unsigned int _step;
 };

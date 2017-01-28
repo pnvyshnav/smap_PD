@@ -87,15 +87,46 @@ TrueMap TrueMap::generate(unsigned int seed)
     map.updateSubscribers();
 
     ROS_INFO("True map has %d nodes in total.", (int)map.calcNumNodes());
-    ROS_INFO("Voxels per dimension: %d x %d x %d",
+    ROS_INFO("Voxels per dimension: %d x %d x %d (%d in total)",
              (int)Parameters::voxelsPerDimensionX,
              (int)Parameters::voxelsPerDimensionY,
-             (int)Parameters::voxelsPerDimensionZ);
+             (int)Parameters::voxelsPerDimensionZ,
+             (int)Parameters::voxelsTotal);
     map.calcMinMax();
     ROS_INFO("True map range: (%.2f %.2f %.2f) to (%.2f %.2f %.2f)",
              map.min_value[0], map.min_value[1], map.min_value[2],
              map.max_value[0], map.max_value[1], map.max_value[2]);
     return map;
+}
+
+void TrueMap::shuffle()
+{
+    auto center = Parameters::Vec3Type(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter);
+    // XXX note the <= instead of < here compared to LogOddsMap and BeliefMap
+    for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y <= Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z <= Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(
+                        Parameters::xMin + x * Parameters::voxelSize,
+                        Parameters::yMin + y * Parameters::voxelSize,
+                        Parameters::zMin + z * Parameters::voxelSize);
+                // cells around center (where the robot is) are free
+                if (center.distance(point) <= Parameters::freeRadiusAroundCenter)
+                {
+                    updateNode(point, false);
+                }
+                else
+                {
+                    bool occupied = rand() % 3 == 0; // 1/3 occupied
+                    updateNode(point, occupied);
+                }
+            }
+        }
+    }
+    updateSubscribers();
 }
 
 TrueMap TrueMap::generateFromPointCloud(std::string filename)
