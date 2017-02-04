@@ -38,12 +38,13 @@ public:
                 ROBOT &robot)
     {
 #ifdef REAL_3D
-        _msg.step = _step++;
+        _msg.step = _step;
         _msg.maxStep = _msg.step;
 #else
         _msg.step = robot.currentStep() + 1;
         _msg.maxStep = Parameters::FakeRobotNumSteps;
 #endif
+        _step++;
 
         auto beliefCompleteStats = beliefMap.stats(_trueMap);
         auto logOddsCompleteStats = logOddsMap.stats(_trueMap);
@@ -56,9 +57,11 @@ public:
             if (std::find(logOddsUpdatedPositions.begin(), logOddsUpdatedPositions.end(), position) != logOddsUpdatedPositions.end())
             {
                 updatedPositions.push_back(position);
+#ifndef MANY_STEPS
                 _msg.updatedVoxelsX.push_back(position.x());
                 _msg.updatedVoxelsY.push_back(position.y());
                 _msg.updatedVoxelsZ.push_back(position.z());
+#endif
             }
         }
 
@@ -102,7 +105,7 @@ public:
         _msg.stdErrorCorrelationBelief.push_back(pcc(stdUpdatedBelief, absErrorUpdatedBelief));
         _msg.stdErrorCorrelationLogOdds.push_back(pcc(stdUpdatedLogOdds, absErrorUpdatedLogOdds));
 
-#ifndef MANY_STEPS
+#if !defined(MANY_STEPS) || defined(COMPUTE_UPDATED_EVOLUTION)
         // append current errors to complete error vectors
         _msg.errorCompleteLogOdds.insert(_msg.errorCompleteLogOdds.end(),
                                          _msg.errorLogOdds.begin(),
@@ -111,14 +114,6 @@ public:
                                         _msg.errorBelief.begin(),
                                         _msg.errorBelief.end());
 
-        // append current errors of updated voxels to complete updated error vectors
-        _msg.errorCompleteUpdatedLogOdds.insert(_msg.errorCompleteUpdatedLogOdds.end(),
-                                                absErrorUpdatedLogOdds.begin(),
-                                                absErrorUpdatedLogOdds.end());
-        _msg.errorCompleteUpdatedBelief.insert(_msg.errorCompleteUpdatedBelief.end(),
-                                               absErrorUpdatedBelief.begin(),
-                                               absErrorUpdatedBelief.end());
-
         // append current std devs to complete std dev vectors
         _msg.stdCompleteLogOdds.insert(_msg.stdCompleteLogOdds.end(),
                                        _msg.stdLogOdds.begin(),
@@ -126,6 +121,16 @@ public:
         _msg.stdCompleteBelief.insert(_msg.stdCompleteBelief.end(),
                                       _msg.stdBelief.begin(),
                                       _msg.stdBelief.end());
+#endif
+
+#ifndef MANY_STEPS
+        // append current errors of updated voxels to complete updated error vectors
+        _msg.errorCompleteUpdatedLogOdds.insert(_msg.errorCompleteUpdatedLogOdds.end(),
+                                                absErrorUpdatedLogOdds.begin(),
+                                                absErrorUpdatedLogOdds.end());
+        _msg.errorCompleteUpdatedBelief.insert(_msg.errorCompleteUpdatedBelief.end(),
+                                               absErrorUpdatedBelief.begin(),
+                                               absErrorUpdatedBelief.end());
 
         // append current std devs of updated voxels to complete updated error vectors
         _msg.stdCompleteUpdatedBelief.insert(_msg.stdCompleteUpdatedBelief.end(),
@@ -230,14 +235,73 @@ public:
 #endif
     }
 
-    void saveToFile(std::string filename) const
+    void saveToFile(std::string filename)
     {
+        // update final stats for updated voxels
+        _msg.errorFinalUpdatedBelief.clear();
+        _msg.errorFinalUpdatedLogOdds.clear();
+        _msg.stdFinalUpdatedBelief.clear();
+        _msg.stdFinalUpdatedLogOdds.clear();
+        // compute indices at last step where log odds and SMAP voxel occupancy != prior
+        std::vector<unsigned int> updatedIndices;
+        for (unsigned int i = 0; i < _msg.errorBelief.size(); ++i)
+        {
+            if (std::abs(_msg.errorBelief[i]-Parameters::priorMean) > Parameters::equalityThreshold
+                && std::abs(_msg.errorLogOdds[i]-Parameters::priorMean) > Parameters::equalityThreshold)
+            {
+                updatedIndices.push_back(i);
+                _msg.errorFinalUpdatedBelief.push_back(_msg.errorBelief[i]);
+                _msg.errorFinalUpdatedLogOdds.push_back(_msg.errorLogOdds[i]);
+                _msg.stdFinalUpdatedBelief.push_back(_msg.stdBelief[i]);
+                _msg.stdFinalUpdatedLogOdds.push_back(_msg.stdLogOdds[i]);
+            }
+        }
+        ROS_INFO("%d of %d voxels were updated by SMAP and Log Odds.",
+                 (int)updatedIndices.size(), (int)_msg.errorBelief.size());
+
+#ifdef COMPUTE_UPDATED_EVOLUTION
+        _msg.errorEvolutionUpdatedBelief.clear();
+        _msg.errorEvolutionUpdatedLogOdds.clear();
+        for (unsigned int step = 0; step < _step; ++step)
+        {
+            double evolutionLogOdds = 0, evolutionBelief = 0;
+            for (auto i : updatedIndices)
+            {
+                evolutionLogOdds += std::abs(_msg.errorCompleteLogOdds[step*_msg.voxels + i]);
+                evolutionBelief += std::abs(_msg.errorCompleteBelief[step*_msg.voxels + i]);
+            }
+            evolutionLogOdds /= updatedIndices.size();
+            evolutionBelief /= updatedIndices.size();
+            _msg.errorEvolutionUpdatedLogOdds.push_back(evolutionLogOdds);
+            _msg.errorEvolutionUpdatedBelief.push_back(evolutionBelief);
+        }
+#endif
+
+#if defined(MANY_STEPS) && defined(COMPUTE_UPDATED_EVOLUTION)
+        // back up complete errors and stds to clear the message
+        auto completeErrorLogOdds = std::vector<double>(_msg.errorCompleteLogOdds);
+        auto completeErrorBelief = std::vector<double>(_msg.errorCompleteBelief);
+        _msg.errorCompleteLogOdds.clear();
+        _msg.errorCompleteBelief.clear();
+        auto completeStdLogOdds = std::vector<double>(_msg.stdCompleteLogOdds);
+        auto completeStdBelief = std::vector<double>(_msg.stdCompleteBelief);
+        _msg.stdCompleteLogOdds.clear();
+        _msg.stdCompleteBelief.clear();
+#endif
+
         rosbag::Bag bag;
         bag.open(filename, rosbag::bagmode::Write);
         //bag.setCompression(rosbag::compression::BZ2);
         bag.write("stats", ros::Time::now(), _msg);
         bag.close();
         ROS_INFO_STREAM("Saved statistics ROS bag file to " << filename);
+
+#if defined(MANY_STEPS) && defined(COMPUTE_UPDATED_EVOLUTION)
+        _msg.errorCompleteLogOdds = std::vector<double>(completeErrorLogOdds);
+        _msg.errorCompleteBelief = std::vector<double>(completeErrorBelief);
+        _msg.stdCompleteLogOdds = std::vector<double>(completeStdLogOdds);
+        _msg.stdCompleteBelief = std::vector<double>(completeStdBelief);
+#endif
     }
 
     /**
@@ -330,8 +394,15 @@ public:
         _msg.errorLogOdds.clear();
         _msg.errorEvolutionBelief.clear();
         _msg.errorEvolutionLogOdds.clear();
+        _msg.errorEvolutionUpdatedBelief.clear();
+        _msg.errorEvolutionUpdatedLogOdds.clear();
         _msg.stdEvolutionBelief.clear();
         _msg.stdEvolutionLogOdds.clear();
+
+        _msg.errorFinalUpdatedBelief.clear();
+        _msg.errorFinalUpdatedLogOdds.clear();
+        _msg.stdFinalUpdatedBelief.clear();
+        _msg.stdFinalUpdatedLogOdds.clear();
 
         _msg.errorCompleteBelief.clear();
         _msg.errorCompleteLogOdds.clear();

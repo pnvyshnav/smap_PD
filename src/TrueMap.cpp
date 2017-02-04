@@ -165,5 +165,11 @@ TrueMap TrueMap::generateFromPointCloud(std::string filename)
         map.updateNode(point, true);
     }
 
+    ROS_INFO("Voxels per dimension: %d x %d x %d (%d in total)",
+             (int)Parameters::voxelsPerDimensionX,
+             (int)Parameters::voxelsPerDimensionY,
+             (int)Parameters::voxelsPerDimensionZ,
+             (int)Parameters::voxelsTotal);
+
     return map;
 }

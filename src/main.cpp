@@ -15,7 +15,7 @@
 #include "../include/PointCloud.h"
 
 #ifdef REAL_3D
-    TrueMap trueMap = TrueMap::generateFromPointCloud("/home/eric/catkin_ws/src/smap/dataset/V1_01_easy/groundtruth_pcl.ply"); // use a fixed seed value
+    TrueMap trueMap = TrueMap::generateFromPointCloud("/home/eric/catkin_ws/src/smap/dataset/V1_01_easy/data.ply");
 #else
     TrueMap trueMap = TrueMap::generate(123); // use a fixed seed value
 #endif
@@ -42,6 +42,7 @@ ecl::StopWatch stopWatch;
 int updated = 0;
 void handleObservation(const Observation &observation)
 {
+#ifndef SLIM_STATS
     stats->registerMeasurements((int)observation.measurements().size());
     std::valarray<Parameters::NumType> rayLengths(observation.measurements().size());
     unsigned int i = 0;
@@ -59,13 +60,24 @@ void handleObservation(const Observation &observation)
     stats->registerStepTimeLogOdds(stopWatch.elapsed());
 //
     stats->update(logOddsMap, beliefMap, robot);
+#else
+    beliefMap.update(observation, trueMap);
+    logOddsMap.update(observation, trueMap);
+#endif
 
 #ifdef REAL_3D
-    if (updated > 0 && updated % 50 == 0)
+    if (updated > 0 && updated % 25 == 0)
     {
+#ifdef SLIM_STATS
+        stats->update(logOddsMap, beliefMap, robot);
+#endif
+
         // save stats continually
         stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/stats_real3d_"
                           + std::to_string(updated) + ".bag");
+#ifdef SLIM_STATS
+        stats->reset();
+#endif
     }
 #endif
     ++updated;
@@ -95,14 +107,16 @@ int main(int argc, char **argv)
 
 #ifdef ENABLE_VISUALIZATION
     Visualizer *visualizer = new Visualizer;
-//    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
+    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
+    for (int i = 0; i < 20; ++i)
+        trueMap.publish();
 #ifndef REAL_3D
     robot.subscribe(std::bind(&Visualizer::publishFakeRobot, visualizer, std::placeholders::_1, &trueMap));
 #endif
-    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMap, visualizer, std::placeholders::_1));
-
-    //trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
-    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
+//    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMap, visualizer, std::placeholders::_1));
+//
+//    //trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
+//    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
 //
 //    for (int j = 0; j < 20; ++j)
 //        trueMap.publish();
@@ -117,8 +131,8 @@ int main(int argc, char **argv)
     beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
 #else
     // todo reactivate
-//    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
-//    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMapFull, visualizer, std::placeholders::_1));
+    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
+    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMapFull, visualizer, std::placeholders::_1));
 #endif
     robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
 #endif
@@ -149,7 +163,7 @@ int main(int argc, char **argv)
         #ifdef ONLY_HANDCRAFTED_TRAJECTORIES
                 stats->saveToFile("handcrafted_trajeval/trajectory_" + std::to_string(splineId) + ".bag");
         #else
-                stats->saveToFile("trajeval/trajectory_" + std::to_string(splineId) + ".bag");
+                stats->saveToFile("time trajeval mlCause one pixel/trajectory_" + std::to_string(splineId) + ".bag");
         #endif
                 stats->reset();
                 ++splineId;
@@ -165,19 +179,20 @@ int main(int argc, char **argv)
     #endif
 
     #if defined(REPEATED_RUNS)
-        for (unsigned int round = 0; round < 10; ++round)
+        for (unsigned int round = 0; round < 1; ++round)
         {
             beliefMap.reset();
             logOddsMap.reset();
             robot.run();
-            stats->saveToFile("repeated_fullmap_noise0.2/stats_" + std::to_string(round) + ".bag");
+            //stats->saveToFile("different_maps/stats_" + std::to_string(round) + ".bag");
+            stats->saveToFile("repeated_fullmap_noise0.01_n/stats_" + std::to_string(round) + ".bag");
             stats->reset();
             ROS_INFO("Completed round %d", (int)round);
-//            trueMap.shuffle();
+            trueMap.shuffle();
         }
     #elif defined(ISM_RUNS)
         std::vector<double> increments = {0.05, 0.2, 0.4};
-        std::vector<double> rampSizes = {0.05, 0.1, 0.3, 1};
+        std::vector<double> rampSizes = {0.05, 0.1, 0.3};
         std::vector<double> topSizes = {0.05, 0.1, 0.3};
         unsigned int round = 0;
         for (auto increment : increments)
@@ -194,7 +209,7 @@ int main(int argc, char **argv)
                     beliefMap.reset();
                     logOddsMap.reset();
                     robot.run();
-                    stats->saveToFile("ism_runs/stats_" + std::to_string(round++) + ".bag");
+                    stats->saveToFile("ism_runs_fewsteps_noise0.05/stats_" + std::to_string(round++) + ".bag");
                     stats->reset();
                 }
             }

@@ -29,6 +29,18 @@ float64[] errorLogOdds
 float64[] errorEvolutionBelief
 float64[] errorEvolutionLogOdds
 
+# L1-error evolution of updated voxels at last step,
+# i.e. sum of errors for all steps
+float64[] errorEvolutionUpdatedBelief
+float64[] errorEvolutionUpdatedLogOdds
+
+# abs errors and  std at final step of all voxels that were updated
+# at SMAP and Log Odds over the whole runs
+float64[] errorFinalUpdatedBelief
+float64[] errorFinalUpdatedLogOdds
+float64[] stdFinalUpdatedBelief
+float64[] stdFinalUpdatedLogOdds
+
 # std evolution, i.e. sum of stds for all steps
 float64[] stdEvolutionBelief
 float64[] stdEvolutionLogOdds

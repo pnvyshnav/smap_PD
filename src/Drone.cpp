@@ -60,7 +60,15 @@ void Drone::handleMeasurements(Drone::PointCloudMessage &pointsMsg, Drone::Trans
 
     ROS_INFO("Point Cloud size reduced from %i to %i points.",
              (int)pointCloud->size(), (int)pointCloudFiltered->size());
+#ifdef SKIP_LARGE_POINTCLOUDS
+    if (pointCloudFiltered->size() > 1500)
+    {
+        ROS_WARN("SKIPPING POINT CLOUD (TOO LARGE).");
+        return;
+    }
+#endif
     pointCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(pointCloudFiltered);
+
 
 
     tf::StampedTransform stampedTransform;
@@ -237,6 +245,7 @@ void Drone::runOffline(std::string filename)
     int step = 0;
     for (rosbag::MessageInstance &msg : view)
     {
+        ++step;
         if (msg.getTopic() == "/tf_points")
         {
             points = msg.instantiate<sensor_msgs::PointCloud2>();
@@ -250,11 +259,8 @@ void Drone::runOffline(std::string filename)
             handleMeasurements(points, transformation);
             points = NULL;
             transformation = NULL;
-            if (step % 50 == 0)
+            if (step % 10 == 0)
                 ROS_INFO("Updated for message %d.", step);
-            ++step;
-            if (step >= 200)
-                break;
         }
     }
 

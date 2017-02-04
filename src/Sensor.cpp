@@ -53,9 +53,9 @@ Parameters::NumType Sensor::likelihoodGivenCause(Measurement measurement, QVoxel
         return tg.pdfValue(measurement.value);
 #else
       //  return std::abs(measurement.value - causeVoxel.position.distance(_position)) < Parameters::voxelSize;
-        auto tg = TruncatedGaussianDistribution(measurement.value, Parameters::sensorNoiseStd,//TODO sensorNoiseStd range-dependent
+        auto tg = TruncatedGaussianDistribution(causeVoxel.position.distance(_position), Parameters::sensorNoiseStd,//TODO sensorNoiseStd range-dependent
                                                 0, _range); // TODO truncated?
-        return tg.pdfValue(causeVoxel.position.distance(_position));
+        return tg.pdfValue(measurement.value);
 #endif
     }
     else if (causeVoxel.type == GEOMETRY_HOLE)
@@ -125,6 +125,13 @@ InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, Bel
     Parameters::NumType likelihoodGivenInfinity = likelihoodGivenCause(measurement, QBeliefVoxel::hole());
 
     icm->posteriorInfinity = likelihoodGivenInfinity * causeProbabilityFromInfinityPrior;
+
+    if (std::abs(prior.sum() + causeProbabilityFromInfinityPrior - 1) >= 1e-10)
+    {
+        ROS_WARN("New assertion fired.");
+        delete icm;
+        return NULL;
+    }
 
     auto eta = icm->posteriorOnRay.sum() + icm->posteriorInfinity;
     if (eta == 0.)

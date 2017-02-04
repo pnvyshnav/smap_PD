@@ -25,7 +25,7 @@ StereoCameraSensor::StereoCameraSensor(Parameters::Vec3Type position, Parameters
             )));
         }
     }
-#elif defined(PLANNER_2D_TEST)
+#elif defined(FAKE_2D)
     if (Parameters::StereoCameraHorizontalPixels == 1)
     {
         _pixelSensors.push_back(PixelSensor(position, orientation));

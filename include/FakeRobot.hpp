@@ -240,6 +240,7 @@ public:
             }
     #else
             setOrientation(Parameters::Vec3Type(std::cos(rad), std::sin(rad), 0));
+            Robot::publishObservation(observe());
     #endif
 #else
             const static Parameters::NumType radius = 0.7;
@@ -252,13 +253,13 @@ public:
             Robot::publishObservation(observe());
 #endif
 
-#ifdef FAKE_3D
+#if defined(FAKE_3D) || defined(FAKE_2D)
             if (_step % 20 == 0)
                 ROS_INFO("Robot step %i / %i", (int)_step+1, (int)Parameters::FakeRobotNumSteps);
 #endif
         }
 
-#ifdef FAKE_3D
+#if defined(FAKE_3D) || defined(FAKE_2D)
         if (_stopRequested)
             ROS_INFO("Robot stopped after %g full rounds in %d steps.",
                      (Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity)/(2. * M_PI),

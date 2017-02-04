@@ -8,21 +8,23 @@
 
 #include <octomap/OcTree.h>
 
-//#define FAKE_2D
-//#define PLANNER_2D_TEST
-//#define SIMULATE_TIME
+#define FAKE_2D
+#define PLANNER_2D_TEST
+#define SIMULATE_TIME
 //#define ONLY_HANDCRAFTED_TRAJECTORIES
 //#define REPLANNING
-#define FAKE_3D
+//#define FAKE_3D
 //#define REPEATED_RUNS
-#define ISM_RUNS
+//#define ISM_RUNS
 #define MANY_STEPS
+//#define COMPUTE_UPDATED_EVOLUTION
 
 //#define REAL_3D
 
-#define ENABLE_VISUALIZATION
+//#define ENABLE_VISUALIZATION
 
 //#define PUBLISH_STATS // publish statistics via ROS topic
+//#define SLIM_STATS
 
 
 class Parameters
@@ -50,14 +52,14 @@ public:
     };
     typedef std::unordered_set<octomap::point3d, PositionHash> PositionSet;
 
-    static constexpr NumType equalityThreshold = 1e-16;
+    static constexpr NumType equalityThreshold = 1e-8;
 
     static const unsigned int numParticles = 101;
-    //l
+    //
     // Fake sensor measurements
     //
     static const bool deterministicSensorMeasurements = false;
-    static const unsigned int FakeRobotNumSteps = 800;
+    static const unsigned int FakeRobotNumSteps = 500;
 
     //
     // Trajectory evaluation
@@ -82,7 +84,9 @@ public:
     static constexpr NumType sensorRange = (const NumType) 1.5;
     static constexpr NumType sensorNoiseStd = (const NumType) (sensorRange / 20.);
 
-    static constexpr double FakeRobotAngularVelocity = 1. * M_PI / 180.;
+    static constexpr double FakeRobotAngularVelocity = 15. * M_PI / 180.;
+//    static const unsigned int StereoCameraHorizontalPixels = 8;
+//    static constexpr double StereoCameraHorizontalFOV = 40. * M_PI / 180.;
 #elif defined(FAKE_3D)
     static constexpr float voxelSize = 0.125;
     static constexpr float xMin = -2. + voxelSize * 0.5;
@@ -106,18 +110,18 @@ public:
     // quadratic pixels
     static constexpr double StereoCameraVerticalFOV = StereoCameraHorizontalFOV * StereoCameraVerticalPixels *1. / StereoCameraHorizontalPixels *1.;
 #elif defined(REAL_3D)
-    static constexpr NumType voxelSize = 0.125; //0.0625; //0.125;
+    static constexpr NumType voxelSize = 0.0625; //0.125;
 
-    static constexpr NumType xMin = -6.;
-    static constexpr NumType xMax =  4.5;
-    static constexpr NumType yMin = -5.6;
+    static constexpr NumType xMin = -5.;
+    static constexpr NumType xMax =  3.4;
+    static constexpr NumType yMin = -4.6;
     static constexpr NumType yMax =  7.8;
     static constexpr NumType zMin = -0.1;
     static constexpr NumType zMax =  4.5;
 
     static const bool sensorTruncatedGaussianNoise = false;
     static constexpr NumType sensorRange = (const NumType) 10;
-    static constexpr NumType sensorNoiseStd = (const NumType) 0.2;
+    static constexpr NumType sensorNoiseStd = (const NumType) 0.1;
 
     static constexpr NumType freeRadiusAroundCenter = 0; // irrelevant
     // IRRELEVANT:
@@ -175,7 +179,7 @@ public:
     static constexpr NumType invSensor_increment = 0.05;
     static constexpr NumType invSensor_occupied = invSensor_increment;
     static constexpr NumType invSensor_free = -invSensor_increment;
-    static constexpr NumType invSensor_rampSize = voxelSize;
-    static constexpr NumType invSensor_topSize = voxelSize;
+    static constexpr NumType invSensor_rampSize = 0.1;
+    static constexpr NumType invSensor_topSize = 0.1;
     static constexpr NumType invSensor_rampSlope = (invSensor_occupied - invSensor_free)/invSensor_rampSize;
 };

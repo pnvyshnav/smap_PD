@@ -112,11 +112,11 @@ std::vector<Trajectory> TrajectoryPlanner::generateTrajectories()
     return trajectories;
 #endif
 
-    Point lowerBound1( 0.1, -0.2), upperBound1(0.7, 0.35);
-    Point lowerBound2(-0.3, -0.2), upperBound2(0.2, 0.35);
+//    Point lowerBound1( 0.1, -0.2), upperBound1(0.7, 0.35);
+//    Point lowerBound2(-0.3, -0.2), upperBound2(0.2, 0.35);
 
-//    Point lowerBound1(-0.9, -0.9), upperBound1(0.7, 0.35);
-//    Point lowerBound2(-0.9, -0.9), upperBound2(0.2, 0.35);
+    Point lowerBound1(-0.9, -0.9), upperBound1(0.7, 0.35);
+    Point lowerBound2(-0.9, -0.9), upperBound2(0.2, 0.35);
 
     const double stepSize = 0.25;
 
@@ -137,6 +137,13 @@ std::vector<Trajectory> TrajectoryPlanner::generateTrajectories()
                     ROS_INFO("TOTAL ARC LENGTH: %f", trajectory.totalArcLength());
                     trajectory.computeTimeProfile();
                     ROS_INFO("TOTAL TIME:       %f", trajectory.totalTime());
+                    if (trajectory.totalTime() > Parameters::SimulationFinalTime)
+                    {
+                        ROS_WARN("Trajectory's total time is too long (%f > %f).",
+                                 trajectory.totalTime(),
+                                 Parameters::SimulationFinalTime);
+                        continue;
+                    }
                     trajectory.saveProfile("handcrafted_trajectories/trajectory_" + std::to_string(count) + ".csv");
                     trajectories.push_back(trajectory);
                     ++count;
