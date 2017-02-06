@@ -5,7 +5,7 @@
 #include <ros/console.h>
 
 Trajectory::Trajectory(std::initializer_list<Point> points, unsigned int degree)
-    : _lastU(0), _yawWasPi(false), _empty(false)
+    : _lastU(0), _yawWasPi(false), _empty(false), _controlPoints(points)
 {
     _spline = ts::BSpline(degree, DIMENSIONS, points.size(), TS_CLAMPED);
     std::vector<float> ctrlpts = _spline.ctrlp();
@@ -227,22 +227,6 @@ double Trajectory::_computeYaw(double u)
     else if (t < 0. && _yawWasPi)
         t += 2. * M_PI;
     return t;
-}
-
-const std::vector<Point> Trajectory::controlPoints() const
-{
-    std::vector<Point> points;
-    for (unsigned int i = 0; i < _spline.nCtrlp(); ++i)
-    {
-        Point p;
-        p.x = _spline.ctrlp()[i];
-        p.y = _spline.ctrlp()[i + 1];
-#if (DIMENSIONS == 3)
-        p.z = _spline.ctrlp()[i + 2];
-#endif
-        points.push_back(p);
-    }
-    return points;
 }
 
 std::vector<Trajectory::VelocityPlanningPoint> Trajectory::computeVelocities(

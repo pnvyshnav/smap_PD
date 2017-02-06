@@ -163,7 +163,7 @@ int main(int argc, char **argv)
         #ifdef ONLY_HANDCRAFTED_TRAJECTORIES
                 stats->saveToFile("handcrafted_trajeval/trajectory_" + std::to_string(splineId) + ".bag");
         #else
-                stats->saveToFile("time trajeval mlCause one pixel/trajectory_" + std::to_string(splineId) + ".bag");
+                stats->saveToFile("time trajeval mlCause one pixel singlePoint/trajectory_" + std::to_string(splineId) + ".bag");
         #endif
                 stats->reset();
                 ++splineId;

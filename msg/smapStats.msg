@@ -111,6 +111,10 @@ float64[] trajectoryY
 float64[] trajectoryT
 float64[] trajectoryTime
 
+# trajectory control points 2d positions
+float64[] trajectoryControlX
+float64[] trajectoryControlY
+
 # Future predictions
 # reachability of voxels within time span
 float64[] trajectoryFutureReachability

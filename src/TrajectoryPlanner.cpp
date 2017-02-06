@@ -116,22 +116,22 @@ std::vector<Trajectory> TrajectoryPlanner::generateTrajectories()
 //    Point lowerBound2(-0.3, -0.2), upperBound2(0.2, 0.35);
 
     Point lowerBound1(-0.9, -0.9), upperBound1(0.7, 0.35);
-    Point lowerBound2(-0.9, -0.9), upperBound2(0.2, 0.35);
+//    Point lowerBound2(-0.9, -0.9), upperBound2(0.2, 0.35);
 
-    const double stepSize = 0.25;
+    const double stepSize = 0.15;
 
     unsigned int count = 0;
     for (double x1 = lowerBound1.x; x1 <= upperBound1.x; x1 += stepSize)
     {
         for (double y1 = lowerBound1.y; y1 <= upperBound1.y; y1 += stepSize)
         {
-            for (double x2 = lowerBound2.x; x2 <= upperBound2.x; x2 += stepSize)
-            {
-                for (double y2 = lowerBound2.y; y2 <= upperBound2.y; y2 += stepSize)
-                {
+//            for (double x2 = lowerBound2.x; x2 <= upperBound2.x; x2 += stepSize)
+//            {
+//                for (double y2 = lowerBound2.y; y2 <= upperBound2.y; y2 += stepSize)
+//                {
                     Trajectory trajectory({Point(0.0 + shift, -0.9 + shift),
                                            Point(x1 + shift, y1 + shift),
-                                           Point(x2 + shift, y2 + shift),
+//                                           Point(x2 + shift, y2 + shift),
                                            Point(-0.9 + shift, 0.0 + shift)});
                     trajectory.computeVelocities();
                     ROS_INFO("TOTAL ARC LENGTH: %f", trajectory.totalArcLength());
@@ -152,8 +152,8 @@ std::vector<Trajectory> TrajectoryPlanner::generateTrajectories()
 //                        ROS_INFO("%d trajectories were generated. Stopping.", (int)count);
 //                        return trajectories;
 //                    }
-                }
-            }
+//                }
+//            }
         }
     }
     ROS_INFO("%d trajectories were generated.", (int)count);

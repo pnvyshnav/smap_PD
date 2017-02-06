@@ -126,7 +126,10 @@ public:
      * Returns the control points of this spline.
      * @return Spline control points.
      */
-    const std::vector<Point> controlPoints() const;
+    const std::vector<Point> controlPoints() const
+    {
+        return _controlPoints;
+    }
 
     /**
      * Returns the keys to the voxels covered by the current spline.
@@ -181,6 +184,7 @@ public:
 private:
     Trajectory(std::initializer_list<Point> points, unsigned int degree = 2);
     ts::BSpline _spline;
+    std::vector<Point> _controlPoints;
 
     bool _empty;
 

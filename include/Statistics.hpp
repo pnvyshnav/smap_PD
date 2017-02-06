@@ -45,6 +45,7 @@ public:
         _msg.maxStep = Parameters::FakeRobotNumSteps;
 #endif
         _step++;
+        _robot = &robot;
 
         auto beliefCompleteStats = beliefMap.stats(_trueMap);
         auto logOddsCompleteStats = logOddsMap.stats(_trueMap);
@@ -242,6 +243,15 @@ public:
         _msg.errorFinalUpdatedLogOdds.clear();
         _msg.stdFinalUpdatedBelief.clear();
         _msg.stdFinalUpdatedLogOdds.clear();
+#ifdef PLANNER_2D_TEST
+        _msg.trajectoryControlX.clear();
+        _msg.trajectoryControlY.clear();
+        for (auto &p : _robot->trajectory().controlPoints())
+        {
+            _msg.trajectoryControlX.push_back(p.x);
+            _msg.trajectoryControlY.push_back(p.y);
+        }
+#endif
         // compute indices at last step where log odds and SMAP voxel occupancy != prior
         std::vector<unsigned int> updatedIndices;
         for (unsigned int i = 0; i < _msg.errorBelief.size(); ++i)
@@ -461,4 +471,5 @@ private:
     smap::smapStats _msg;
     const TrueMap &_trueMap;
     unsigned int _step;
+    ROBOT *_robot;
 };
