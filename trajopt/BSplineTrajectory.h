@@ -4,50 +4,10 @@
 #include <valarray>
 
 #include "tinysplinecpp.h"
-#include "Parameters.hpp"
-#include "BeliefMap.h"
+#include "Trajectory.hpp"
+#include "../include/Parameters.hpp"
+#include "../include/BeliefMap.h"
 
-#define DIMENSIONS 2
-
-struct Point
-{
-    double x;
-    double y;
-
-#if (DIMENSIONS == 3)
-    double z;
-    Point(double x, double y, double z) : x(x), y(y), z(z)
-    {}
-#endif
-
-    Point()
-    {}
-
-    Point(double x, double y) : x(x), y(y)
-    {}
-};
-
-struct TrajectoryEvaluationResult
-{
-    Point point;
-    double yaw;
-    double arcLength;
-    double u;
-    double splineU;
-    double time;
-    double velocity;
-
-    bool empty;
-
-    TrajectoryEvaluationResult() : empty(true)
-    {}
-
-    TrajectoryEvaluationResult(const Point &point, double yaw, double arcLength,
-                               double u, double splineU, double velocity)
-            : point(point), yaw(yaw), arcLength(arcLength),
-              u(u), splineU(splineU), empty(false), velocity(velocity)
-    {}
-};
 
 struct VelocityPlanningParameters
 {
@@ -65,12 +25,12 @@ struct VelocityPlanningParameters
 /**
  * Trajectory planning using cubic splines.
  */
-class Trajectory
+class BSplineTrajectory : public Trajectory
 {
     friend class TrajectoryPlanner;
 public:
-    Trajectory();
-    Trajectory(const Trajectory &trajectory);
+    BSplineTrajectory();
+    BSplineTrajectory(const BSplineTrajectory &trajectory);
 
     TrajectoryEvaluationResult evaluate(double u, bool computeTime = false);
 
@@ -182,7 +142,7 @@ public:
     }
 
 private:
-    Trajectory(std::initializer_list<Point> points, unsigned int degree = 2);
+    BSplineTrajectory(std::initializer_list<Point> points, unsigned int degree = 2);
     ts::BSpline _spline;
     std::vector<Point> _controlPoints;
 

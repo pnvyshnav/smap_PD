@@ -50,7 +50,7 @@
 TrajectoryPlanner::TrajectoryPlanner(TrueMap &trueMap, BeliefMap &beliefMap, LogOddsMap &logOddsMap)
     : _trueMap(trueMap), _beliefMap(beliefMap), _logOddsMap(logOddsMap), _stats(trueMap)
 {
-//    Trajectory trajectory({Point(0.0, -0.9), Point(0.5, -0.1), Point(0.0, 0.0), Point(-0.9, 0.0)});
+//    BSplineTrajectory trajectory({Point(0.0, -0.9), Point(0.5, -0.1), Point(0.0, 0.0), Point(-0.9, 0.0)});
 //    trajectory.computeVelocities();
 //    ROS_INFO("TOTAL ARC LENGTH: %f", trajectory.totalArcLength());
 //    trajectory.computeTimeProfile();
@@ -65,7 +65,7 @@ TrajectoryPlanner::TrajectoryPlanner(TrueMap &trueMap, BeliefMap &beliefMap, Log
 //            {
 //                for (double y2 = -0.2; y2 < 0.3; y2 += 0.15)
 //                {
-//                    Trajectory trajectory({Point(0.0, -0.9), Point(x1, y1), Point(x2, y2), Point(-0.9, 0.0)});
+//                    BSplineTrajectory trajectory({Point(0.0, -0.9), Point(x1, y1), Point(x2, y2), Point(-0.9, 0.0)});
 //                    trajectory.computeVelocities();
 //                    ROS_INFO("TOTAL ARC LENGTH: %f", trajectory.totalArcLength());
 //                    trajectory.computeTimeProfile();
@@ -76,7 +76,7 @@ TrajectoryPlanner::TrajectoryPlanner(TrueMap &trueMap, BeliefMap &beliefMap, Log
 //
 //    }
 
-//    Trajectory trajectory2({Point(0.0, -0.9), Point(0.0, 0.4), Point(0.4, 0.0), Point(-0.9, 0.0)});
+//    BSplineTrajectory trajectory2({Point(0.0, -0.9), Point(0.0, 0.4), Point(0.4, 0.0), Point(-0.9, 0.0)});
 //    trajectory2.computeVelocities();
 //    ROS_INFO("TOTAL ARC LENGTH: %f", trajectory2.totalArcLength());
 //    trajectory2.computeTimeProfile();
@@ -84,27 +84,27 @@ TrajectoryPlanner::TrajectoryPlanner(TrueMap &trueMap, BeliefMap &beliefMap, Log
 //    trajectory2.evaluate(0.5);
 }
 
-std::vector<Trajectory> TrajectoryPlanner::generateTrajectories()
+std::vector<BSplineTrajectory> TrajectoryPlanner::generateTrajectories()
 {
-    std::vector<Trajectory> trajectories;
+    std::vector<BSplineTrajectory> trajectories;
     double shift = Parameters::voxelSize / 2.; // make sure trajectory aligns at middle of voxel
 
 #ifdef ONLY_HANDCRAFTED_TRAJECTORIES
     Point start(0.0 + shift, -0.9 + shift);
     Point end(-0.9 + shift, 0.0 + shift);
-    Trajectory trajectory0({start, Point(0 + shift, 0 + shift), end}, 1);
+    BSplineTrajectory trajectory0({start, Point(0 + shift, 0 + shift), end}, 1);
     trajectory0.computeVelocities();
     trajectory0.computeTimeProfile();
     trajectory0.saveProfile("handcrafted_trajectories/trajectory_0.csv");
     trajectories.push_back(trajectory0);
 
-    Trajectory trajectory1({start, Point(0.5 + shift, -0.1 + shift), Point(0 + shift, 0 + shift), end}, 2);
+    BSplineTrajectory trajectory1({start, Point(0.5 + shift, -0.1 + shift), Point(0 + shift, 0 + shift), end}, 2);
     trajectory1.computeVelocities();
     trajectory1.computeTimeProfile();
     trajectory1.saveProfile("handcrafted_trajectories/trajectory_1.csv");
     trajectories.push_back(trajectory1);
 
-    Trajectory trajectory2({start, Point(0 + shift, 0.4 + shift), Point(0.4 + shift, 0 + shift), end}, 2);
+    BSplineTrajectory trajectory2({start, Point(0 + shift, 0.4 + shift), Point(0.4 + shift, 0 + shift), end}, 2);
     trajectory2.computeVelocities();
     trajectory2.computeTimeProfile();
     trajectory2.saveProfile("handcrafted_trajectories/trajectory_2.csv");
@@ -129,7 +129,7 @@ std::vector<Trajectory> TrajectoryPlanner::generateTrajectories()
 //            {
 //                for (double y2 = lowerBound2.y; y2 <= upperBound2.y; y2 += stepSize)
 //                {
-                    Trajectory trajectory({Point(0.0 + shift, -0.9 + shift),
+                    BSplineTrajectory trajectory({Point(0.0 + shift, -0.9 + shift),
                                            Point(x1 + shift, y1 + shift),
 //                                           Point(x2 + shift, y2 + shift),
                                            Point(-0.9 + shift, 0.0 + shift)});
@@ -139,7 +139,7 @@ std::vector<Trajectory> TrajectoryPlanner::generateTrajectories()
                     ROS_INFO("TOTAL TIME:       %f", trajectory.totalTime());
                     if (trajectory.totalTime() > Parameters::SimulationFinalTime)
                     {
-                        ROS_WARN("Trajectory's total time is too long (%f > %f).",
+                        ROS_WARN("BSplineTrajectory's total time is too long (%f > %f).",
                                  trajectory.totalTime(),
                                  Parameters::SimulationFinalTime);
                         continue;
@@ -161,10 +161,10 @@ std::vector<Trajectory> TrajectoryPlanner::generateTrajectories()
 }
 
 
-std::vector<Trajectory> TrajectoryPlanner::generateTrajectories(Point start, Point end,
+std::vector<BSplineTrajectory> TrajectoryPlanner::generateTrajectories(Point start, Point end,
                                                                 VelocityPlanningParameters parameters)
 {
-    std::vector<Trajectory> trajectories;
+    std::vector<BSplineTrajectory> trajectories;
 
     const double stepSize = 0.25;
     const double scaling = 2.0;
@@ -182,7 +182,7 @@ std::vector<Trajectory> TrajectoryPlanner::generateTrajectories(Point start, Poi
     {
         for (double y = midY - scaledHeight; y <= midY + scaledHeight; y += stepSize)
         {
-            Trajectory trajectory({start, Point(x, y), end});
+            BSplineTrajectory trajectory({start, Point(x, y), end});
             trajectory._end = end;
             trajectory.computeVelocities();
             if (!trajectory.isValid())
@@ -207,7 +207,7 @@ std::vector<Trajectory> TrajectoryPlanner::generateTrajectories(Point start, Poi
     return trajectories;
 }
 
-double TrajectoryPlanner::evaluate(Trajectory &trajectory, BeliefMap &map, const smap::smapStats &stats)
+double TrajectoryPlanner::evaluate(BSplineTrajectory &trajectory, BeliefMap &map, const smap::smapStats &stats)
 {
     double reachability = 1.;
     auto startIndex = stats.trajectoryOccupanciesBelief.size() - stats.trajectoryVoxels;
@@ -227,7 +227,7 @@ double TrajectoryPlanner::evaluate(Trajectory &trajectory, BeliefMap &map, const
             reOcc = 0.1;
 
         double mean = 1. - 0.5 * (imOcc + reOcc); // do we take the belief map or imaginary reachability?
-        //ROS_INFO("Trajectory 1-mean: %f", mean);
+        //ROS_INFO("BSplineTrajectory 1-mean: %f", mean);
         reachability *= 1. - reOcc;
         double meanSq = std::pow(mean, 2.);
         reachLeft *= var + meanSq;
@@ -241,7 +241,7 @@ double TrajectoryPlanner::evaluate(Trajectory &trajectory, BeliefMap &map, const
     return reachability - kappa * stdReachability;
 }
 
-Trajectory TrajectoryPlanner::replan(Point start, Point end, double startVelocity)
+BSplineTrajectory TrajectoryPlanner::replan(Point start, Point end, double startVelocity)
 {
     VelocityPlanningParameters parameters;
     parameters.startVelocity = startVelocity;
@@ -270,7 +270,7 @@ Trajectory TrajectoryPlanner::replan(Point start, Point end, double startVelocit
         _simulationBot->_step = 20;
         _simulationBot->run();
         auto utility = evaluate(candidate, _imaginaryMap, _stats.stats());
-        ROS_INFO("Trajectory %d has utility: %.10f", (int)i, utility);
+        ROS_INFO("BSplineTrajectory %d has utility: %.10f", (int)i, utility);
         if (utility > optimalUtility)
         {
             optimalUtility = utility;
@@ -281,7 +281,7 @@ Trajectory TrajectoryPlanner::replan(Point start, Point end, double startVelocit
         ++i;
     }
 
-    ROS_INFO("Trajectory %i has the best utility.", (int)optimalIdx);
+    ROS_INFO("BSplineTrajectory %i has the best utility.", (int)optimalIdx);
     return trajectories[optimalIdx];
 }
 
@@ -291,9 +291,9 @@ void TrajectoryPlanner::_handleObservation(const Observation &observation)
     _stats.update(_logOddsMap, _imaginaryMap, *_simulationBot);
 }
 
-Trajectory TrajectoryPlanner::generateInitialDirectTrajectory(Point start, Point end)
+BSplineTrajectory TrajectoryPlanner::generateInitialDirectTrajectory(Point start, Point end)
 {
-    Trajectory trajectory({start, Point((start.x + end.x) / 2., (start.y + end.y) / 2.), end});
+    BSplineTrajectory trajectory({start, Point((start.x + end.x) / 2., (start.y + end.y) / 2.), end});
     trajectory.computeVelocities();
     trajectory.computeTimeProfile();
     return trajectory;

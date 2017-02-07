@@ -193,7 +193,7 @@ public:
 
 #ifdef PLANNER_2D_TEST
         _msg.trajectoryVoxels = (unsigned int) robot.trajectory().splineVoxelKeys(_trueMap).size();
-        //ROS_INFO("Trajectory voxels: %d", (int)_msg.trajectoryVoxels);
+        //ROS_INFO("BSplineTrajectory voxels: %d", (int)_msg.trajectoryVoxels);
         _msg.trajectoryVoxelX.clear();
         _msg.trajectoryVoxelY.clear();
         for (auto &position: robot.trajectory().splineVoxelPositions(_trueMap))

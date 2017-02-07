@@ -3,7 +3,7 @@
 #include "TrueMap.h"
 #include "BeliefMap.h"
 #include "LogOddsMap.h"
-#include "Trajectory.h"
+#include "../trajopt/BSplineTrajectory.h"
 #include "FakeRobot.hpp"
 #include "PixelSensor.h"
 #include "Observation.hpp"
@@ -14,17 +14,17 @@ class TrajectoryPlanner : public Observable
 public:
     TrajectoryPlanner(TrueMap &trueMap, BeliefMap &beliefMap, LogOddsMap &logOddsMap);
 
-    Trajectory replan(Point start, Point end, double startVelocity = 0.0);
+    BSplineTrajectory replan(Point start, Point end, double startVelocity = 0.0);
 
-    static Trajectory generateInitialDirectTrajectory(Point start, Point end);
+    static BSplineTrajectory generateInitialDirectTrajectory(Point start, Point end);
 
-    static std::vector<Trajectory> generateTrajectories();
-    static std::vector<Trajectory> generateTrajectories(Point start, Point end,
+    static std::vector<BSplineTrajectory> generateTrajectories();
+    static std::vector<BSplineTrajectory> generateTrajectories(Point start, Point end,
                                                  VelocityPlanningParameters parameters = VelocityPlanningParameters());
 
-    double evaluate(Trajectory &trajectory, BeliefMap &map, const smap::smapStats &stats);
+    double evaluate(BSplineTrajectory &trajectory, BeliefMap &map, const smap::smapStats &stats);
 
-    Trajectory currentEvaluationCandidate() const
+    BSplineTrajectory currentEvaluationCandidate() const
     {
         return _candidate;
     }
@@ -34,7 +34,7 @@ private:
     BeliefMap &_beliefMap;
     BeliefMap _imaginaryMap;
     LogOddsMap &_logOddsMap;
-    Trajectory _candidate;
+    BSplineTrajectory _candidate;
     Statistics<FakeRobot<PixelSensor> > _stats;
     FakeRobot<PixelSensor> *_simulationBot;
 

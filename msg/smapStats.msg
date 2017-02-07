@@ -88,7 +88,7 @@ float64 ismTopSize
 float64 ismRampSlope
 
 #################################################################
-#         Scenario of Trajectory Evaluation (Planning)          #
+#         Scenario of BSplineTrajectory Evaluation (Planning)          #
 #################################################################
 
 uint32 trajectoryId

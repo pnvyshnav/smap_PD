@@ -14,7 +14,7 @@
 #include "TrueMap.h"
 #include "Robot.hpp"
 #include "LogOddsMap.h"
-#include "Trajectory.h"
+#include "../trajopt/BSplineTrajectory.h"
 
 enum ObservationMode
 {
@@ -33,7 +33,7 @@ class FakeRobot : public Robot, public Observable
     friend class TrajectoryPlanner;
 public:
     // start, end, currentVelocity
-    typedef std::function<Trajectory(Point, Point, double)> PlanningSubscriber;
+    typedef std::function<BSplineTrajectory(Point, Point, double)> PlanningSubscriber;
 
     FakeRobot(Parameters::Vec3Type position,
           Parameters::Vec3Type orientation,
@@ -122,7 +122,7 @@ public:
         {
 #ifdef FAKE_2D
     #ifdef PLANNER_2D_TEST
-            //ROS_INFO("Trajectory empty? %d", (int) _trajectory.empty());
+            //ROS_INFO("BSplineTrajectory empty? %d", (int) _trajectory.empty());
             if (!_trajectory.empty())
             {
                 TrajectoryEvaluationResult current;
@@ -294,12 +294,12 @@ public:
         return _lastVelocity;
     }
 
-    Trajectory &trajectory()
+    BSplineTrajectory &trajectory()
     {
         return _trajectory;
     }
 
-    void setTrajectory(const Trajectory &trajectory)
+    void setTrajectory(const BSplineTrajectory &trajectory)
     {
         _trajectory = trajectory;
     }
@@ -340,7 +340,7 @@ private:
     unsigned int _step;
     Parameters::KeySet _splineFutureVoxels;
 
-    Trajectory _trajectory;
+    BSplineTrajectory _trajectory;
     double _lastTime;
     double _lastVelocity;
 

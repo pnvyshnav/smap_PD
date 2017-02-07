@@ -611,7 +611,7 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
         wayPoints.color.g = (float)colors[color][1];
         wayPoints.color.b = (float)colors[color][2];
 
-        auto trajectory = Trajectory(robot->trajectory());
+        auto trajectory = BSplineTrajectory(robot->trajectory());
 #ifdef SIMULATION_TIME
         for (double x = 0; x <= Parameters::SimulationFinalTime; x += Parameters::SimulationTimeStep)
         {

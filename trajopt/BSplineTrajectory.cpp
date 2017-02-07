@@ -1,10 +1,10 @@
-#include "../include/Trajectory.h"
+#include "BSplineTrajectory.h"
 
 #include <fstream>
 
 #include <ros/console.h>
 
-Trajectory::Trajectory(std::initializer_list<Point> points, unsigned int degree)
+BSplineTrajectory::BSplineTrajectory(std::initializer_list<Point> points, unsigned int degree)
     : _lastU(0), _yawWasPi(false), _empty(false), _controlPoints(points)
 {
     _spline = ts::BSpline(degree, DIMENSIONS, points.size(), TS_CLAMPED);
@@ -22,7 +22,7 @@ Trajectory::Trajectory(std::initializer_list<Point> points, unsigned int degree)
 
     _start = *points.begin();
     _end = Point(ctrlpts[ctrlpts.size()-2], ctrlpts[ctrlpts.size()-1]);
-//    ROS_INFO("Trajectory end: %f %f", _end.x, _end.y);
+//    ROS_INFO("BSplineTrajectory end: %f %f", _end.x, _end.y);
 
     _totalArcLength = 0;
     _maxRad = Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity;
@@ -52,13 +52,13 @@ Trajectory::Trajectory(std::initializer_list<Point> points, unsigned int degree)
     }
 }
 
-Trajectory::Trajectory() : _lastU(0), _yawWasPi(false), _empty(true),
+BSplineTrajectory::BSplineTrajectory() : _lastU(0), _yawWasPi(false), _empty(true),
                            _totalArcLength(0), _totalTime(0), _relativeTotalTime(0)
 {
 
 }
 
-Trajectory::Trajectory(const Trajectory &trajectory)
+BSplineTrajectory::BSplineTrajectory(const BSplineTrajectory &trajectory)
         : _lastU(trajectory._lastU), _yawWasPi(trajectory._yawWasPi),
           _empty(trajectory._empty), _totalArcLength(trajectory._totalArcLength),
           _totalTime(trajectory._totalTime), _relativeTotalTime(trajectory._relativeTotalTime),
@@ -70,7 +70,7 @@ Trajectory::Trajectory(const Trajectory &trajectory)
 
 }
 
-TrajectoryEvaluationResult Trajectory::evaluate(double u, bool computeTime)
+TrajectoryEvaluationResult BSplineTrajectory::evaluate(double u, bool computeTime)
 {
     //ROS_INFO("Evaluating at u = %f with computeTime? %d", u, (int)computeTime);
     _lastU = u;
@@ -163,7 +163,7 @@ TrajectoryEvaluationResult Trajectory::evaluate(double u, bool computeTime)
     }
 }
 
-TrajectoryEvaluationResult Trajectory::evaluateAtTime(double time)
+TrajectoryEvaluationResult BSplineTrajectory::evaluateAtTime(double time)
 {
     if (time <= 0.)
         return evaluate(0, true);
@@ -181,7 +181,7 @@ TrajectoryEvaluationResult Trajectory::evaluateAtTime(double time)
     return evaluate(1, true);
 }
 
-Parameters::KeySet Trajectory::splineVoxelKeys(const TrueMap &trueMap)
+Parameters::KeySet BSplineTrajectory::splineVoxelKeys(const TrueMap &trueMap)
 {
     //ROS_INFO("Spline voxels before computation: %d", (int)_splineVoxels.size());
     if (!_splineVoxels.empty())
@@ -199,7 +199,7 @@ Parameters::KeySet Trajectory::splineVoxelKeys(const TrueMap &trueMap)
     return _splineVoxels;
 }
 
-Parameters::PositionSet Trajectory::splineVoxelPositions(const TrueMap &trueMap)
+Parameters::PositionSet BSplineTrajectory::splineVoxelPositions(const TrueMap &trueMap)
 {
     //ROS_INFO("Spline voxels before computation: %d", (int)_splineVoxels.size());
     if (!_splineVoxelPositions.empty())
@@ -217,7 +217,7 @@ Parameters::PositionSet Trajectory::splineVoxelPositions(const TrueMap &trueMap)
     return _splineVoxelPositions;
 }
 
-double Trajectory::_computeYaw(double u)
+double BSplineTrajectory::_computeYaw(double u)
 {
     auto next = _spline.evaluate((float) std::min(1., std::max(_miniStep/1., u + _miniStep/1.))).result();
     auto prev = _spline.evaluate((float) std::min(1. - _miniStep/1., std::max(0.0, u - _miniStep/1.))).result();
@@ -229,7 +229,7 @@ double Trajectory::_computeYaw(double u)
     return t;
 }
 
-std::vector<Trajectory::VelocityPlanningPoint> Trajectory::computeVelocities(
+std::vector<BSplineTrajectory::VelocityPlanningPoint> BSplineTrajectory::computeVelocities(
         const VelocityPlanningParameters &parameters)
 {
     _planningPoints.resize(Parameters::VelocityPlanningPoints + 1);
@@ -240,7 +240,7 @@ std::vector<Trajectory::VelocityPlanningPoint> Trajectory::computeVelocities(
     // compute equidistant planning points
     for (unsigned int i = 0; i <= Parameters::VelocityPlanningPoints; ++i)
     {
-        Trajectory::VelocityPlanningPoint vpp;
+        BSplineTrajectory::VelocityPlanningPoint vpp;
         vpp.u = i * 1. / Parameters::VelocityPlanningPoints;
         auto evaluation = evaluate(vpp.u);
         vpp.splineU = evaluation.splineU;
@@ -291,7 +291,7 @@ std::vector<Trajectory::VelocityPlanningPoint> Trajectory::computeVelocities(
     return _planningPoints;
 }
 
-double Trajectory::_computeCurvature(double u, VelocityPlanningPoint &vpp)
+double BSplineTrajectory::_computeCurvature(double u, VelocityPlanningPoint &vpp)
 {
     double leftFirstDerivative = std::abs(_computeYaw(u) - _computeYaw(u - _miniStep)) / (10. * _miniStep);
     double rightFirstDerivative = std::abs(_computeYaw(u + _miniStep) - _computeYaw(u)) / (10. * _miniStep);
@@ -301,7 +301,7 @@ double Trajectory::_computeCurvature(double u, VelocityPlanningPoint &vpp)
     return vpp.curvature;
 }
 
-std::valarray<double> Trajectory::computeTimeProfile()
+std::valarray<double> BSplineTrajectory::computeTimeProfile()
 {
     _totalTime = 0;
     _relativeTotalTime = 0;
@@ -334,7 +334,7 @@ std::valarray<double> Trajectory::computeTimeProfile()
     return _times;
 }
 
-bool Trajectory::saveProfile(const std::string &csvfilename)
+bool BSplineTrajectory::saveProfile(const std::string &csvfilename)
 {
     std::fstream f;
     f.open(csvfilename, std::ios::out);
@@ -360,7 +360,7 @@ bool Trajectory::saveProfile(const std::string &csvfilename)
     return true;
 }
 
-bool Trajectory::isValid() const
+bool BSplineTrajectory::isValid() const
 {
     for (auto &vpp : _planningPoints)
     {

@@ -62,7 +62,7 @@ public:
     static const unsigned int FakeRobotNumSteps = 500;
 
     //
-    // Trajectory evaluation
+    // BSplineTrajectory evaluation
     //
     static const bool EquidistantArcLengthSampling = true;
     static const unsigned int VelocityPlanningPoints = 250;
