@@ -30,8 +30,8 @@ void Visualizer::render()
 Visualizer::Visualizer() : _counter(0)
 {
     nodeHandle = new ros::NodeHandle;
-    trueMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("true_map", 10);
-    trueMap2dPublisher = nodeHandle->advertise<nav_msgs::GridCells>("true_map_2d", 0);
+    trueMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("true_map", 1);
+    trueMap2dPublisher = nodeHandle->advertise<nav_msgs::GridCells>("true_map_2d", 10);
     logOddsMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("logodds_map", 10);
     beliefMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("belief_map", 10);
     sensorPublisher = nodeHandle->advertise<visualization_msgs::Marker>("sensor", 10);
@@ -58,29 +58,41 @@ void Visualizer::publishTrueMap(const Observable *visualizable)
     auto trueMap = (TrueMap *) visualizable;
     ros::Rate loop_rate(PaintRate);
     loop_rate.sleep();
+//    ROS_INFO("Visualizing true map");
 
     visualization_msgs::MarkerArray cells;
-
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x) {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y) {
             for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z) {
                 auto _x = Parameters::xMin + x * Parameters::voxelSize;
                 auto _y = Parameters::yMin + y * Parameters::voxelSize;
-                auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                auto _z = Parameters::zMin + (z + 0.5) * Parameters::voxelSize;
                 QTrueVoxel voxel = trueMap->query(_x, _y, _z);
+                if (!voxel.node())
+                    continue;
 
                 visualization_msgs::Marker cell;
-                cell.action = 0;
+#ifdef REAL_3D
+                if (trueMap->getVoxelMean(voxel) < 0.3)
+                    continue;
+#else
+//                if (z > 12 && (trueMap->getVoxelMean(voxel) < 0.5 && voxel.position.norm() < 1.5 || voxel.position.norm() < 0.6))
+//                // remove voxel
+//                    continue;
+//                else
+                    cell.action = 0;
+#endif
+
                 cell.id = (int) voxel.hash;
                 cell.type = visualization_msgs::Marker::CUBE;
                 cell.header.frame_id = "map";
                 cell.scale.x = Parameters::voxelSize;
                 cell.scale.y = Parameters::voxelSize;
                 cell.scale.z = Parameters::voxelSize;
-                cell.color.a = (int)std::round(voxel.node()->getOccupancy());
-                cell.color.r = 0;
-                cell.color.g = 0;
-                cell.color.b = 0;
+                cell.color.a = 1.0f;
+                cell.color.r = (float)(1. - trueMap->getVoxelMean(voxel) * .5);
+                cell.color.g = (float)(1. - trueMap->getVoxelMean(voxel) * .5); //(int)std::round(voxel.node()->getOccupancy());
+                cell.color.b = (float)(1. - trueMap->getVoxelMean(voxel) * .5);
                 cell.pose.position.x = _x;
                 cell.pose.position.y = _y;
                 cell.pose.position.z = _z;
@@ -89,7 +101,9 @@ void Visualizer::publishTrueMap(const Observable *visualizable)
         }
     }
 
+//    ROS_INFO("Publishing %d cells", (int)cells.markers.size());
     trueMapPublisher.publish(cells);
+    ros::spinOnce();
 }
 
 void Visualizer::publishTrueMap2dSlice(const Observable *visualizable, unsigned int z)
@@ -106,7 +120,7 @@ void Visualizer::publishTrueMap2dSlice(const Observable *visualizable, unsigned 
     grid.cell_height = (float) Parameters::voxelSize;
     grid.cell_width = (float) Parameters::voxelSize;
 
-    auto _z = Parameters::zMin + (z + Parameters::voxelsPerDimensionZ/2) * Parameters::voxelSize;
+    auto _z = /*Parameters::zMin +*/ (z + Parameters::voxelsPerDimensionZ/2) * Parameters::voxelSize;
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
     {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
@@ -114,7 +128,7 @@ void Visualizer::publishTrueMap2dSlice(const Observable *visualizable, unsigned 
             auto _x = Parameters::xMin + x * Parameters::voxelSize;
             auto _y = Parameters::yMin + y * Parameters::voxelSize;
             QTrueVoxel voxel = trueMap->query(_x, _y, _z);
-            if (voxel.node()->getOccupancy() < 0.5)
+            if (!voxel.node() || trueMap->getVoxelMean(voxel) < 0.5)
                 continue;
 
             geometry_msgs::Point p;
@@ -196,22 +210,22 @@ void Visualizer::publishBeliefMap(const Observable *visualizable)
     {
         visualization_msgs::Marker cell;
         // TODO do not remove voxels by z position
-#ifndef FAKE_2D
-        if (voxel.node()->getValue()->mean() < 0.52
-#ifndef FAKE_3D
-            || voxel.position.z() < 0.4 || voxel.position.z() > 1.5
-#endif
-            )
-        {
-            // remove voxel
-            cell.action = 2;
-            cell.id = (int) voxel.hash;
-        }
-        else
-#endif
+//#ifndef FAKE_2D
+//        if (voxel.node()->getValue()->mean() < 0.52
+//#ifndef FAKE_3D
+////            || voxel.position.z() < 0.4 || voxel.position.z() > 1.5
+//#endif
+//            )
+//        {
+//            // remove voxel
+//            cell.action = 2;
+//            cell.id = (int) voxel.hash;
+//        }
+//        else
+//#endif
         {
             cell.action = 0;
-            cell.id = (int) voxel.hash;
+            cell.id = (int) voxel.hash + 13761;
             cell.type = visualization_msgs::Marker::CUBE;
             cell.header.frame_id = "map";
             cell.scale.x = Parameters::voxelSize;
@@ -276,7 +290,7 @@ void Visualizer::publishBeliefMap(const Observable *visualizable)
 //
 //    rayVoxelPublisher.publish(rayVoxels);
 
-    //ros::spinOnce();
+    ros::spinOnce();
 }
 
 void Visualizer::publishBeliefMapFull(const Observable *visualizable)
@@ -287,6 +301,7 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
     auto beliefMap = (BeliefMap*) visualizable;
     ros::Rate loop_rate(PaintRate);
     loop_rate.sleep();
+    octomap::OcTreeKey::KeyHash hasher;
 
     visualization_msgs::MarkerArray cells;
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
@@ -298,17 +313,25 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
                 auto _x = Parameters::xMin + x * Parameters::voxelSize;
                 auto _y = Parameters::yMin + y * Parameters::voxelSize;
                 auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                Parameters::Vec3Type pos(_x, _y, _z);
                 QBeliefVoxel voxel = beliefMap->query(_x, _y, _z);
 
                 visualization_msgs::Marker cell;
-                cell.action = 0;
-                cell.id = (int) voxel.hash;
+                cell.id = 1379 + (int) hasher(octomap::OcTreeKey(x, y, z));
+#ifndef FAKE_2D
+                if (beliefMap->getVoxelMean(voxel) < 0.49 && pos.norm() < 1.5 || pos.norm() < 0.6)
+                    // remove voxel
+                    cell.action = 2;
+                else
+#endif
+                    cell.action = 0;
                 cell.type = visualization_msgs::Marker::CUBE;
                 cell.header.frame_id = "map";
                 cell.scale.x = Parameters::voxelSize;
                 cell.scale.y = Parameters::voxelSize;
                 cell.scale.z = Parameters::voxelSize;
-                cell.color.a = 0.9;
+                cell.color.a = 1.0;
+                cell.lifetime = ros::Duration(1000, 1000);
                 float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
                 cell.color.r = intensity;
                 cell.color.g = intensity;
@@ -321,7 +344,87 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
         }
     }
 
-    beliefMapPublisher.publish(cells);
+//    ROS_INFO("Publishing %i Belief cells.", (int)cells.markers.size());
+
+    // Clear ICM's ray voxels
+//    visualization_msgs::MarkerArray rayVoxels;
+//    visualization_msgs::Marker clearVoxel;
+//    clearVoxel.action = 3; // clear all
+//    clearVoxel.header.frame_id = "map";
+//    rayVoxels.markers.push_back(clearVoxel);
+//    rayVoxelPublisher.publish(rayVoxels);
+
+    ros::spinOnce();
+//    for (int i = 0 ; i < 20; ++i)
+//    {
+//        beliefMapPublisher.publish(cells);
+//        ros::spinOnce();
+//        ros::Rate loop_rate(PaintRate);
+//        loop_rate.sleep();
+//    }
+}
+
+void Visualizer::publishLogOddsMapFull(const Observable *visualizable)
+{
+    if (!visualizable)
+        return;
+
+    auto logOddsMap = (LogOddsMap*) visualizable;
+    ros::Rate loop_rate(PaintRate);
+    loop_rate.sleep();
+
+    visualization_msgs::MarkerArray cells;
+    octomap::OcTreeKey::KeyHash hasher;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 15; z < 16 /*Parameters::voxelsPerDimensionZ*/; ++z)
+            {
+                auto _x = Parameters::xMin + x * Parameters::voxelSize;
+                auto _y = Parameters::yMin + y * Parameters::voxelSize;
+                auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                Parameters::Vec3Type pos(_x, _y, _z);
+                QTrueVoxel voxel = logOddsMap->query(_x, _y, _z);
+
+                visualization_msgs::Marker cell;
+                cell.id = 1379 + (int) hasher(octomap::OcTreeKey(x, y, z));
+//                if (pos.norm() < 0.7)
+//                    // remove voxel
+//                    continue;
+//                else {
+                    cell.action = 0;
+
+                    if (voxel.node()) {
+                        float intensity = (float) (1.0 - logOddsMap->getVoxelMean(voxel));
+                        cell.color.r = intensity;
+                        cell.color.g = intensity;
+                        cell.color.b = intensity;
+                    } else {
+                        if (pos.norm() > 1.4) {
+                            float intensity = (float) (1.0 - Parameters::priorMean);
+                            cell.color.r = intensity;
+                            cell.color.g = intensity;
+                            cell.color.b = intensity;
+                        } else
+                            continue;
+                    }
+//                }
+                cell.type = visualization_msgs::Marker::CUBE;
+                cell.header.frame_id = "map";
+                cell.scale.x = Parameters::voxelSize;
+                cell.scale.y = Parameters::voxelSize;
+                cell.scale.z = Parameters::voxelSize;
+                cell.color.a = 1.0;
+                cell.pose.position.x = pos.x();
+                cell.pose.position.y = pos.y();
+                cell.pose.position.z = pos.z();
+                cells.markers.push_back(cell);
+            }
+        }
+    }
+
+    logOddsMapPublisher.publish(cells);
 
     // Clear ICM's ray voxels
     visualization_msgs::MarkerArray rayVoxels;
@@ -448,7 +551,7 @@ void Visualizer::publishRay(TrueMap &trueMap, Sensor &sensor)
             rayVoxel.scale.x = Parameters::voxelSize;
             rayVoxel.scale.y = Parameters::voxelSize;
             rayVoxel.scale.z = Parameters::voxelSize;
-            rayVoxel.color.a = 0.9;
+            rayVoxel.color.a = 1.0;
             rayVoxel.color.r = 0.4;
             rayVoxel.color.g = 0.9;
             rayVoxel.color.b = 0.0;
@@ -519,13 +622,13 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
         wayPoints.color.g = (float)colors[color][1];
         wayPoints.color.b = (float)colors[color][2];
 
-        auto trajectory = Trajectory(robot->trajectory());
+        auto trajectory = robot->trajectory();
 #ifdef SIMULATION_TIME
         for (double x = 0; x <= Parameters::SimulationFinalTime; x += Parameters::SimulationTimeStep)
         {
             auto result = trajectory.evaluateAtTime(x);
 #else
-        for (double x = 0; x <= 1.01; x += 0.05)
+        for (double x = 0; x <= 1.01; x += 0.02)
         {
             auto result = trajectory.evaluate(x);
 #endif
@@ -554,15 +657,15 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
         trajectoryVoxels.color.g = (float)colors[color][1];
         trajectoryVoxels.color.b = (float)colors[color][2];
         //robot->selectSpline(splineId); // TODO messes up simulation
-        for (auto &coords : robot->trajectory().splineVoxelPositions(*trueMap))
-        {
-            geometry_msgs::Point p;
-            p.x = coords.x();
-            p.y = coords.y();
-            p.z = 0.51;
-            trajectoryVoxels.points.push_back(p);
-        }
-        allTrajectoryVoxels.markers.push_back(trajectoryVoxels);
+//        for (auto &coords : robot->trajectory().splineVoxelPositions(*trueMap))
+//        {
+//            geometry_msgs::Point p;
+//            p.x = coords.x();
+//            p.y = coords.y();
+//            p.z = 0.51;
+//            trajectoryVoxels.points.push_back(p);
+//        }
+//        allTrajectoryVoxels.markers.push_back(trajectoryVoxels);
 
         // visualize all trajectory voxels
         visualization_msgs::Marker trajectoryFutureVoxels;
@@ -637,7 +740,7 @@ void Visualizer::publishTrajectoryPlanner(const Observable *visualizable)
     wayPoints.color.g = 0.8f;
     wayPoints.color.b = 0.0f;
 
-    for (double x = 0; x <= 1.01; x += 0.05)
+    for (double x = 0; x <= 1.01; x += 0.02)
     {
         auto result = trajectoryPlanner->currentEvaluationCandidate().evaluate(x);
         geometry_msgs::Point p;

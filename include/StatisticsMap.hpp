@@ -5,11 +5,11 @@
 
 struct VoxelStatistics
 {
-    double absError;
+    double error;
     double stdDev;
     const QVoxel *voxel;
-    VoxelStatistics(double absError, double stdDev, const QVoxel *voxel)
-            : absError(absError), stdDev(stdDev), voxel(voxel)
+    VoxelStatistics(double error, double stdDev, const QVoxel *voxel)
+            : error(error), stdDev(stdDev), voxel(voxel)
     {}
 
     static std::vector<double> selectError(const std::vector<VoxelStatistics> &stats)
@@ -17,7 +17,7 @@ struct VoxelStatistics
         std::vector<double> vs(stats.size());
         unsigned int i = 0;
         for (auto &stat : stats)
-            vs[i++] = stat.absError;
+            vs[i++] = stat.error;
         return vs;
     }
 
@@ -58,7 +58,7 @@ public:
                 continue;
             }
             QTrueVoxel trueVoxel = trueMap.query(voxel.key);
-            double error = std::abs(trueMap.getVoxelMean(trueVoxel) - this->getVoxelMean(voxel));
+            double error = (trueMap.getVoxelMean(trueVoxel) - this->getVoxelMean(voxel));
             stats.push_back(VoxelStatistics(error, this->getVoxelStd(voxel), &voxel));
         }
         return stats;
@@ -77,7 +77,7 @@ public:
                 continue;
             }
             QTrueVoxel trueVoxel = trueMap.query(voxel.key);
-            double error = std::abs(trueMap.getVoxelMean(trueVoxel) - this->getVoxelMean(voxel));
+            double error = (trueMap.getVoxelMean(trueVoxel) - this->getVoxelMean(voxel));
             stats.push_back(VoxelStatistics(error, this->getVoxelStd(voxel), &voxel));
         }
         return stats;
@@ -97,7 +97,7 @@ public:
                 continue;
             }
             QTrueVoxel trueVoxel = trueMap.query(voxel.key);
-            double error = std::abs(trueMap.getVoxelMean(trueVoxel) - this->getVoxelMean(voxel));
+            double error = (trueMap.getVoxelMean(trueVoxel) - this->getVoxelMean(voxel));
             stats.push_back(VoxelStatistics(error, this->getVoxelStd(voxel), &voxel));
         }
         return stats;
@@ -116,7 +116,7 @@ public:
                 continue;
             }
             QTrueVoxel trueVoxel = trueMap.query(voxel.key);
-            double error = std::abs(trueMap.getVoxelMean(trueVoxel) - this->getVoxelMean(voxel));
+            double error = (trueMap.getVoxelMean(trueVoxel) - this->getVoxelMean(voxel));
             stats.push_back(VoxelStatistics(error, this->getVoxelStd(voxel), &voxel));
         }
         return stats;

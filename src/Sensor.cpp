@@ -53,9 +53,9 @@ Parameters::NumType Sensor::likelihoodGivenCause(Measurement measurement, QVoxel
         return tg.pdfValue(measurement.value);
 #else
       //  return std::abs(measurement.value - causeVoxel.position.distance(_position)) < Parameters::voxelSize;
-        auto tg = TruncatedGaussianDistribution(measurement.value, Parameters::sensorNoiseStd,//TODO sensorNoiseStd range-dependent
+        auto tg = TruncatedGaussianDistribution(causeVoxel.position.distance(_position), Parameters::sensorNoiseStd,//TODO sensorNoiseStd range-dependent
                                                 0, _range); // TODO truncated?
-        return tg.pdfValue(causeVoxel.position.distance(_position));
+        return tg.pdfValue(measurement.value);
 #endif
     }
     else if (causeVoxel.type == GEOMETRY_HOLE)
@@ -74,6 +74,7 @@ Parameters::NumType Sensor::likelihoodGivenCause(Measurement measurement, QVoxel
 InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) const
 {
     auto *icm = new InverseCauseModel;
+//    ROS_INFO("computeInverseCauseModel: position %f %f %f", _position.x(), _position.y(), _position.z());
     if (!beliefMap.computeRayKeys(_position, _orientation * _range + _position, ray)) //TODO remove *2.0
     {
         ROS_WARN("Compute ray keys failed.");
@@ -126,10 +127,17 @@ InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, Bel
 
     icm->posteriorInfinity = likelihoodGivenInfinity * causeProbabilityFromInfinityPrior;
 
-    auto eta = icm->posteriorOnRay.sum() + icm->posteriorInfinity;
-    if (eta < 1e-20)
+    if (std::abs(prior.sum() + causeProbabilityFromInfinityPrior - 1) >= 1e-10)
     {
-        //ROS_WARN("Inverse Cause Model: eta = %g", eta);
+        ROS_WARN("New assertion fired.");
+        delete icm;
+        return NULL;
+    }
+
+    auto eta = icm->posteriorOnRay.sum() + icm->posteriorInfinity;
+    if (eta == 0.)
+    {
+//        ROS_WARN("Inverse Cause Model: eta = %g", eta);
         // TODO correct behavior?
         delete icm;
         return NULL;
@@ -140,9 +148,9 @@ InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, Bel
         icm->posteriorInfinity /= eta;
     }
 
-    if (!(std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.) < 1e-10))
+    if (std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.) >= 1e-10)
     {
-        //ROS_WARN("ICM assertion failed. Test: %g < 1e-20", std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.));
+//        ROS_WARN("ICM assertion failed. Test: %g < 1e-20", std::abs(icm->posteriorOnRay.sum() + icm->posteriorInfinity - 1.));
         delete icm;
         return NULL;
     }

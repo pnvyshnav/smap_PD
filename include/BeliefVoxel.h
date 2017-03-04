@@ -19,6 +19,11 @@ public:
     Parameters::NumType mean();
     Parameters::NumType variance();
 
+    void storeMeanVariance(double mean, double variance);
+
+    // prevent future updates of the mean
+    void lockMean();
+
     bool isBeliefValid() const;
 
     void updateBelief(Parameters::NumType a, Parameters::NumType b);
@@ -36,6 +41,8 @@ private:
     Particles pdf;
     bool _recomputeMean, _recomputeVariance;
     Parameters::NumType _mean, _variance;
+    bool _useStored;
+    bool _meanLocked;
 };
 
 // The problem: OcTreeDataNode does not provide a virtual destructor.

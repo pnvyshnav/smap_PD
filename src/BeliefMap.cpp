@@ -135,7 +135,7 @@ std::valarray<Parameters::NumType> BeliefMap::bouncingProbabilitiesOnRay(const o
     {
         auto *b = belief(key);
         if (b == NULL)
-            bouncingProbabilities[i] = 0.5; // TODO correct error handling?
+            bouncingProbabilities[i] = Parameters::priorMean;
         else
             bouncingProbabilities[i] = b->mean();
         ++i;
@@ -211,12 +211,12 @@ bool BeliefMap::update(const Observation &observation, const TrueMap &trueMap)
             beliefVoxel->getValue().get()->updateBelief(a, b);
 
             // TODO reactivate
-//            if (!beliefVoxel->getValue().get()->isBeliefValid())
-//            {
-//                // already asserted in Belief::updateBelief
-//                ROS_ERROR("Belief voxel has invalid PDF after updating with measurement.");
-//                return false;
-//            }
+            if (!beliefVoxel->getValue().get()->isBeliefValid())
+            {
+                // already asserted in Belief::updateBelief
+                ROS_ERROR("Belief voxel has invalid PDF after updating with measurement.");
+                return false;
+            }
 
 #ifdef LOG_DETAILS
             auto meanAfter = beliefVoxel->getValue().get()->mean();

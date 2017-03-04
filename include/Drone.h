@@ -10,7 +10,7 @@
 
 
 // Disable flag to transform and downsample incoming point clouds.
-#define PREPROCESSED_INPUT
+//#define PREPROCESSED_INPUT
 
 class Drone : public Robot
 {
@@ -22,6 +22,12 @@ public:
 
     void run();
     void stop();
+
+    /**
+     * Drone plays back bag file with given file name.
+     * @param filename ROS bag file name.
+     */
+    void runOffline(std::string filename);
 
 private:
     void handleMeasurements(PointCloudMessage &pointsMsg,

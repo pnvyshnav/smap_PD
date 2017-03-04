@@ -19,6 +19,7 @@ public:
     void publishTrueMap(const Observable *visualizable);
     void publishTrueMap2dSlice(const Observable *visualizable, unsigned int z = 0);
     void publishLogOddsMap(const Observable *visualizable);
+    void publishLogOddsMapFull(const Observable *visualizable);
     void publishBeliefMap(const Observable *visualizable);
     void publishBeliefMapFull(const Observable *visualizable);
     void publishSensor(const Observable *visualizable);
@@ -27,7 +28,7 @@ public:
     void publishFakeRobot(const Observable *visualizable, const TrueMap *trueMap);
     void publishTrajectoryPlanner(const Observable *visualizable);
 
-    static const int PaintRate = 200;
+    static const int PaintRate = 2000;
 
 private:
     int _counter;

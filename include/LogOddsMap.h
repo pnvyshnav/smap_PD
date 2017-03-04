@@ -8,6 +8,36 @@
 #include "Observation.hpp"
 #include "TrueMap.h"
 
+struct ISMParameters
+{
+    double increment = Parameters::invSensor_increment;
+    double rampSize = Parameters::invSensor_rampSize;
+    double topSize = Parameters::invSensor_topSize;
+    double free = -increment;
+    double occupied = increment;
+    double rampSlope = Parameters::invSensor_rampSlope;
+
+    void setIncrement(double inc)
+    {
+        increment = inc;
+        free = -increment;
+        occupied = increment;
+        rampSlope = (occupied - free)/rampSize;
+    }
+
+    void setRampSize(double size)
+    {
+        rampSize = size;
+        rampSlope = (occupied - free)/rampSize;
+    }
+
+    void setTopSize(double size)
+    {
+        topSize = size;
+    }
+
+};
+
 class LogOddsMap
         : public octomap::OcTree,
           public StatisticsMap<octomap::OcTreeNode, octomap::AbstractOccupancyOcTree>,
@@ -15,6 +45,8 @@ class LogOddsMap
 {
 public:
     LogOddsMap();
+
+    static ISMParameters parameters;
 
     // TODO remove trueMap argument
     bool update(const Observation &observation, const TrueMap &trueMap);

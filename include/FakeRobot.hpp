@@ -14,7 +14,8 @@
 #include "TrueMap.h"
 #include "Robot.hpp"
 #include "LogOddsMap.h"
-#include "Trajectory.h"
+#include "../trajopt/BSplineTrajectory.h"
+#include "../trajopt/MinSnapTrajectory.h"
 
 enum ObservationMode
 {
@@ -30,10 +31,10 @@ enum ObservationMode
 template <class SENSOR = StereoCameraSensor>
 class FakeRobot : public Robot, public Observable
 {
-    friend class TrajectoryPlanner;
 public:
     // start, end, currentVelocity
-    typedef std::function<Trajectory(Point, Point, double)> PlanningSubscriber;
+    // TODO allow other types of trajectories
+    typedef std::function<MinSnapTrajectory(Point, Point, Point)> PlanningSubscriber;
 
     FakeRobot(Parameters::Vec3Type position,
           Parameters::Vec3Type orientation,
@@ -42,7 +43,7 @@ public:
               _sensor(position, orientation),
               _trueMap(trueMap), _beliefMap(beliefMap),
               _lastTime(0), _observationMode(OBSERVE_ONLY_REAL),
-              _step(0)
+              _step(0), _lastPosition(position), _travelledDistance(0)
     {
     }
 
@@ -80,8 +81,11 @@ public:
             case OBSERVE_ONLY_IMAGINARY:
                 return _sensor.observeImaginary(_beliefMap);
             case OBSERVE_BOTH:
-                if (_step < 5)
+                if (_step < 1)
+                {
+//                    ROS_INFO("TAKE TRUE MEASUREMENT !!!!!!!!!!!!!!!!");
                     return _sensor.observe(_trueMap);
+                }
                 return _sensor.observeImaginary(_beliefMap);
             default:
                 return _sensor.observe(_trueMap);
@@ -97,7 +101,9 @@ public:
     {
 //        ROS_INFO("FakeRobot is running...");
         _stopRequested = false;
-//        _step = 0;
+//#ifndef REPLANNING
+        _step = 0;
+//#endif
         ecl::StopWatch stopWatch;
 
         std::vector<Parameters::Vec3Type> positions = std::vector<Parameters::Vec3Type> {
@@ -111,32 +117,43 @@ public:
 #ifdef SIMULATE_TIME
         stepLimit = (unsigned int)(Parameters::SimulationFinalTime / Parameters::SimulationTimeStep);
 #else
-        stepLimit = Parameters::FakeRobotNumSteps;
+        _totalSteps = Parameters::FakeRobotNumSteps;
+//        if (_observationMode == OBSERVE_ONLY_REAL)
+            _totalSteps *= 2;
 #endif
 
-        for (auto rad = 0.;
-             !_stopRequested && _step <= stepLimit;
+        for (double rad = 0.;
+             !_stopRequested && _step < _totalSteps;
              rad += Parameters::FakeRobotAngularVelocity, ++_step)
         {
 #ifdef FAKE_2D
     #ifdef PLANNER_2D_TEST
-            //ROS_INFO("Trajectory empty? %d", (int) _trajectory.empty());
-            if (!_trajectory.empty())
-            {
+            //ROS_INFO("BSplineTrajectory empty? %d", (int) _trajectory.empty());
+//            if (!_trajectory->empty())
+//            {
                 TrajectoryEvaluationResult current;
     #ifdef SIMULATE_TIME
                 double time = _step * Parameters::SimulationTimeStep;
                 //ROS_INFO("Computing trajectory at time = %f", time);
-                current = _trajectory.evaluateAtTime(time);
+                current = _trajectory->evaluateAtTime(time);
     #else
-                double u = _step * 1. / stepLimit;
+                double u = _step * 1. / _totalSteps;
                 //ROS_INFO("Computing trajectory at u = %f", u);
                 current = _trajectory.evaluate(u, true);
     #endif
 
                 _yaw = current.yaw;
+                _lastVelocity = current.velocity;
 
                 setPosition(Parameters::Vec3Type(current.point.x, current.point.y, 0.05));
+
+            if (_observationMode == OBSERVE_ONLY_REAL)
+            {
+                if (_step == 0)
+                    _lastPosition = _position;
+                _travelledDistance += _position.distance(_lastPosition);
+//                std::cout << "Distance from " << _position << " to " << _lastPosition << std::endl << _position.distance(_lastPosition) << std::endl;
+            }
 
     //            int pos = (int)(rad / (2. * M_PI));
     //            double progress = rad / (2. * M_PI) - pos;
@@ -157,6 +174,7 @@ public:
 
 
                 Robot::publishObservation(observe());
+//            _beliefMap.publish();
 
                 //ROS_INFO("Current Robot Time: %f", time);
 
@@ -168,20 +186,22 @@ public:
 
                 _splineFutureVoxels.clear();
 
+            std::vector<Point> futurePositions;
+
                 for (unsigned int futureStep = _step + 1;
-                     futureStep < std::min(stepLimit, _step + 6);
+                     futureStep < std::min(_totalSteps, _step + 17); // TODO change back to + 11
                      ++futureStep)
                 {
                     TrajectoryEvaluationResult fresult;
     #ifdef SIMULATE_TIME
                     double ftime = futureStep * Parameters::SimulationTimeStep;
                     //ROS_INFO("Computing trajectory at time = %f", time);
-                    fresult = _trajectory.evaluateAtTime(ftime);
+                    fresult = _trajectory->evaluateAtTime(ftime);
     #else
-                    double p = futureStep * 1. / stepLimit;
+                    double p = futureStep * 1. / _totalSteps;
                     fresult = _trajectory.evaluate(p, true);
     #endif
-
+                    futurePositions.push_back(fresult.point);
                     octomap::OcTreeKey key = _trueMap.coordToKey(fresult.point.x, fresult.point.y, 0.05);
                     _splineFutureVoxels.insert(key);
 
@@ -201,57 +221,95 @@ public:
 //                    if (elapsedFuture > 0.1 * Parameters::SimulationTimeStep) //Parameters::EvaluateFutureTimespan)
 //                        break;
                 }
-
+#ifdef SIMULATE_TIME
                 _lastTime = time;
                 _lastVelocity = current.velocity;
+#endif
 
         #if defined(REPLANNING)
-                if (_observationMode == OBSERVE_ONLY_REAL || _observationMode == OBSERVE_BOTH)
-                {
-                    double reachability = 1.;
-//                    ROS_INFO("Checking future reachability...");
+                    _futureReachability = 1;
+                    Point lastPosition = current.point;
+                    _futureArcLength = 0;
+//                    ROS_INFO("Checking future _futureReachability...");
                     // TODO check if replanning is necessary
-                    for (auto &voxel : _splineFutureVoxels)
+                    for (auto &p : futurePositions)
                     {
-                        auto beliefVoxel = _beliefMap.query(voxel);
-                        if (!beliefVoxel.node())
-                        {
-                            ROS_WARN("Could not evaluate future belief voxel");
-                            continue;
-                        }
-                        reachability *= 1. - _beliefMap.getVoxelMean(beliefVoxel);
+                        _futureReachability *= std::pow(_beliefMap.filteredReachability(p.x, p.y, 0.05),
+                                                        p.dist(lastPosition));
+                        lastPosition = p;
+                        _futureArcLength += p.dist(lastPosition);
                     }
-//                    ROS_INFO("Future Reachability: %f  (%i voxels)", reachability, (int)_splineFutureVoxels.size());
-                    auto replanningNecessary = reachability < 0.2;
-                    if (_replanningHandler != nullptr && replanningNecessary)
+//                    if (futurePositions.size() > 1)
+//                        reachability = std::pow(reachability, 1. / _futureArcLength);
+//                    for (auto &voxel : _splineFutureVoxels)
+//                    {
+//                        auto beliefVoxel = _beliefMap.query(voxel);
+//                        if (!beliefVoxel.node())
+//                        {
+//                            ROS_WARN("Could not evaluate future belief voxel");
+//                            continue;
+//                        }
+//                        reachability *= 1. - _beliefMap.getVoxelMean(beliefVoxel);
+//                    }
+                if (_observationMode == OBSERVE_ONLY_REAL)
+                {
+                    ROS_INFO("Future Reachability: %f  (%i voxels, %i positions)",
+                             _futureReachability, (int)_splineFutureVoxels.size(), (int)futurePositions.size());
+                    ROS_INFO("Travelled Distance: %f", _travelledDistance);
+                    auto replanningNecessary = _futureReachability < 0.9;
+                    if (_replanningHandler && (replanningNecessary)) // || _travelledDistance > 10 * Parameters::voxelSize))
                     {
-                        ROS_INFO("REPLANNING IS NECESSARY (reachability: %f)", reachability);
-                        // TODO fix that trajectory/robot "forgets" the end point
+                        if (!replanningNecessary && _trajectory.end().dist(current.point) < 1.)
+                        {
+                            ROS_INFO("Almost there (%f), no replanning necessary",
+                                     _trajectory.end().dist(current.point));
+                        }
+                        else if (_travelledDistance < 1e-3)
+                        {
+                            ROS_INFO("Did not travel enough distance to replan (%f).", _travelledDistance);
+                        }
+                        else
+                        {
+                            ROS_INFO("REPLANNING IS NECESSARY (reachability: %f)", _futureReachability);
+                            // TODO fix that trajectory/robot "forgets" the end point
 //                        setTrajectory(_replanningHandler(current.point, _trajectory.end(), current.velocity));
-                        setTrajectory(_replanningHandler(current.point, Point(-0.95, 0.05), current.velocity));
-                        _step = 0; // step has to be reset manually
-                        run();
-                        return;
+                            auto velocity = ((MinSnapTrajectory)_trajectory).velocity(u);
+                            ROS_INFO("Velocity at replanning: %f %f", velocity.x, velocity.y);
+                            auto trajectory = _replanningHandler(Point(_position.x(), _position.y()),
+                                                                 _trajectory.end(), velocity);
+                            setTrajectory(trajectory);
+                            _step = 0; // step has to be reset manually
+                            run();
+                            _lastPosition = _position;
+                            _travelledDistance = 0;
+                            return;
+                        }
                     }
                 }
         #endif
-            }
+//            }
     #else
             setOrientation(Parameters::Vec3Type(std::cos(rad), std::sin(rad), 0));
+            Robot::publishObservation(observe());
     #endif
 #else
             const static Parameters::NumType radius = 0.7;
-            setOrientation(Parameters::Vec3Type(-std::sin(-rad), -std::cos(rad), 0));
+            setOrientation(Parameters::Vec3Type(std::sin(-rad), std::cos(rad), 0));
             // let the orientation "lag behind" the position to see more from the side
-            setPosition(Parameters::Vec3Type(
-                    radius * std::cos(rad + 1.5*Parameters::FakeRobotAngularVelocity),
-                    radius * std::sin(rad + 1.5*Parameters::FakeRobotAngularVelocity), 0));
+//            setPosition(Parameters::Vec3Type(
+//                    radius * std::cos(rad + 1.5*Parameters::FakeRobotAngularVelocity),
+//                    radius * std::sin(rad + 1.5*Parameters::FakeRobotAngularVelocity), 0));
+
+            Robot::publishObservation(observe());
 #endif
 
+//#if defined(FAKE_3D) || defined(FAKE_2D)
 //            if (_step % 20 == 0)
 //                ROS_INFO("Robot step %i / %i", (int)_step+1, (int)Parameters::FakeRobotNumSteps);
+//#endif
         }
 
+//#if defined(FAKE_3D) || defined(FAKE_2D)
 //        if (_stopRequested)
 //            ROS_INFO("Robot stopped after %g full rounds in %d steps.",
 //                     (Parameters::FakeRobotNumSteps * Parameters::FakeRobotAngularVelocity)/(2. * M_PI),
@@ -262,6 +320,7 @@ public:
 //                     (int)_step);
 //
 //        ROS_INFO_STREAM("Elapsed time: " << stopWatch.elapsed() << " seconds");
+//#endif
     }
 
     void stop()
@@ -275,6 +334,11 @@ public:
         return _step;
     }
 
+    unsigned int totalSteps() const
+    {
+        return _totalSteps;
+    }
+
     double time() const
     {
         return _lastTime;
@@ -285,14 +349,15 @@ public:
         return _lastVelocity;
     }
 
-    Trajectory &trajectory()
+    MinSnapTrajectory trajectory()
     {
         return _trajectory;
     }
 
-    void setTrajectory(const Trajectory &trajectory)
+    void setTrajectory(MinSnapTrajectory trajectory)
     {
         _trajectory = trajectory;
+        _travelledDistance = 0;
     }
 
     void setReplanningHandler(PlanningSubscriber handler)
@@ -319,6 +384,16 @@ public:
         return _splineFutureVoxels;
     }
 
+    double futureReachability() const
+    {
+        return _futureReachability;
+    }
+
+    double futureArcLength() const
+    {
+        return _futureArcLength;
+    }
+
 private:
     Parameters::Vec3Type _position;
     Parameters::Vec3Type _orientation;
@@ -326,12 +401,19 @@ private:
     TrueMap _trueMap;
     BeliefMap &_beliefMap;
 
+    Parameters::Vec3Type _lastPosition;
+    double _travelledDistance;
+
     SENSOR _sensor;
     bool _stopRequested;
     unsigned int _step;
+    unsigned int _totalSteps;
     Parameters::KeySet _splineFutureVoxels;
 
-    Trajectory _trajectory;
+    double _futureReachability;
+    double _futureArcLength;
+
+    MinSnapTrajectory _trajectory;
     double _lastTime;
     double _lastVelocity;
 
