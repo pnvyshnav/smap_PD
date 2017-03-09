@@ -38,10 +38,13 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(PkgConfig)
 pkg_search_module(Eigen3 REQUIRED eigen3)
 
-find_package(PCL REQUIRED)
+find_package(PCL 1.8 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
-link_directories(${PCL_LIBRARY_DIRS})
+link_directories(${PCL_LIBRARY_DIRS} "/usr/local/lib/")
 add_definitions(${PCL_DEFINITIONS})
+
+set(GCC_COVERAGE_LINK_FLAGS "-lnlopt -lm")
+add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -172,7 +175,7 @@ add_executable(smap src/main.cpp
         include/TruncatedGaussianDistribution.hpp
         include/TrueMap.h
         src/TrueMap.cpp
-        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp src/Visualizer.cpp include/Visualizer.h include/Observable.hpp src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp include/LogOddsMap.h include/Statistics.h tinyspline/tinyspline.c tinyspline/tinysplinecpp.cpp src/TrajectoryPlanner.cpp include/TrajectoryPlanner.h src/Trajectory.cpp include/Trajectory.h src/Trajectory.cpp include/StatisticsMap.hpp)
+        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp src/Visualizer.cpp include/Visualizer.h include/Observable.hpp src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp include/LogOddsMap.h include/Statistics.hpp tinyspline/tinyspline.c tinyspline/tinysplinecpp.cpp src/TrajectoryPlanner.cpp include/TrajectoryPlanner.h trajopt/BSplineTrajectory.cpp trajopt/BSplineTrajectory.h trajopt/BSplineTrajectory.cpp include/StatisticsMap.hpp src/PointCloud.cpp include/PointCloud.h trajopt/Trajectory.hpp trajopt/MinSnapTrajectory.cpp trajopt/MinSnapTrajectory.h)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -183,6 +186,7 @@ target_link_libraries(smap
         ${catkin_LIBRARIES}
         ${PCL_LIBRARIES}
         ${OCTOMAP_LIBRARIES}
+        "/usr/local/lib/libnlopt.so"
 )
 
 #############

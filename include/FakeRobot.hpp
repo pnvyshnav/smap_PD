@@ -6,7 +6,7 @@
 
 #include <ecl/time/stopwatch.hpp>
 
-#include "tinysplinecpp.h"
+#include "../tinyspline/tinysplinecpp.h"
 
 #include "Parameters.hpp"
 #include "StereoCameraSensor.h"
@@ -14,6 +14,7 @@
 #include "TrueMap.h"
 #include "Robot.hpp"
 #include "LogOddsMap.h"
+
 #include "../trajopt/BSplineTrajectory.h"
 #include "../trajopt/MinSnapTrajectory.h"
 

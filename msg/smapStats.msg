@@ -9,6 +9,18 @@ uint32 maxStep
 # number of voxels
 uint64 voxels
 
+# computation time of single step
+float64[] timeBelief
+float64[] timeLogOdds
+
+# number of measurents per step
+int32[] measurements
+
+# ray length statistics over the measurements per step
+float64[] minRayLength
+float64[] maxRayLength
+float64[] avgRayLength
+
 # error for each voxel at current step
 float64[] errorBelief
 float64[] errorLogOdds
@@ -16,6 +28,22 @@ float64[] errorLogOdds
 # L1-error evolution, i.e. sum of errors for all steps
 float64[] errorEvolutionBelief
 float64[] errorEvolutionLogOdds
+
+# L1-error evolution of updated voxels at last step,
+# i.e. sum of errors for all steps
+float64[] errorEvolutionUpdatedBelief
+float64[] errorEvolutionUpdatedLogOdds
+
+# abs errors and  std at final step of all voxels that were updated
+# at SMAP and Log Odds over the whole runs
+float64[] errorFinalUpdatedBelief
+float64[] errorFinalUpdatedLogOdds
+float64[] stdFinalUpdatedBelief
+float64[] stdFinalUpdatedLogOdds
+
+# std evolution, i.e. sum of stds for all steps
+float64[] stdEvolutionBelief
+float64[] stdEvolutionLogOdds
 
 # error for each voxel over all steps (size is step*voxels)
 float64[] errorCompleteBelief
@@ -25,9 +53,9 @@ float64[] errorCompleteLogOdds
 uint64[] updatedVoxels
 
 # positions of updated voxels (size is sum of updatedVoxels)
-int32[] updatedVoxelsX
-int32[] updatedVoxelsY
-int32[] updatedVoxelsZ
+float64[] updatedVoxelsX
+float64[] updatedVoxelsY
+float64[] updatedVoxelsZ
 
 # error for each updated voxel over all steps (size is sum of updatedVoxels)
 float64[] errorCompleteUpdatedBelief
@@ -60,7 +88,7 @@ float64 ismTopSize
 float64 ismRampSlope
 
 #################################################################
-#         Scenario of Trajectory Evaluation (Planning)          #
+#      Scenario of BSplineTrajectory Evaluation (Planning)      #
 #################################################################
 
 uint32 trajectoryId
@@ -83,6 +111,10 @@ float64[] trajectoryY
 float64[] trajectoryT
 float64[] trajectoryTime
 
+# trajectory control points 2d positions
+float64[] trajectoryControlX
+float64[] trajectoryControlY
+
 # Future predictions
 # reachability of voxels within time span
 float64[] trajectoryFutureReachability
@@ -95,3 +127,13 @@ float64[] trajectoryFutureOccupanciesBelief
 # Evolution of std devs of future voxels (size is maxStep*sum(trajectoryFutureVoxels))
 float64[] trajectoryFutureStdDevsBelief
 #float64[] trajectoryFutureStdDevsLogOdds
+
+#################################################################
+#                   Scenario of Replanning                      #
+#################################################################
+float64[] planningReachabilities
+float64[] planningStds
+float64[] planningFutureReachabilities
+float64[] planningFutureStds
+float64[] planningVelocities
+int32 replanningIterations
