@@ -72,6 +72,43 @@ public:
         setOrientation(Parameters::Vec3Type(std::cos(yaw), std::sin(yaw), 0));
     }
 
+    std::vector<float> getOmniDirectionalReachability(unsigned int rays = 360, unsigned int samples = 10)
+    {
+        std::vector<float> omniReach;
+        auto direction = Eigen::Vector3f(_orientation.x(), _orientation.y(), _orientation.z());
+        const double hFactor = M_PI * 2. / (rays-1.);
+        const double sFactor = Parameters::sensorRange / samples;
+        for (unsigned int hp = 0; hp < rays; ++hp)
+        {
+            double angleH = -M_PI + hp * hFactor;
+            auto rotHorizontal = Eigen::AngleAxis<float>((float) -angleH, Eigen::Vector3f(0, 0, 1));
+            Eigen::Vector3f rotated = rotHorizontal * (direction);
+
+            double reach = 1.;
+            auto lastPosition = _position;
+            for (unsigned int s = 1; s <= samples; ++s)
+            {
+                Parameters::Vec3Type pos((float) (_position.x() + s * sFactor * rotated[0]),
+                                         (float) (_position.y() + s * sFactor * rotated[1]),
+                                         0);
+                auto voxel = _beliefMap.query(pos);
+                if (voxel.type == GEOMETRY_HOLE)
+                {
+                    reach *= std::pow(1e-3, sFactor);
+                    continue;
+                }
+                double r = 1. - _beliefMap.getVoxelMean(voxel);
+                reach *= std::pow(r, sFactor);
+                // TODO exponential fall-off
+            }
+            reach = std::pow(reach, 1. / Parameters::sensorRange);
+//            std::cout << (float)reach << " ";
+            omniReach.push_back(reach); //std::max(0., std::min(.999, reach)));
+        }
+//        std::cout << std::endl;
+        return omniReach;
+    }
+
     Observation observe()
     {
         switch (_observationMode)

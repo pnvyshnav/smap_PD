@@ -2,35 +2,11 @@
 
 #include <GL/freeglut.h>
 
-
-#define F_TEX_WIDTH  16   // Floor texture dimensions
-#define F_TEX_HEIGHT 16
-
-
 TrueMap *_trueMap;
 BeliefMap *_beliefMap;
 FakeRobot<> *_robot;
 
-const unsigned char floor_texture[ F_TEX_WIDTH * F_TEX_HEIGHT ] = {
-        0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
-        0xff, 0xf0, 0xcc, 0xf0, 0xf0, 0xf0, 0xff, 0xf0, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
-        0xf0, 0xcc, 0xee, 0xff, 0xf0, 0xf0, 0xf0, 0xf0, 0x30, 0x66, 0x30, 0x30, 0x30, 0x20, 0x30, 0x30,
-        0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xee, 0xf0, 0xf0, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
-        0xf0, 0xf0, 0xf0, 0xf0, 0xcc, 0xf0, 0xf0, 0xf0, 0x30, 0x30, 0x55, 0x30, 0x30, 0x44, 0x30, 0x30,
-        0xf0, 0xdd, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0x33, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
-        0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xff, 0xf0, 0xf0, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x60, 0x30,
-        0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0x33, 0x33, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
-        0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x33, 0x30, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0,
-        0x30, 0x30, 0x30, 0x30, 0x30, 0x20, 0x30, 0x30, 0xf0, 0xff, 0xf0, 0xf0, 0xdd, 0xf0, 0xf0, 0xff,
-        0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x55, 0x33, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xff, 0xf0, 0xf0,
-        0x30, 0x44, 0x66, 0x30, 0x30, 0x30, 0x30, 0x30, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0,
-        0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0xf0, 0xf0, 0xf0, 0xaa, 0xf0, 0xf0, 0xcc, 0xf0,
-        0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0xff, 0xf0, 0xf0, 0xf0, 0xff, 0xf0, 0xdd, 0xf0,
-        0x30, 0x30, 0x30, 0x77, 0x30, 0x30, 0x30, 0x30, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0,
-        0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0,
-};
-
-GLuint floor_tex_id;
+GLuint map_tex_id, obs_tex_id;
 
 void draw()
 {
@@ -41,6 +17,8 @@ void draw()
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+
+    // render map
     std::vector<float> occupancies;
     for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
     {
@@ -56,12 +34,9 @@ void draw()
             }
         }
     }
-
     float *map_tex = occupancies.data();
 
-
-    glGenTextures(1, &floor_tex_id);
-    glBindTexture(GL_TEXTURE_2D, floor_tex_id);
+    glBindTexture(GL_TEXTURE_2D, map_tex_id);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -75,10 +50,41 @@ void draw()
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, floor_tex_id);
+    glBindTexture(GL_TEXTURE_2D, map_tex_id);
 
     glBegin(GL_QUADS);
-    float x1 = -1, x2 = 1, y1 = -1, y2 = 1;
+    float x1 = -1, x2 = 1, y1 = -.9f, y2 = 1;
+    glTexCoord2f(0, 0);
+    glVertex3f(  x1, y1, 0.f);
+    glTexCoord2f(1, 0);
+    glVertex3f(  x2, y1, 0.f);
+    glTexCoord2f(1, 1);
+    glVertex3f(  x2, y2, 0.f);
+    glTexCoord2f(0, 1);
+    glVertex3f(  x1, y2, 0.f);
+    glEnd();
+
+
+    // render observation
+    unsigned int rays = 64;
+    float *obs_tex = _robot->getOmniDirectionalReachability(rays).data();
+
+    glBindTexture(GL_TEXTURE_2D, obs_tex_id);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,
+                 rays, 1, 0, GL_LUMINANCE, GL_FLOAT, obs_tex);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, obs_tex_id);
+
+    glBegin(GL_QUADS);
+    x1 = -1; x2 = 1; y1 = -1; y2 = -.92f;
     glTexCoord2f(0, 0);
     glVertex3f(  x1, y1, 0.f);
     glTexCoord2f(1, 0);
@@ -156,7 +162,7 @@ Visualizer::Visualizer(TrueMap *trueMap, BeliefMap *beliefMap, FakeRobot<> *robo
 
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
 
-    glutInitWindowSize(250, 250);
+    glutInitWindowSize(350, 380);
     glutInitWindowPosition(100, 100);
 
     glutCreateWindow("SMAP Gym Environment");
@@ -165,6 +171,9 @@ Visualizer::Visualizer(TrueMap *trueMap, BeliefMap *beliefMap, FakeRobot<> *robo
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glPointSize(6.0);
+
+    glGenTextures(1, &map_tex_id);
+    glGenTextures(1, &obs_tex_id);
 
     glutDisplayFunc(draw);
     glutKeyboardFunc(keyboard);
@@ -178,55 +187,3 @@ void Visualizer::update()
 {
     glutMainLoopEvent();
 }
-
-//void Visualizer::publishBeliefMapFull(const Observable *visualizable)
-//{
-//    if (!visualizable)
-//        return;
-//
-//    auto beliefMap = (BeliefMap*) visualizable;
-//    ros::Rate loop_rate(PaintRate);
-//    loop_rate.sleep();
-//    octomap::OcTreeKey::KeyHash hasher;
-//
-//    visualization_msgs::MarkerArray cells;
-//    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
-//    {
-//        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
-//        {
-//            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
-//            {
-//                auto _x = Parameters::xMin + x * Parameters::voxelSize;
-//                auto _y = Parameters::yMin + y * Parameters::voxelSize;
-//                auto _z = Parameters::zMin + z * Parameters::voxelSize;
-//                Parameters::Vec3Type pos(_x, _y, _z);
-//                QBeliefVoxel voxel = beliefMap->query(_x, _y, _z);
-//
-//                visualization_msgs::Marker cell;
-//                cell.id = 1379 + (int) hasher(octomap::OcTreeKey(x, y, z));
-//#ifndef FAKE_2D
-//                if (beliefMap->getVoxelMean(voxel) < 0.49 && pos.norm() < 1.5 || pos.norm() < 0.6)
-//                    // remove voxel
-//                    cell.action = 2;
-//                else
-//#endif
-//                    cell.action = 0;
-//                cell.type = visualization_msgs::Marker::CUBE;
-//                cell.header.frame_id = "map";
-//                cell.scale.x = Parameters::voxelSize;
-//                cell.scale.y = Parameters::voxelSize;
-//                cell.scale.z = Parameters::voxelSize;
-//                cell.color.a = 1.0;
-//                cell.lifetime = ros::Duration(1000, 1000);
-//                float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
-//                cell.color.r = intensity;
-//                cell.color.g = intensity;
-//                cell.color.b = intensity;
-//                cell.pose.position.x = voxel.position.x();
-//                cell.pose.position.y = voxel.position.y();
-//                cell.pose.position.z = voxel.position.z();
-//                cells.markers.push_back(cell);
-//            }
-//        }
-//    }
-//}
