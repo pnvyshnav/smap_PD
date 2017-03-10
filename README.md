@@ -1,4 +1,5 @@
 # Confidence Aware Occupancy Grid Mapping
+## Gym Environment
 ROS package implementing 3D mapping and planning using SMAP.
 
 ![Replanning](replanning.gif)
