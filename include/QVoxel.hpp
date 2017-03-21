@@ -22,14 +22,14 @@ public:
     const size_t hash;
 
 protected:
-    QVoxel(void *node, const octomap::point3d &position, GeometryType type, const octomap::OcTreeKey &key)
+    QVoxel(octomap::AbstractOcTreeNode *node, const octomap::point3d &position, GeometryType type, const octomap::OcTreeKey &key)
             : _node(node), position(position), type(type), key(key), hash(_hasher(key))
     {}
-    QVoxel(void *node, const octomap::point3d &position, GeometryType type)
+    QVoxel(octomap::AbstractOcTreeNode *node, const octomap::point3d &position, GeometryType type)
             : _node(node), position(position), type(type), hash(0)
     {}
 
-    const void *_node;
+    const octomap::AbstractOcTreeNode *_node;
 
 private:
     __attribute__((weak))
@@ -65,7 +65,7 @@ public:
         return QTypedVoxel<NODE>(node, position, GEOMETRY_VOXEL, key);
     }
 
-    const NODE *node() const
+    NODE *node() const
     {
         return (NODE*)_node;
     }

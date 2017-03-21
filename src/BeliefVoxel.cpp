@@ -19,7 +19,8 @@ Belief::Particles generateParticles()
 
 Belief::Particles particles = generateParticles();
 
-Belief::Belief() : _recomputeMean(true), _recomputeVariance(true), _useStored(false), _meanLocked(false)
+Belief::Belief(bool empty) : _recomputeMean(true), _recomputeVariance(true),
+                             _useStored(false), _meanLocked(false), _empty(empty)
 {
     if (particles.size() == 0)
         particles = generateParticles();
@@ -96,10 +97,15 @@ Belief::Belief() : _recomputeMean(true), _recomputeVariance(true), _useStored(fa
     //pdf = a * particles;
 
     // TODO reactivate
-    if (!isBeliefValid())
+    /*if (!isBeliefValid())
     {
         ROS_ERROR("Prior voxel belief is invalid.");
-    }
+    }*/
+}
+
+bool Belief::empty()
+{
+    return _empty;
 }
 
 Parameters::NumType Belief::mean()
@@ -161,18 +167,18 @@ void Belief::updateBelief(Parameters::NumType a, Parameters::NumType b)
     const double ps = new_pdf.sum();
     if (ps > 0.)
         pdf = new_pdf / ps;
-    else
-        ROS_WARN("Cannot update belief. New PDF sum (%g) would be too small.", new_pdf.sum());
+//    else
+//        ROS_WARN("Cannot update belief. New PDF sum (%g) would be too small.", new_pdf.sum());
 
     //assert(isBeliefValid());
     _recomputeMean = true;
     _recomputeVariance = true;
 }
 
-bool Belief::operator==(Belief &rhs)
+bool Belief::operator==(const Belief &rhs) const
 {
-    return std::abs(mean() - rhs.mean()) < Parameters::equalityThreshold
-        && std::abs(variance() - rhs.variance()) < Parameters::equalityThreshold;
+    return std::abs(_constMean() - rhs._constMean()) < Parameters::equalityThreshold
+        && std::abs(_constVariance() - rhs._constVariance()) < Parameters::equalityThreshold;
 }
 
 const std::string Belief::str() const
@@ -192,4 +198,23 @@ void Belief::reset()
     pdf = b + a * particles;
     _recomputeMean = true;
     _recomputeVariance = true;
+}
+
+Parameters::NumType Belief::_constMean() const
+{
+    if (_useStored || _meanLocked)
+        return _mean;
+    return (particles * pdf).sum();
+}
+
+Parameters::NumType Belief::_constVariance() const
+{
+    if (_useStored)
+        return _variance;
+    Parameters::NumType exp = 0;
+    for (unsigned int i = 0; i < Parameters::numParticles; ++i)
+    {
+        exp += std::pow(particles[i], 2.) * pdf[i];
+    }
+    return exp - std::pow(_constMean(), 2.);
 }

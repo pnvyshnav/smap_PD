@@ -16,7 +16,7 @@ float64[] timeLogOdds
 # number of measurents per step
 int32[] measurements
 
-# ray length statistics over the measurements per step
+# _ray length statistics over the measurements per step
 float64[] minRayLength
 float64[] maxRayLength
 float64[] avgRayLength

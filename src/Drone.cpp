@@ -165,8 +165,7 @@ void Drone::handleMeasurements(Drone::PointCloudMessage &pointsMsg, Drone::Trans
         point.normalize();
         Parameters::Vec3Type pixelDirection(point.x(), point.y(), point.z());
         Sensor sensor(origin, pixelDirection); // TODO check Parameters::sensorRange
-        auto sensorPtr = std::make_shared<Sensor>(sensor);
-        measurements.push_back(Measurement::voxel(sensorPtr, measuredRange));
+        measurements.push_back(Measurement::voxel(sensor.ray(), measuredRange));
     }
 #ifdef LOG_DETAILS
     ROS_INFO("PointCloud");

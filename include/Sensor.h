@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Parameters.hpp"
+#include "SensorRay.hpp"
 #include "Observation.hpp"
 #include "TrueMap.h"
 #include "BeliefMap.h"
@@ -62,11 +63,16 @@ public:
 
     virtual InverseCauseModel *computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) const;
 
+    inline SensorRay ray() const
+    {
+        return SensorRay(_position, _orientation, _range);
+    }
+
 protected:
     Parameters::Vec3Type _position;
     Parameters::Vec3Type _orientation;
     const Parameters::NumType _range;
 
 private:
-    static octomap::KeyRay ray; // avoid wasteful constructions
+    static octomap::KeyRay _ray; // avoid wasteful constructions
 };

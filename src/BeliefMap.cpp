@@ -4,6 +4,7 @@
 #include "../include/StereoCameraSensor.h"
 
 #include <cassert>
+#include <memory>
 
 class registerTreeType;
 
@@ -23,17 +24,16 @@ BeliefMap::BeliefMap() : octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractO
                 octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
                                        Parameters::yMin + y * Parameters::voxelSize,
                                        Parameters::zMin + z * Parameters::voxelSize);
-                Belief belief;
-                this->updateNode(point, belief);
+                this->updateNode(point, Belief());
             }
         }
     }
 
-    ROS_INFO("Belief map has %d nodes in total.", (int) calcNumNodes());
+//    ROS_INFO("Belief map has %d nodes in total.", (int) calcNumNodes());
     calcMinMax();
 
-    ROS_INFO("Belief map range: (%.2f %.2f %.2f) to (%.2f %.2f %.2f)", min_value[0], min_value[1], min_value[2],
-             max_value[0], max_value[1], max_value[2]);
+//    ROS_INFO("Belief map range: (%.2f %.2f %.2f) to (%.2f %.2f %.2f)", min_value[0], min_value[1], min_value[2],
+//             max_value[0], max_value[1], max_value[2]);
 }
 
 BeliefMap::BeliefMap(const BeliefMap &map) :
@@ -51,7 +51,7 @@ BeliefMap::BeliefMap(const BeliefMap &map) :
                                        Parameters::zMin + z * Parameters::voxelSize);
                 auto *voxel = map.search(point);
                 if (voxel != NULL)
-                    updateNode(point, *(voxel->getValue().get()));
+                    updateNode(point, voxel->getValue());
 #ifdef LOG_DETAILS
                 else
                     ROS_WARN_STREAM("Belief voxel at " << point << " could not be found in copy contructor.");
@@ -80,7 +80,7 @@ BeliefMap BeliefMap::copy() const
                                        Parameters::zMin + z * Parameters::voxelSize);
                 auto *voxel = search(point);
                 if (voxel != NULL)
-                    map.updateNode(point, *(voxel->getValue().get()));
+                    map.updateNode(point, voxel->getValue());
 #ifdef LOG_DETAILS
                 else
                     ROS_WARN_STREAM("Belief voxel at " << point << " could not be found during copying.");
@@ -104,7 +104,7 @@ BeliefMap &BeliefMap::operator=(const BeliefMap &map)
                                        Parameters::zMin + z * Parameters::voxelSize);
                 auto *voxel = map.search(point);
                 if (voxel != NULL)
-                    updateNode(point, *(voxel->getValue().get()));
+                    updateNode(point, voxel->getValue());
 #ifdef LOG_DETAILS
                 else
                     ROS_WARN_STREAM("Belief voxel at " << point << " could not be found in copy contructor.");
@@ -115,16 +115,16 @@ BeliefMap &BeliefMap::operator=(const BeliefMap &map)
     return *this;
 }
 
-Belief *BeliefMap::belief(const octomap::OcTreeKey &key) const
+Belief BeliefMap::belief(const octomap::OcTreeKey &key) const
 {
     BeliefVoxel *voxel = search(key);
     if (voxel != NULL)
-        return voxel->getValue().get();
+        return voxel->getValue();
 
 #ifdef LOG_DETAILS
     ROS_WARN_STREAM("Belief voxel at " << keyToCoord(key) << " could not be found.");
 #endif
-    return NULL;
+    return Belief(true);
 }
 
 std::valarray<Parameters::NumType> BeliefMap::bouncingProbabilitiesOnRay(const octomap::KeyRay &ray) const
@@ -133,11 +133,11 @@ std::valarray<Parameters::NumType> BeliefMap::bouncingProbabilitiesOnRay(const o
     unsigned int i = 0;
     for (auto &key : ray)
     {
-        auto *b = belief(key);
-        if (b == NULL)
+        auto b = belief(key);
+        if (b.empty())
             bouncingProbabilities[i] = Parameters::priorMean;
         else
-            bouncingProbabilities[i] = b->mean();
+            bouncingProbabilities[i] = b.mean();
         ++i;
     }
     return bouncingProbabilities;
@@ -165,7 +165,7 @@ bool BeliefMap::update(const Observation &observation, const TrueMap &trueMap)
     for (auto &measurement : observation.measurements())
     {
 #ifdef FAKE_2D
-        StereoCameraSensor cameraSensor(measurement.sensor->position(), measurement.sensor->orientation());
+        StereoCameraSensor cameraSensor(measurement.sensor.position, measurement.sensor.orientation);
         icm = cameraSensor.computeInverseCauseModel(measurement, *this);
 #else
         icm = measurement.sensor->computeInverseCauseModel(measurement, *this);
@@ -187,11 +187,11 @@ bool BeliefMap::update(const Observation &observation, const TrueMap &trueMap)
             prAfterVoxel -= prOnVoxel;
 
             const QBeliefVoxel qBeliefVoxel = query(key);
-            const BeliefVoxel *beliefVoxel = qBeliefVoxel.node();
+            BeliefVoxel *beliefVoxel = qBeliefVoxel.node();
             if (beliefVoxel == NULL)
             {
 #ifdef LOG_DETAILS
-                ROS_WARN("Belief voxel for given voxel key on ray could not be found.");
+                ROS_WARN("Belief voxel for given voxel key on _ray could not be found.");
 #endif
                 break;
             }
@@ -203,15 +203,17 @@ bool BeliefMap::update(const Observation &observation, const TrueMap &trueMap)
 //                return false;
 //            }
 
-            Parameters::NumType mean = beliefVoxel->getValue().get()->mean();
+            Parameters::NumType mean = beliefVoxel->getValue().mean();
             Parameters::NumType a = (Parameters::NumType) ((1. - mean) * prOnVoxel - mean * prAfterVoxel);
             Parameters::NumType b = (Parameters::NumType) (
                     mean * (1. - mean) * (Parameters::spuriousMeasurementProbability + prBeforeVoxel) +
                     mean * prAfterVoxel);
-            beliefVoxel->getValue().get()->updateBelief(a, b);
+            auto belief = beliefVoxel->getValue();
+            belief.updateBelief(a, b);
+            beliefVoxel->setValue(belief);
 
             // TODO reactivate
-            if (!beliefVoxel->getValue().get()->isBeliefValid())
+            if (!beliefVoxel->getValue().isBeliefValid())
             {
                 // already asserted in Belief::updateBelief
                 ROS_ERROR("Belief voxel has invalid PDF after updating with measurement.");
@@ -268,7 +270,7 @@ BeliefVoxel *BeliefMap::updateNode(const octomap::OcTreeKey &key, const Belief &
     BeliefVoxel *leaf = this->search(key);
     if (leaf != NULL)
     {
-        leaf->setValue(std::make_shared<Belief>(belief));
+        leaf->setValue(belief);
         return leaf;
     }
 
@@ -319,7 +321,7 @@ BeliefVoxel *BeliefMap::_updateNodeRecurs(BeliefVoxel *node, bool node_just_crea
     else
     {
         // at last level, updateSubscribers node, end of recursion
-        node->setValue(std::make_shared<Belief>(belief));
+        node->setValue(belief);
         return node;
     }
 }
@@ -331,7 +333,7 @@ void BeliefMap::_expandNode(BeliefVoxel *node)
     for (unsigned int k = 0; k < 8; k++)
     {
         BeliefVoxel *newNode = _createNodeChild(node, k);
-        newNode->setValue(std::make_shared<Belief>(*(node->getValue().get())));
+        newNode->setValue(node->getValue());
     }
 }
 
@@ -361,10 +363,12 @@ void BeliefMap::reset()
                 octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
                                        Parameters::yMin + y * Parameters::voxelSize,
                                        Parameters::zMin + z * Parameters::voxelSize);
-                auto voxel = search(point);
-                voxel->getValue()->reset();
+                auto belief = search(point)->getValue();
+                belief.reset();
+                search(point)->setValue(belief);
             }
         }
     }
+    _lastUpdatedVoxels.clear();
     publish();
 }

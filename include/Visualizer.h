@@ -4,16 +4,19 @@
 #include "Sensor.h"
 #include "FakeRobot.hpp"
 
+typedef BeliefMap MapType;
 
 class Visualizer
 {
-    friend class BeliefMapDrawer;
 public:
-    Visualizer(TrueMap *trueMap, BeliefMap *beliefMap, FakeRobot<> *robot);
-
+    Visualizer(TrueMap *trueMap, MapType *map, FakeRobot<> *robot, bool gymMode = false);
     virtual ~Visualizer();
 
     void render();
-
     void update();
+
+    void setEpisode(unsigned int episode);
+    void setVelocity(float velocity);
+    void setAngularVelocity(float angularVelocity);
+    void setObservation(std::vector<float> observation);
 };

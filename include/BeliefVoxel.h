@@ -14,7 +14,9 @@ class Belief
 public:
     typedef std::valarray<Parameters::NumType> Particles;
 
-    Belief();
+    Belief(bool empty = false);
+
+    bool empty();
 
     Parameters::NumType mean();
     Parameters::NumType variance();
@@ -28,7 +30,7 @@ public:
 
     void updateBelief(Parameters::NumType a, Parameters::NumType b);
 
-    bool operator==(Belief& rhs);
+    bool operator==(const Belief& rhs) const;
 
     /**
      * Stringifies PDF particles for debugging.
@@ -43,8 +45,11 @@ private:
     Parameters::NumType _mean, _variance;
     bool _useStored;
     bool _meanLocked;
+    bool _empty;
+    Parameters::NumType _constMean() const;
+    Parameters::NumType _constVariance() const;
 };
 
 // The problem: OcTreeDataNode does not provide a virtual destructor.
 // To avoid memory leaks, we use a smart pointer here.
-typedef octomap::OcTreeDataNode<std::shared_ptr<Belief> > BeliefVoxel;
+typedef octomap::OcTreeDataNode<Belief> BeliefVoxel;

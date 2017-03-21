@@ -59,11 +59,11 @@ bool LogOddsMap::update(const Observation &observation, const TrueMap &trueMap)
 LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Measurement &measurement)
 {
     octomap::KeyRay ray;
-    if (!computeRayKeys(measurement.sensor->position(),
-                        measurement.sensor->orientation() * measurement.sensor->range() + measurement.sensor->position(),
+    if (!computeRayKeys(measurement.sensor.position,
+                        measurement.sensor.orientation * measurement.sensor.range + measurement.sensor.position,
                         ray))
     {
-        ROS_WARN("Compute ray keys failed.");
+        ROS_WARN("Compute _ray keys failed.");
         return NULL;
     }
 
@@ -94,7 +94,7 @@ LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Mea
         unsigned int i = 0;
         for (auto &causeVoxel : causeVoxels)
         {
-            auto distance = causeVoxel.position.distance(measurement.sensor->position());
+            auto distance = causeVoxel.position.distance(measurement.sensor.position);
             if (distance < measurement.value - parameters.rampSize / 2.)
             {
                 ism->causeProbabilitiesOnRay[i] = parameters.free;
@@ -135,5 +135,6 @@ LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Mea
 void LogOddsMap::reset()
 {
     this->clear();
+    _lastUpdatedVoxels.clear();
     publish();
 }

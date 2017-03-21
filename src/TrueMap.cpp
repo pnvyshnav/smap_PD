@@ -148,7 +148,9 @@ TrueMap TrueMap::generateCorridor()
             Rectangle(-1.0, -0.6, -0.6,  0.6), // B
             Rectangle(-1.0,  0.6,  0.1,  1.0), // C
             Rectangle( 0.6, -1.0,  1.0,  1.0), // D
-            Rectangle(-0.1, -0.1,  0.6,  0.1)  // E
+//            Rectangle(-0.1, -0.1,  0.6,  0.1), // E
+            Rectangle(-1.0, -1.0,  1.0, -0.9),
+            Rectangle(-1.0,  0.9,  1.0,  1.0)
     };
     return _generateFromObstacles(obstacles);
 }

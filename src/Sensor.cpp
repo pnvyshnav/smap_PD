@@ -3,7 +3,7 @@
 
 //#undef FAKE_2D // TODO remove
 
-octomap::KeyRay Sensor::ray;
+octomap::KeyRay Sensor::_ray;
 
 Sensor::Sensor(Parameters::Vec3Type position, Parameters::Vec3Type orientation, Parameters::NumType range)
         : _range(range), _position(position), _orientation(orientation)
@@ -75,46 +75,46 @@ InverseCauseModel *Sensor::computeInverseCauseModel(Measurement measurement, Bel
 {
     auto *icm = new InverseCauseModel;
 //    ROS_INFO("computeInverseCauseModel: position %f %f %f", _position.x(), _position.y(), _position.z());
-    if (!beliefMap.computeRayKeys(_position, _orientation * _range + _position, ray)) //TODO remove *2.0
+    if (!beliefMap.computeRayKeys(_position, _orientation * _range + _position, _ray)) //TODO remove *2.0
     {
-        ROS_WARN("Compute ray keys failed.");
+        ROS_WARN("Compute _ray keys failed.");
         delete icm;
         return NULL;
     }
 
-    if (ray.size() == 0)
+    if (_ray.size() == 0)
     {
         delete icm;
         return NULL;
     }
 
     unsigned int j = 0;
-    icm->ray.reserve(ray.size());
+    icm->ray.reserve(_ray.size());
     std::vector<QVoxel> causeVoxels;
-    for (auto &key : ray)
+    for (auto &key : _ray)
     {
         icm->ray.push_back(key);
         causeVoxels.push_back(beliefMap.query(key));
         ++j;
-        if (j >= ray.size())
+        if (j >= _ray.size())
             break;
     }
-    icm->rayLength = ray.size();
-    auto bouncingProbabilities = beliefMap.bouncingProbabilitiesOnRay(ray);
-    auto reachingProbabilities = beliefMap.reachingProbabilitiesOnRay(ray, bouncingProbabilities);
+    icm->rayLength = _ray.size();
+    auto bouncingProbabilities = beliefMap.bouncingProbabilitiesOnRay(_ray);
+    auto reachingProbabilities = beliefMap.reachingProbabilitiesOnRay(_ray, bouncingProbabilities);
     std::valarray<Parameters::NumType> prior = bouncingProbabilities * reachingProbabilities;
 
 #ifdef LOG_DETAILS
     ROS_INFO("Found %i cause voxels.", (int)causeVoxels.size());
 #endif
 
-    std::valarray<Parameters::NumType> likelihood(ray.size());
-    for (unsigned int i = 0; i < ray.size(); ++i)
+    std::valarray<Parameters::NumType> likelihood(_ray.size());
+    for (unsigned int i = 0; i < _ray.size(); ++i)
         likelihood[i] = likelihoodGivenCause(measurement, causeVoxels[i]);
     icm->posteriorOnRay = likelihood * prior;
 
 
-    const unsigned int end = ray.size() - 1;
+    const unsigned int end = _ray.size() - 1;
 
     Parameters::NumType bouncingProbabilityFromInfinity = 1;
     Parameters::NumType reachingProbabilityFromInfinity = (Parameters::NumType) ((1. - bouncingProbabilities[end]) *

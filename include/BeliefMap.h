@@ -31,7 +31,7 @@ public:
 
     BeliefMap &operator=(const BeliefMap &map);
 
-    Belief *belief(const octomap::OcTreeKey &key) const;
+    Belief belief(const octomap::OcTreeKey &key) const;
 
     BeliefVoxel *updateNode(const octomap::point3d& position, const Belief &belief);
     BeliefVoxel *updateNode(const octomap::OcTreeKey& key, const Belief &belief);
@@ -57,12 +57,12 @@ public:
 
     double getVoxelMean(QBeliefVoxel &voxel) const
     {
-        return voxel.node()->getValue()->mean();
+        return voxel.node()->getValue().mean();
     }
 
     double getVoxelStd(QBeliefVoxel &voxel) const
     {
-        return std::sqrt(voxel.node()->getValue()->variance());
+        return std::sqrt(voxel.node()->getValue().variance());
     }
 
     std::string mapType() const

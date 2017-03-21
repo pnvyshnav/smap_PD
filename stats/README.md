@@ -19,7 +19,7 @@ SMAP ultimately converges and outperforms Log Odds:
 
 To get better insights, how belief or Log Odds are updated at every step, in the following,
 only the *updated* voxels are considered
-that lie on the ray from the sensor position up until (and including) the first *occupied* voxel.
+that lie on the _ray from the sensor position up until (and including) the first *occupied* voxel.
 
 The following diagram visualizes the histogram of errors at every step.
 1600 steps were executed which equates to 22.22 full rotations of the robot in the environment

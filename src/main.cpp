@@ -21,8 +21,8 @@
     TrueMap trueMap = TrueMap::generateCorridor(); // use a fixed seed value
 #endif
 
+MapType map;
 BeliefMap beliefMap;
-LogOddsMap logOddsMap;
 FakeRobot<> robot(
         Parameters::Vec3Type(Parameters::xCenter,
                              Parameters::yCenter,
@@ -44,11 +44,10 @@ void handleObservation(const Observation &observation)
 {
 #ifndef SLIM_STATS
     stopWatch.restart();
-    beliefMap.update(observation, trueMap);
+    map.update(observation, trueMap);
     stopWatch.restart();
-    logOddsMap.update(observation, trueMap);
 #else
-    beliefMap.update(observation, trueMap);
+    map.update(observation, trueMap);
     logOddsMap.update(observation, trueMap);
 #endif
 
@@ -64,11 +63,12 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "SMAP");
     ros::Time::init();
 
-    visualizer = new Visualizer(&trueMap, &beliefMap, &robot);
-
-    robot.setPosition(Parameters::Vec3Type(0.35, -0.95, 0));
-    robot.setYaw(M_PI / 2.);
     robot.registerObserver(&handleObservation);
+
+    visualizer = new Visualizer(&trueMap, &map, &robot);
+
+    robot.setPosition(Parameters::Vec3Type(0.35f, -0.85f, 0));
+    robot.setYaw(M_PI / 2.);
     robot.run();
 
     visualizer->render();
