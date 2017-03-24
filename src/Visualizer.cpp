@@ -15,6 +15,8 @@ float _angularVelocity = 0;
 
 std::vector<float> _observation;
 
+std::vector<Parameters::Vec3Type> _positions;
+
 GLuint map_tex_id, obs_tex_id;
 
 unsigned int frame = 0;
@@ -115,6 +117,19 @@ void draw()
     }
 
     glDisable(GL_TEXTURE_2D);
+
+    // render position trace
+    if (_gymMode)
+    {
+        glColor3f(1, .5f, 0);
+        glBegin(GL_LINE_STRIP);
+        for (auto &p : _positions)
+        {
+            glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
+        }
+        glEnd();
+    }
+
     glColor3f(1, 0, 0);
     glBegin(GL_POINTS);
     glVertex2f(_robot->position().x(), (GLfloat) ((_robot->position().y() + 1.) * (1.84 / 2.) - 0.84));
@@ -274,6 +289,7 @@ void Visualizer::update()
 void Visualizer::setEpisode(unsigned int episode)
 {
     _episode = episode;
+    _positions.clear();
 }
 void Visualizer::setVelocity(float velocity)
 {
@@ -287,4 +303,5 @@ void Visualizer::setAngularVelocity(float angularVelocity)
 void Visualizer::setObservation(std::vector<float> observation)
 {
     _observation = observation;
+    _positions.push_back(_robot->position());
 }

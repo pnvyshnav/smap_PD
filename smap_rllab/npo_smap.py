@@ -26,8 +26,8 @@ def run_task(*_):
         baseline=baseline,
         batch_size=4000,
         whole_paths=True,
-        max_path_length=200, # todo what is this?
-        n_itr=50,
+        max_path_length=500, # todo what is this?
+        n_itr=500,
         discount=0.99,
         step_size=0.01,
         # Uncomment both lines (this and the plot parameter below) to enable plotting

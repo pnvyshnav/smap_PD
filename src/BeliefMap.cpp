@@ -282,12 +282,12 @@ BeliefVoxel *BeliefMap::updateNode(const octomap::OcTreeKey &key, const Belief &
         createdRoot = true;
     }
 
-    return _updateNodeRecurs(this->root, createdRoot, key, 0, belief);
+    return updateNodeRecurs(this->root, createdRoot, key, 0, belief);
 }
 
-BeliefVoxel *BeliefMap::_updateNodeRecurs(BeliefVoxel *node, bool node_just_created,
-                                          const octomap::OcTreeKey &key,
-                                          unsigned int depth, const Belief &belief)
+BeliefVoxel *BeliefMap::updateNodeRecurs(BeliefVoxel *node, bool node_just_created,
+                                         const octomap::OcTreeKey &key,
+                                         unsigned int depth, const Belief &belief)
 {
     bool created_node = false;
 
@@ -297,10 +297,10 @@ BeliefVoxel *BeliefMap::_updateNodeRecurs(BeliefVoxel *node, bool node_just_crea
     if (depth < this->tree_depth)
     {
         unsigned int pos = computeChildIdx(key, this->tree_depth - 1 - depth);
-        if (!node->childExists(pos))
+        if (!nodeChildExists(node, pos))
         {
             // child does not exist, but maybe it's a pruned node?
-            if (!node->hasChildren() && !node_just_created)
+            if (!nodeHasChildren(node) && !node_just_created)
             {
                 // current node does not have children AND it is not a new node
                 // -> expand pruned node
@@ -314,7 +314,7 @@ BeliefVoxel *BeliefMap::_updateNodeRecurs(BeliefVoxel *node, bool node_just_crea
             }
         }
 
-        BeliefVoxel *result = _updateNodeRecurs(node->getChild(pos), created_node, key, depth + 1, belief);
+        BeliefVoxel *result = updateNodeRecurs(getNodeChild(node, pos), created_node, key, depth + 1, belief);
 
         return result;
     }
@@ -341,15 +341,13 @@ BeliefVoxel *BeliefMap::_createNodeChild(BeliefVoxel *node, unsigned int childId
 {
     assert(childIdx < 8);
 
-    if (node->childExists(childIdx))
-        return node->getChild(childIdx);
+    if (nodeChildExists(node, childIdx))
+        return getNodeChild(node, childIdx);
 
     tree_size++;
     size_changed = true;
 
-    node->createChild(childIdx);
-
-    return node->getChild(childIdx);
+    return createNodeChild(node, childIdx);
 }
 
 void BeliefMap::reset()

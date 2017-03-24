@@ -83,22 +83,23 @@ public:
             double angleH = -M_PI + hp * hFactor;
             auto rotHorizontal = Eigen::AngleAxis<float>((float) -angleH, Eigen::Vector3f(0, 0, 1));
             Eigen::Vector3f rotated = rotHorizontal * (direction);
-
             double reach = 1.;
             auto lastPosition = _position;
+            double totalLength = 0;
             for (unsigned int s = 1; s <= samples; ++s)
             {
                 double r = _beliefMap.filteredReachability((float) (_position.x() + s * sFactor * rotated[0]),
                                                            (float) (_position.y() + s * sFactor * rotated[1]),
-                                                           0);
-                reach *= std::pow(std::max(1e-3, r), sFactor);
+                                                           Parameters::zCenter);
+                reach *= std::pow(std::max(1e-3, r), sFactor * (samples-s));
+                totalLength += sFactor * (samples-s);
                 // TODO exponential fall-off
             }
-            reach = std::pow(reach, 1. / Parameters::sensorRange);
-//            std::cout << (float)reach << " ";
+            reach = std::pow(reach, 1. / totalLength);
+            //std::cout << (float)reach << " ";
             omniReach[hp] = (float)reach; //std::max(0., std::min(.999, reach)));
         }
-//        std::cout << std::endl;
+        //std::cout << std::endl;
         return omniReach;
     }
 

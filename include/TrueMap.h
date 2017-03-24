@@ -15,11 +15,13 @@ public:
     static TrueMap generateFromPointCloud(std::string filename);
     static TrueMap generateCorridor();
     static TrueMap generateCorridor2();
+    static TrueMap generateRandomCorridor(int radius = 3, int branches = 60, unsigned int seed = (unsigned int) time(NULL));
 
     /**
      * Alters the map with a new random map.
      */
     void shuffle();
+    void shuffleCorridor(int radius = 3, int branches = 60, unsigned int seed = (unsigned int) time(NULL));
 
     static inline bool insideMap(const Parameters::Vec3Type &point)
     {
@@ -37,6 +39,9 @@ public:
     {
         return 0;
     }
+
+    TrueMap operator=(TrueMap &map);
+    TrueMap operator=(TrueMap map);
 
 private:
     TrueMap();

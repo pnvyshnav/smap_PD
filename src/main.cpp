@@ -18,7 +18,7 @@
     TrueMap trueMap = TrueMap::generateFromPointCloud("/home/eric/catkin_ws/src/smap/dataset/V1_01_easy/data.ply");
 #else
 //    TrueMap trueMap = TrueMap::generate(123); // use a fixed seed value
-    TrueMap trueMap = TrueMap::generateCorridor(); // use a fixed seed value
+    TrueMap trueMap = TrueMap::generateRandomCorridor(); // use a fixed seed value
 #endif
 
 MapType map;
@@ -33,7 +33,7 @@ FakeRobot<> robot(
         Parameters::Vec3Type(0, 1, 0),
 #endif
         trueMap,
-        beliefMap);
+        map);
 
 ecl::StopWatch stopWatch;
 
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 
     visualizer = new Visualizer(&trueMap, &map, &robot);
 
-    robot.setPosition(Parameters::Vec3Type(0.35f, -0.85f, 0));
+//    robot.setPosition(Parameters::Vec3Type(0.35f, -0.85f, 0));
     robot.setYaw(M_PI / 2.);
     robot.run();
 

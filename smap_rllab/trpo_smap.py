@@ -1,3 +1,7 @@
+import sys
+# Add the ptdraft folder path to the sys.path list
+sys.path.append('/home/eric/dev/rllab/')
+
 from rllab.algos.trpo import TRPO
 from rllab.baselines.linear_feature_baseline import LinearFeatureBaseline
 from rllab.envs.gym_env import GymEnv
@@ -26,8 +30,8 @@ def run_task(*_):
         baseline=baseline,
         batch_size=4000,
         whole_paths=True,
-        max_path_length=200,
-        n_itr=100,
+        max_path_length=600,
+        n_itr=1000,
         discount=0.99,
         step_size=0.01,
         # Uncomment both lines (this and the plot parameter below) to enable plotting

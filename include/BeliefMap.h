@@ -70,11 +70,13 @@ public:
         return "Belief";
     }
 
+protected:
+    BeliefVoxel *updateNodeRecurs(BeliefVoxel *node, bool node_just_created,
+                                  const octomap::OcTreeKey &key,
+                                  unsigned int depth, const Belief &belief);
+
 private:
     std::vector<QBeliefVoxel> _lastUpdatedVoxels;
-    BeliefVoxel *_updateNodeRecurs(BeliefVoxel* node, bool node_just_created,
-                                   const octomap::OcTreeKey& key,
-                                   unsigned int depth, const Belief &belief);
 
     void _expandNode(BeliefVoxel *node);
     BeliefVoxel *_createNodeChild(BeliefVoxel *node, unsigned int childIdx);

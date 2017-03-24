@@ -7,10 +7,9 @@
 
 extern "C"
 {
-    TrueMap trueMap = TrueMap::generateCorridor(); // use a fixed seed value
+    TrueMap trueMap = TrueMap::generateRandomCorridor(); // use a fixed seed value
 
     MapType map;
-    BeliefMap beliefMap;
     LogOddsMap logOddsMap;
     FakeRobot<> robot(
             Parameters::Vec3Type(Parameters::xCenter,
@@ -18,7 +17,7 @@ extern "C"
                                  Parameters::zCenter),
             Parameters::Vec3Type(1, 0, 0),
             trueMap,
-            beliefMap);
+            map);
 
     Visualizer *visualizer;
 
@@ -47,7 +46,7 @@ extern "C"
 
         visualizer = new Visualizer(&trueMap, &map, &robot, true);
 
-        robot.setPosition(Parameters::Vec3Type(0.35f, -0.85f, 0));
+        robot.setPosition(Parameters::Vec3Type(0, 0, 0));
         robot.setYaw(M_PI / 2.);
         robot.registerObserver(&handleObservation);
         robot.run();
@@ -61,7 +60,9 @@ extern "C"
         episode += 1;
         visualizer->setEpisode(episode);
         map.reset();
-        robot.setPosition(Parameters::Vec3Type(0.35f, -0.85f, 0));
+        //trueMap = TrueMap::generateRandomCorridor();
+        trueMap.shuffleCorridor();
+        robot.setPosition(Parameters::Vec3Type(0, 0, 0));
         robot.setYaw(M_PI / 2.);
         robot.run();
     }

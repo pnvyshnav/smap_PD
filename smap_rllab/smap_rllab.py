@@ -9,9 +9,9 @@ from rllab.envs.base import Env, Step
 from rllab.envs.env_spec import EnvSpec
 from rllab.misc.overrides import overrides
 
-
 RAYS = 32
 END_TIME = 1000
+
 
 def make_nd_array(c_pointer, shape, dtype=np.float64, order='C', own_data=True):
     arr_size = np.prod(shape[:]) * np.dtype(dtype).itemsize
@@ -29,6 +29,7 @@ def make_nd_array(c_pointer, shape, dtype=np.float64, order='C', own_data=True):
         return arr.copy()
     else:
         return arr
+
 
 lib = None
 
@@ -49,7 +50,9 @@ def load():
     lib.reset()
     print("Called load()")
 
+
 load()
+
 
 def isLoaded(lib):
     libp = os.path.abspath(lib)
@@ -67,14 +70,14 @@ class SmapExplore(Env):
     @property
     @overrides
     def action_space(self):
-        return spaces.Box(np.array([0,-0.1]), np.array([+0.05,+0.1]))
+        return spaces.Box(np.array([0, -0.1]), np.array([+0.05, +0.1]))
 
     @property
     @overrides
     def observation_space(self):
-        upper = np.ones(RAYS+1)
-        upper[-1] = 1000 # time
-        return spaces.Box(np.zeros(RAYS+1), upper)
+        upper = np.ones(RAYS + 1)
+        upper[-1] = 1000  # time
+        return spaces.Box(np.zeros(RAYS + 1), upper)
 
     @property
     def action_bounds(self):
@@ -119,7 +122,7 @@ class SmapExplore(Env):
         # obs = np.frombuffer((c_float * RAYS).from_address(ptr), np.float32).copy()
         # obs = np.ctypeslib.as_array(ptr,shape=(RAYS,))
         # ap = cast(ptr, POINTER(c_float * RAYS))
-        obs = make_nd_array(ptr, (RAYS+1,), np.float32)
+        obs = make_nd_array(ptr, (RAYS + 1,), np.float32)
         obs[-1] = self.t
         # print(obs)
         # print(self.reward)
@@ -129,9 +132,10 @@ class SmapExplore(Env):
         return EnvSpec(observation_space=self.observation_space,
                        action_space=self.action_space)
 
+
 se = SmapExplore()
 env_spec = EnvSpec(observation_space=se.observation_space,
                    action_space=se.action_space)
 
-if __name__=="__main__":
+if __name__ == "__main__":
     os.system("/home/eric/catkin_ws/build/smap/devel/lib/smap/smap")

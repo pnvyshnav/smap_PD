@@ -208,3 +208,201 @@ TrueMap TrueMap::generateCorridor2()
     };
     return _generateFromObstacles(obstacles);
 }
+
+void fillBlock(TrueMap &map, int x1, int x2, int y1, int y2, bool value = false)
+{
+    for (int x = std::max(1, std::min(x1, x2)); x <= std::min((int)Parameters::voxelsPerDimensionX-1, std::max(x1, x2)); ++x)
+    {
+        for (int y = std::max(1, std::min(y1, y2)); y <= std::min((int)Parameters::voxelsPerDimensionY-1, std::max(y1, y2)); ++y)
+        {
+            for (int z = 0; z <= Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(
+                        Parameters::xMin + x * Parameters::voxelSize,
+                        Parameters::yMin + y * Parameters::voxelSize,
+                        Parameters::zMin + z * Parameters::voxelSize);
+                map.updateNode(point, value);
+            }
+        }
+    }
+}
+
+TrueMap TrueMap::generateRandomCorridor(int radius, int branches, unsigned int seed)
+{
+    srand(seed);
+    TrueMap map;
+
+    for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y <= Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z <= Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(
+                        Parameters::xMin + x * Parameters::voxelSize,
+                        Parameters::yMin + y * Parameters::voxelSize,
+                        Parameters::zMin + z * Parameters::voxelSize);
+                map.updateNode(point, true);
+            }
+        }
+    }
+
+    std::vector<Parameters::Vec3Type> positions({Parameters::Vec3Type(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter)});
+    for (int k = 0; k < branches; ++k)
+    {
+        int i = (int)(rand() * 1. / RAND_MAX * Parameters::voxelsPerDimensionX);
+        int j = (int)(rand() * 1. / RAND_MAX * Parameters::voxelsPerDimensionY);
+        double nx = Parameters::xMin + i * Parameters::voxelSize;
+        double ny = Parameters::yMin + j * Parameters::voxelSize;
+
+        fillBlock(map, Parameters::voxelsPerDimensionX/2 - radius, Parameters::voxelsPerDimensionX/2 + radius,
+                  Parameters::voxelsPerDimensionY/2 - radius, Parameters::voxelsPerDimensionY/2 + radius);
+
+        // find closest vertex
+        double minDistance = std::numeric_limits<double>::max();
+        Parameters::Vec3Type closest;
+        for (auto &pos : positions)
+        {
+            double d = pos.distance(Parameters::Vec3Type(nx, ny, Parameters::zCenter));
+            if (d < minDistance)
+            {
+                minDistance = d;
+                closest = pos;
+            }
+        }
+
+        int mi = (int) ((closest.x() - Parameters::xMin) / Parameters::voxelSize);
+        int mj = (int) ((closest.y() - Parameters::yMin) / Parameters::voxelSize);
+        if (std::abs(nx-closest.x()) < std::abs(ny-closest.y()))
+        {
+            // connect vertically
+            fillBlock(map,  mi - radius, mi + radius, std::min(mj, j) - radius, std::max(mj, j) + radius);
+            positions.push_back(Parameters::Vec3Type(closest.x(), ny, Parameters::zCenter));
+        }
+        else
+        {
+            // connect horizontally
+            fillBlock(map, std::min(mi, i) - radius, std::max(mi, i) + radius, mj - radius, mj + radius);
+            positions.push_back(Parameters::Vec3Type(nx, closest.y(), Parameters::zCenter));
+        }
+    }
+
+    return map;
+
+//    // find start / goal positions
+//    max_dist = 0
+//    start, goal = (0,0), (0,0)
+//    for x1, y1 in positions:
+//        i1, j1 = (x1-Parameters::xMin) / Parameters::voxelSize, (y1-Parameters::yMin) / Parameters::voxelSize
+//        if world[i1, j1] > 1e-4:
+//            continue
+//        for x2, y2 in positions:
+//            i2, j2 = (x2-Parameters::xMin) / Parameters::voxelSize, (y2-Parameters::yMin) / Parameters::voxelSize
+//            if world[i2, j2] > 1e-4:
+//                continue
+//            dist = (x1-x2)**2 + (y1-y2)**2
+//            if dist > max_dist:
+//                max_dist = dist
+//                start = (x1,y1)
+//                goal = (x2, y2)
+}
+
+TrueMap TrueMap::operator=(TrueMap &map)
+{
+    for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y <= Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z <= Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(
+                        Parameters::xMin + x * Parameters::voxelSize,
+                        Parameters::yMin + y * Parameters::voxelSize,
+                        Parameters::zMin + z * Parameters::voxelSize);
+                auto v = map.search(x, y, z);
+                this->updateNode(point, v->getOccupancy() > 0.5);
+            }
+        }
+    }
+    return *this;
+}
+
+TrueMap TrueMap::operator=(TrueMap map)
+{
+    for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y <= Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z <= Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(
+                        Parameters::xMin + x * Parameters::voxelSize,
+                        Parameters::yMin + y * Parameters::voxelSize,
+                        Parameters::zMin + z * Parameters::voxelSize);
+                auto v = map.search(x, y, z);
+                this->updateNode(point, v == NULL ? true : v->getOccupancy() > 0.5);
+            }
+        }
+    }
+    return *this;
+}
+
+void TrueMap::shuffleCorridor(int radius, int branches, unsigned int seed)
+{
+    srand(seed);
+
+    for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y <= Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z <= Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(
+                        Parameters::xMin + x * Parameters::voxelSize,
+                        Parameters::yMin + y * Parameters::voxelSize,
+                        Parameters::zMin + z * Parameters::voxelSize);
+                this->updateNode(point, true);
+            }
+        }
+    }
+
+    std::vector<Parameters::Vec3Type> positions({Parameters::Vec3Type(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter)});
+    for (int k = 0; k < branches; ++k)
+    {
+        int i = (int)(rand() * 1. / RAND_MAX * Parameters::voxelsPerDimensionX);
+        int j = (int)(rand() * 1. / RAND_MAX * Parameters::voxelsPerDimensionY);
+        double nx = Parameters::xMin + i * Parameters::voxelSize;
+        double ny = Parameters::yMin + j * Parameters::voxelSize;
+
+        fillBlock(*this, Parameters::voxelsPerDimensionX/2 - radius, Parameters::voxelsPerDimensionX/2 + radius,
+                  Parameters::voxelsPerDimensionY/2 - radius, Parameters::voxelsPerDimensionY/2 + radius);
+
+        // find closest vertex
+        double minDistance = std::numeric_limits<double>::max();
+        Parameters::Vec3Type closest;
+        for (auto &pos : positions)
+        {
+            double d = pos.distance(Parameters::Vec3Type(nx, ny, Parameters::zCenter));
+            if (d < minDistance)
+            {
+                minDistance = d;
+                closest = pos;
+            }
+        }
+
+        int mi = (int) ((closest.x() - Parameters::xMin) / Parameters::voxelSize);
+        int mj = (int) ((closest.y() - Parameters::yMin) / Parameters::voxelSize);
+        if (std::abs(nx-closest.x()) < std::abs(ny-closest.y()))
+        {
+            // connect vertically
+            fillBlock(*this,  mi - radius, mi + radius, std::min(mj, j) - radius, std::max(mj, j) + radius);
+            positions.push_back(Parameters::Vec3Type(closest.x(), ny, Parameters::zCenter));
+        }
+        else
+        {
+            // connect horizontally
+            fillBlock(*this, std::min(mi, i) - radius, std::max(mi, i) + radius, mj - radius, mj + radius);
+            positions.push_back(Parameters::Vec3Type(nx, closest.y(), Parameters::zCenter));
+        }
+    }
+}
