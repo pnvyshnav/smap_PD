@@ -119,16 +119,13 @@ void draw()
     glDisable(GL_TEXTURE_2D);
 
     // render position trace
-    if (_gymMode)
+    glColor3f(1, .5f, 0);
+    glBegin(GL_LINE_STRIP);
+    for (auto &p : _positions)
     {
-        glColor3f(1, .5f, 0);
-        glBegin(GL_LINE_STRIP);
-        for (auto &p : _positions)
-        {
-            glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
-        }
-        glEnd();
+        glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
     }
+    glEnd();
 
     glColor3f(1, 0, 0);
     glBegin(GL_POINTS);
@@ -198,6 +195,7 @@ void keyboard(unsigned char key, int x, int y)
 //    std::cout << "Key: " << key << std::endl;
     _velocity = 0.f;
     _angularVelocity = 0.f;
+    _positions.push_back(_robot->position());
     switch (key)
     {
         case 'w': case 'W':
@@ -220,7 +218,10 @@ void keyboard(unsigned char key, int x, int y)
             _robot->run();
             _angularVelocity = -0.1f;
             break;
-
+        case 'r': case 'R':
+            _map->reset();
+            _trueMap->shuffleCorridor();
+            break;
         default:
             break;
     }
