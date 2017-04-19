@@ -8,11 +8,12 @@ from rllab.envs.gym_env import GymEnv
 from rllab.envs.normalized_env import normalize
 from rllab.misc.instrument import run_experiment_lite
 from rllab.policies.gaussian_mlp_policy import GaussianMLPPolicy
-from smap_rllab import SmapExplore, env_spec
+from smap_rllab import SmapExplore
 
 
 def run_task(*_):
-    env = SmapExplore()
+    env = SmapExplore(skip_frame=100)
+    env_spec = env.env_spec()
     env = normalize(env)
     # env = normalize(GymEnv("Pendulum-v0"))
 

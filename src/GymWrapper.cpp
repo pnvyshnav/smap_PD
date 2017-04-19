@@ -15,7 +15,7 @@ extern "C"
             Parameters::Vec3Type(Parameters::xCenter,
                                  Parameters::yCenter,
                                  Parameters::zCenter),
-            Parameters::Vec3Type(1, 0, 0),
+            Parameters::Vec3Type(0, 1, 0),
             trueMap,
             map);
 
@@ -35,7 +35,7 @@ extern "C"
     /**
      * Initializes environment.
      */
-    void initialize()
+    void initialize(int skipFrame = 10)
     {
         char *myargv[1];
         int myargc = 1;
@@ -44,7 +44,7 @@ extern "C"
 
         episode = 0;
 
-        visualizer = new Visualizer(&trueMap, &map, &robot, true);
+        visualizer = new Visualizer(&trueMap, &map, &robot, true, skipFrame);
 
         robot.setPosition(Parameters::Vec3Type(0, 0, 0));
         robot.setYaw(M_PI / 2.);
@@ -59,12 +59,16 @@ extern "C"
     {
         episode += 1;
         visualizer->setEpisode(episode);
+//        std::cout << "Resetting environment..." << std::endl;
         map.reset();
         //trueMap = TrueMap::generateRandomCorridor();
+//        std::cout << "Shuffling environment..." << std::endl;
         trueMap.shuffleCorridor();
         robot.setPosition(Parameters::Vec3Type(0, 0, 0));
         robot.setYaw(M_PI / 2.);
+//        std::cout << "Running robot..." << std::endl;
         robot.run();
+//        std::cout << "Finished reset" << std::endl;
     }
 
     /**

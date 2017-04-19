@@ -3,8 +3,6 @@
 #include <GL/freeglut.h>
 #include <ecl/time/stopwatch.hpp>
 
-#define DRAW_EVERY 10
-
 TrueMap *_trueMap;
 MapType *_map;
 FakeRobot<> *_robot;
@@ -24,13 +22,17 @@ unsigned int frame = 0;
 int _window = 0;
 
 bool _gymMode = false;
+int _skipFrame = 10;
+bool _egoCentric = false;
+bool _egoCentricScaling = false;
+
+int _egoCentricResolutionScaling = 4;
 
 void draw()
 {
-#ifdef DRAW_EVERY
-    if (_gymMode && frame++ % DRAW_EVERY != 0)
+    if (frame++ % _skipFrame != 0)
         return;
-#endif
+
     glLoadIdentity();
 
     glClearColor(0.1f, 0.1f, 0.1f, 1.f);
@@ -41,17 +43,62 @@ void draw()
 
     // render map
     std::vector<float> occupancies;
-    for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+    unsigned int width = Parameters::voxelsPerDimensionX;
+    unsigned int height = Parameters::voxelsPerDimensionY;
+    if (!_egoCentric)
     {
-        for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+        for (unsigned int y = 0; y < height; ++y)
         {
-            for (unsigned int z = 0; z < 1; ++z)
+            for (unsigned int x = 0; x < width; ++x)
             {
-                auto _x = Parameters::xMin + x * Parameters::voxelSize;
-                auto _y = Parameters::yMin + y * Parameters::voxelSize;
-                auto _z = Parameters::zMin + z * Parameters::voxelSize;
-                auto voxel = _map->query(_x, _y, _z);
-                occupancies.push_back(1.f - (float) _map->getVoxelMean(voxel));
+                for (unsigned int z = 0; z < 1; ++z)
+                {
+                    auto _x = Parameters::xMin + x * Parameters::voxelSize;
+                    auto _y = Parameters::yMin + y * Parameters::voxelSize;
+                    auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                    auto voxel = _map->query(_x, _y, _z);
+                    occupancies.push_back(1.f - (float) _map->getVoxelMean(voxel));
+                }
+            }
+        }
+    }
+    else
+    {
+        width *= _egoCentricResolutionScaling;
+        height *= _egoCentricResolutionScaling;
+        for (unsigned int y = 0; y < height; ++y)
+        {
+            for (unsigned int x = 0; x < width; ++x)
+            {
+                for (unsigned int z = 0; z < 1; ++z)
+                {
+                    auto _x = Parameters::xMin + x * Parameters::voxelSize / _egoCentricResolutionScaling;
+                    auto _y = Parameters::yMin + y * Parameters::voxelSize / _egoCentricResolutionScaling;
+                    auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                    auto direction = Eigen::Vector3f(_x, _y, _z);
+                    auto rotHorizontal = Eigen::AngleAxis<float>(
+                            (float) (_robot->yaw() - M_PI / 2.), Eigen::Vector3f(0, 0, 1));
+                    Eigen::Vector3f rotated = rotHorizontal * (direction);
+                    double distx = std::abs(rotated[0]);
+                    double disty = std::abs(rotated[1]);
+                    double xfactor = 1, yfactor = 1;
+                    if (_egoCentricScaling)
+                    {
+                        xfactor = std::pow(distx, 2.);
+                        yfactor = std::pow(disty, 2.);
+                    }
+                    double r = _map->filteredReachability(
+                            rotated[0] * xfactor + _robot->position().x(),
+                            rotated[1] * yfactor + _robot->position().y(),
+                            rotated[2]);
+//                    double r = _map->filteredReachability(_x, _y, _z);
+                    occupancies.push_back((float) r);
+
+
+//                    auto voxel = _map->query(_x, _y, _z);
+//                    float m = (float) (voxel.type == GEOMETRY_VOXEL ? _map->getVoxelMean(voxel) : Parameters::priorMean);
+//                    occupancies.push_back(1.f - m);
+                }
             }
         }
     }
@@ -64,8 +111,7 @@ void draw()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,
-                 Parameters::voxelsPerDimensionX,
-                 Parameters::voxelsPerDimensionY,
+                 width, height,
                  0, GL_LUMINANCE, GL_FLOAT, map_tex);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -119,20 +165,51 @@ void draw()
     glDisable(GL_TEXTURE_2D);
 
     // render position trace
-    glColor3f(1, .5f, 0);
-    glBegin(GL_LINE_STRIP);
-    for (auto &p : _positions)
+    if (_egoCentric)
     {
-        glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
+        glColor3f(1, .5f, 0);
+        glBegin(GL_LINE_STRIP);
+        for (auto &p : _positions)
+        {
+            auto direction = Eigen::Vector3f(p.x(), p.y(), p.z());
+            auto rotHorizontal = Eigen::AngleAxis<float>(
+                    (float) (_robot->yaw() - M_PI / 2.), Eigen::Vector3f(0, 0, 1));
+            Eigen::Vector3f rotated = rotHorizontal * (direction);
+            double distx = std::abs(rotated[0]);
+            double disty = std::abs(rotated[1]);
+            double xfactor = 1, yfactor = 1;
+            if (_egoCentricScaling)
+            {
+                xfactor = std::pow(distx, 2.);
+                yfactor = std::pow(disty, 2.);
+            }
+            glVertex2f((GLfloat) (rotated[0] * xfactor + _robot->position().x()),
+                       (GLfloat) (rotated[1] * yfactor + _robot->position().y()));
+        }
+        glEnd();
     }
-    glEnd();
+    else
+    {
+        glColor3f(1, .5f, 0);
+        glBegin(GL_LINE_STRIP);
+        for (auto &p : _positions)
+        {
+            glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
+        }
+        glEnd();
+    }
 
     glColor3f(1, 0, 0);
     glBegin(GL_POINTS);
-    glVertex2f(_robot->position().x(), (GLfloat) ((_robot->position().y() + 1.) * (1.84 / 2.) - 0.84));
+    Parameters::Vec3Type p;
+    if (!_egoCentric)
+        p = _robot->position();
+    glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
     glEnd();
     glBegin(GL_LINES);
-    auto direction = Eigen::Vector3f(_robot->orientation().x(), _robot->orientation().y(), _robot->orientation().z());
+    Eigen::Vector3f direction = Eigen::Vector3f(0, 1, 0);
+    if (!_egoCentric)
+        direction = Eigen::Vector3f(_robot->orientation().x(), _robot->orientation().y(), _robot->orientation().z());
     const double hFactor = Parameters::StereoCameraHorizontalFOV / (Parameters::StereoCameraHorizontalPixels-1);
     for (unsigned int hp = 0; hp < Parameters::StereoCameraHorizontalPixels; ++hp)
     {
@@ -140,9 +217,9 @@ void draw()
         auto rotHorizontal = Eigen::AngleAxis<float>((float) angleH, Eigen::Vector3f(0, 0, 1));
         Eigen::Vector3f rotated = rotHorizontal * (direction);
 
-        glVertex2f(_robot->position().x(), (GLfloat) ((_robot->position().y() + 1.) * (1.84 / 2.) - 0.84));
-        float y = (float) (_robot->position().y() + rotated[1] * Parameters::sensorRange);
-        glVertex2f((GLfloat) (_robot->position().x() + rotated[0] * Parameters::sensorRange),
+        glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
+        float y = (float) (p.y() + rotated[1] * Parameters::sensorRange);
+        glVertex2f((GLfloat) (p.x() + rotated[0] * Parameters::sensorRange),
                    (GLfloat) ((y + 1.) * (1.84 / 2.) - 0.84));
     }
     glEnd();
@@ -150,7 +227,9 @@ void draw()
     // render velocity
     glColor3f(0, 1, 0);
     glBegin(GL_QUADS);
-    x1 = std::min(0.f, _velocity) * 3.f - 0.5f; x2 = std::max(0.f, _velocity) * 3.f - 0.5f; y1 = -1.f; y2 = -.94f;
+    x1 = std::min(0.f, _velocity) * 3.f - 0.5f;
+    x2 = std::max(0.f, _velocity) * 3.f - 0.5f;
+    y1 = -1.f; y2 = -.94f;
     glVertex2f(x1, y1);
     glVertex2f(x2, y1);
     glVertex2f(x2, y2);
@@ -165,7 +244,9 @@ void draw()
     // render angular velocity
     glColor3f(0, 0, 1);
     glBegin(GL_QUADS);
-    x1 = std::min(0.f, _angularVelocity) * 3.f + 0.5f; x2 = std::max(0.f, _angularVelocity) * 3.f + 0.5f; y1 = -1.f; y2 = -.94f;
+    x1 = std::min(0.f, _angularVelocity) * 3.f + 0.5f;
+    x2 = std::max(0.f, _angularVelocity) * 3.f + 0.5f;
+    y1 = -1.f; y2 = -.94f;
     glVertex2f(x1, y1);
     glVertex2f(x2, y1);
     glVertex2f(x2, y2);
@@ -234,13 +315,15 @@ void Visualizer::render()
     glutMainLoop();
 }
 
-Visualizer::Visualizer(TrueMap *trueMap, MapType *map, FakeRobot<> *robot, bool gymMode)
+Visualizer::Visualizer(TrueMap *trueMap, MapType *map, FakeRobot<> *robot, bool gymMode, int skipFrame, bool egoCentric)
 {
     _trueMap = trueMap;
     _map = map;
     _robot = robot;
 
     _gymMode = gymMode;
+    _skipFrame = skipFrame;
+    _egoCentric = egoCentric;
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 

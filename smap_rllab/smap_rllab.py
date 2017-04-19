@@ -10,7 +10,7 @@ from rllab.envs.env_spec import EnvSpec
 from rllab.misc.overrides import overrides
 
 RAYS = 32
-END_TIME = 1000
+END_TIME = 2000
 
 
 def make_nd_array(c_pointer, shape, dtype=np.float64, order='C', own_data=True):
@@ -34,7 +34,7 @@ def make_nd_array(c_pointer, shape, dtype=np.float64, order='C', own_data=True):
 lib = None
 
 
-def load():
+def load(skip_frame=10):
     global lib
     lib = cdll.LoadLibrary('/home/eric/catkin_ws/build/smap/devel/lib/libgym.so')
 
@@ -46,22 +46,24 @@ def load():
 
     lib.inside.restype = c_bool
 
-    lib.initialize()
+    lib.initialize(skip_frame)
     lib.reset()
-    print("Called load()")
 
 
-load()
 
-
-def isLoaded(lib):
-    libp = os.path.abspath(lib)
-    ret = os.system("lsof -p %d | grep %s > /dev/null" % (os.getpid(), libp))
-    return (ret == 0)
+def isLoaded():
+    return lib is not None
+    # libp = os.path.abspath(lib)
+    # ret = os.system("lsof -p %d | grep %s > /dev/null" % (os.getpid(), libp))
+    # return (ret == 0)
 
 
 class SmapExplore(Env):
-    def __init__(self):
+    def __init__(self, skip_frame=10):
+        if not isLoaded():
+            load(skip_frame)
+            print("loaded library", lib)
+        self.skip_frame = skip_frame
         self.reward = 0.0
         self.last_reward = 0.0
         self.t = 0.0
@@ -103,13 +105,15 @@ class SmapExplore(Env):
         #     self.resets = 0
         #     load()
         # else:
-        lib.reset()
+        if not isLoaded():
+            load(self.skip_frame)
+        else:
+            lib.reset()
 
-        return self.step(None)[0]
+        return self.step(None).observation
 
     @overrides
     def step(self, action):
-        # print(action)
         step_reward = 0.
         self.reward = 0.
         self.last_reward = self.reward
@@ -133,9 +137,10 @@ class SmapExplore(Env):
                        action_space=self.action_space)
 
 
-se = SmapExplore()
-env_spec = EnvSpec(observation_space=se.observation_space,
-                   action_space=se.action_space)
+# def env_spec():
+#     se = SmapExplore()
+#     return EnvSpec(observation_space=se.observation_space,
+#                    action_space=se.action_space)
 
 if __name__ == "__main__":
     os.system("/home/eric/catkin_ws/build/smap/devel/lib/smap/smap")

@@ -64,11 +64,11 @@ int main(int argc, char **argv)
     ros::Time::init();
 
     robot.registerObserver(&handleObservation);
+    robot.setYaw(M_PI);
 
     visualizer = new Visualizer(&trueMap, &map, &robot);
 
 //    robot.setPosition(Parameters::Vec3Type(0.35f, -0.85f, 0));
-    robot.setYaw(M_PI / 2.);
     robot.run();
 
     visualizer->render();

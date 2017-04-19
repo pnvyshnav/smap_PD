@@ -9,7 +9,8 @@ typedef BeliefMap MapType;
 class Visualizer
 {
 public:
-    Visualizer(TrueMap *trueMap, MapType *map, FakeRobot<> *robot, bool gymMode = false);
+    Visualizer(TrueMap *trueMap, MapType *map, FakeRobot<> *robot,
+               bool gymMode = false, int skipFrame = 1, bool egoCentric = true);
     virtual ~Visualizer();
 
     void render();
