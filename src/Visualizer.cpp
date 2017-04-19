@@ -1,7 +1,6 @@
 #include "../include/Visualizer.h"
 
 #include <GL/freeglut.h>
-#include <ecl/time/stopwatch.hpp>
 
 TrueMap *_trueMap;
 MapType *_map;
@@ -26,7 +25,7 @@ int _skipFrame = 10;
 bool _egoCentric = false;
 bool _egoCentricScaling = false;
 
-int _egoCentricResolutionScaling = 4;
+int _egoCentricResolutionScaling = 2;
 
 void draw()
 {
@@ -77,7 +76,7 @@ void draw()
                     auto _z = Parameters::zMin + z * Parameters::voxelSize;
                     auto direction = Eigen::Vector3f(_x, _y, _z);
                     auto rotHorizontal = Eigen::AngleAxis<float>(
-                            (float) (_robot->yaw() - M_PI / 2.), Eigen::Vector3f(0, 0, 1));
+                            (float) (_robot->yaw() - M_PI_2), Eigen::Vector3f(0, 0, 1));
                     Eigen::Vector3f rotated = rotHorizontal * (direction);
                     double distx = std::abs(rotated[0]);
                     double disty = std::abs(rotated[1]);
@@ -165,39 +164,21 @@ void draw()
     glDisable(GL_TEXTURE_2D);
 
     // render position trace
+    glColor3f(1, .5f, 0);
+    glPushMatrix();
     if (_egoCentric)
     {
-        glColor3f(1, .5f, 0);
-        glBegin(GL_LINE_STRIP);
-        for (auto &p : _positions)
-        {
-            auto direction = Eigen::Vector3f(p.x(), p.y(), p.z());
-            auto rotHorizontal = Eigen::AngleAxis<float>(
-                    (float) (_robot->yaw() - M_PI / 2.), Eigen::Vector3f(0, 0, 1));
-            Eigen::Vector3f rotated = rotHorizontal * (direction);
-            double distx = std::abs(rotated[0]);
-            double disty = std::abs(rotated[1]);
-            double xfactor = 1, yfactor = 1;
-            if (_egoCentricScaling)
-            {
-                xfactor = std::pow(distx, 2.);
-                yfactor = std::pow(disty, 2.);
-            }
-            glVertex2f((GLfloat) (rotated[0] * xfactor + _robot->position().x()),
-                       (GLfloat) (rotated[1] * yfactor + _robot->position().y()));
-        }
-        glEnd();
+        glRotated((M_PI_2-_robot->yaw()) * 180./M_PI, 0, 0, 1);
+        glTranslatef(-_robot->position().x(), -_robot->position().y(), 0);
     }
-    else
+    glBegin(GL_LINE_STRIP);
+    for (auto &p : _positions)
     {
-        glColor3f(1, .5f, 0);
-        glBegin(GL_LINE_STRIP);
-        for (auto &p : _positions)
-        {
-            glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
-        }
-        glEnd();
+        glVertex2f(p.x(), p.y());
     }
+    glVertex2f(_robot->position().x(), _robot->position().y());
+    glEnd();
+    glPopMatrix();
 
     glColor3f(1, 0, 0);
     glBegin(GL_POINTS);
@@ -206,6 +187,7 @@ void draw()
         p = _robot->position();
     glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
     glEnd();
+
     glBegin(GL_LINES);
     Eigen::Vector3f direction = Eigen::Vector3f(0, 1, 0);
     if (!_egoCentric)
@@ -315,7 +297,8 @@ void Visualizer::render()
     glutMainLoop();
 }
 
-Visualizer::Visualizer(TrueMap *trueMap, MapType *map, FakeRobot<> *robot, bool gymMode, int skipFrame, bool egoCentric)
+Visualizer::Visualizer(TrueMap *trueMap, MapType *map, FakeRobot<> *robot,
+                       bool gymMode, int skipFrame, bool egoCentric)
 {
     _trueMap = trueMap;
     _map = map;
@@ -342,21 +325,6 @@ Visualizer::Visualizer(TrueMap *trueMap, MapType *map, FakeRobot<> *robot, bool 
 
     glutDisplayFunc(draw);
     glutKeyboardFunc(keyboard);
-
-//    ecl::StopWatch watch;
-//    for (int i = 0; i < 10000; ++i)
-//    {
-//        _robot->setYaw(_robot->yaw() + 0.1);
-//        _observation = _robot->getOmniDirectionalReachability();
-//        if (i % 500 == 0)
-//            _map->reset();
-//        _robot->run();
-////        glutPostRedisplay();
-////        glutMainLoopEvent();
-//        std::cout << watch.elapsed() << std::endl;
-//        watch.restart();
-//    }
-//    std::exit(0);
 }
 
 Visualizer::~Visualizer()

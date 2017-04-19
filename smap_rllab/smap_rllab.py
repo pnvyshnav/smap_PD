@@ -36,7 +36,7 @@ lib = None
 
 def load(skip_frame=10):
     global lib
-    lib = cdll.LoadLibrary('/home/eric/catkin_ws/build/smap/devel/lib/libgym.so')
+    lib = cdll.LoadLibrary('/home/wal/catkin_ws/devel/lib/libgym.so')
 
     lib.act.argtypes = [c_float, c_float]
     lib.act.restype = c_float
@@ -143,4 +143,4 @@ class SmapExplore(Env):
 #                    action_space=se.action_space)
 
 if __name__ == "__main__":
-    os.system("/home/eric/catkin_ws/build/smap/devel/lib/smap/smap")
+    os.system("/home/wal/catkin_ws/devel/lib/smap/smap")

@@ -328,7 +328,7 @@ BeliefVoxel *BeliefMap::updateNodeRecurs(BeliefVoxel *node, bool node_just_creat
 
 void BeliefMap::_expandNode(BeliefVoxel *node)
 {
-    assert(!node->hasChildren());
+    assert(!nodeHasChildren(node));
 
     for (unsigned int k = 0; k < 8; k++)
     {
