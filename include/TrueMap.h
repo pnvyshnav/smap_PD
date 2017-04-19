@@ -15,7 +15,9 @@ public:
     static TrueMap generateFromPointCloud(std::string filename);
     static TrueMap generateCorridor();
     static TrueMap generateCorridor2();
-    static TrueMap generateRandomCorridor(int radius = 2, int branches = 20, unsigned int seed = (unsigned int) time(NULL));
+    static TrueMap generateRandomCorridor(int radius = 2, int branches = 20,
+                                          unsigned int samplingWidth = 32, unsigned int samplingHeight = 32,
+                                          unsigned int seed = (unsigned int) time(NULL));
 
     /**
      * Alters the map with a new random map.

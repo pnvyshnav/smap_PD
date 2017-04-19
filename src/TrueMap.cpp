@@ -203,13 +203,18 @@ TrueMap TrueMap::generateCorridor2()
 {
     auto obstacles = std::vector<Rectangle> {
             Rectangle(-1.0, -1.0, -0.9,  1.0),
-            Rectangle(-0.9, -1.0, -0.7, -0.2), Rectangle(-0.9, -0.1, -0.4,  1.0),
-            Rectangle(-0.9, -1.0, -0.4, -0.7), Rectangle(-0.9, -0.1, -0.7,  1.0),
+            Rectangle(-0.9, -1.0, -0.7, -0.2),
+            Rectangle(-0.9, -0.1, -0.4,  1.0),
+            Rectangle(-0.9, -1.0, -0.4, -0.7),
+            Rectangle(-0.9, -0.1, -0.7,  1.0),
     };
     return _generateFromObstacles(obstacles);
 }
 
-void fillBlock(TrueMap *map, int x1, int x2, int y1, int y2, bool value = false)
+void fillBlock(TrueMap *map, int x1, int x2, int y1, int y2, bool value = false,
+               float xmin = Parameters::xMin,
+               float ymin = Parameters::yMin,
+               float zmin = Parameters::zMin)
 {
     for (int x = std::max(1, std::min(x1, x2)); x <= std::min((int)Parameters::voxelsPerDimensionX-1, std::max(x1, x2)); ++x)
     {
@@ -218,9 +223,9 @@ void fillBlock(TrueMap *map, int x1, int x2, int y1, int y2, bool value = false)
             for (int z = 0; z <= Parameters::voxelsPerDimensionZ; ++z)
             {
                 octomap::point3d point(
-                        Parameters::xMin + x * Parameters::voxelSize,
-                        Parameters::yMin + y * Parameters::voxelSize,
-                        Parameters::zMin + z * Parameters::voxelSize);
+                        xmin + x * Parameters::voxelSize,
+                        ymin + y * Parameters::voxelSize,
+                        zmin + z * Parameters::voxelSize);
                 for (int i = 0; i < 20; ++i)
                     map->updateNode(point, value);
                 //ROS_INFO("Updating %i %i %i to %i", x, y, z, value);
@@ -229,7 +234,9 @@ void fillBlock(TrueMap *map, int x1, int x2, int y1, int y2, bool value = false)
     }
 }
 
-TrueMap TrueMap::generateRandomCorridor(int radius, int branches, unsigned int seed)
+TrueMap TrueMap::generateRandomCorridor(int radius, int branches,
+                                        unsigned int samplingWidth, unsigned int samplingHeight,
+                                        unsigned int seed)
 {
     srand(seed);
     TrueMap map;
@@ -252,11 +259,15 @@ TrueMap TrueMap::generateRandomCorridor(int radius, int branches, unsigned int s
     fillBlock(&map, Parameters::voxelsPerDimensionX/2 - radius, Parameters::voxelsPerDimensionX/2 + radius,
               Parameters::voxelsPerDimensionY/2 - radius, Parameters::voxelsPerDimensionY/2 + radius);
 
-    std::vector<Parameters::Vec3Type> positions({Parameters::Vec3Type(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter)});
+    const float xmin = Parameters::xMin + (Parameters::voxelsPerDimensionX-samplingWidth)/2.f * Parameters::voxelSize;
+    const float ymin = Parameters::yMin + (Parameters::voxelsPerDimensionY-samplingHeight)/2.f * Parameters::voxelSize;
+    std::vector<Parameters::Vec3Type> positions({Parameters::Vec3Type(Parameters::xCenter,
+                                                                      Parameters::yCenter,
+                                                                      Parameters::zCenter)});
     for (int k = 0; k < branches; ++k)
     {
-        int i = (int)(rand() * 1. / RAND_MAX * Parameters::voxelsPerDimensionX);
-        int j = (int)(rand() * 1. / RAND_MAX * Parameters::voxelsPerDimensionY);
+        int i = (int)(rand() * 1. / RAND_MAX * samplingWidth);
+        int j = (int)(rand() * 1. / RAND_MAX * samplingHeight);
         // roll the dice again if we are too close to the center (double the chances of have more expanding maps)
 //        while (std::abs(i - Parameters::voxelsPerDimensionX/2) < Parameters::voxelsPerDimensionX * 0.3
 //                && std::abs(j - Parameters::voxelsPerDimensionY/2) < Parameters::voxelsPerDimensionY * 0.3)
@@ -264,8 +275,8 @@ TrueMap TrueMap::generateRandomCorridor(int radius, int branches, unsigned int s
 //            i = (int)(rand() * 1. / RAND_MAX * Parameters::voxelsPerDimensionX);
 //            j = (int)(rand() * 1. / RAND_MAX * Parameters::voxelsPerDimensionY);
 //        }
-        float nx = Parameters::xMin + i * Parameters::voxelSize;
-        float ny = Parameters::yMin + j * Parameters::voxelSize;
+        float nx = xmin + i * Parameters::voxelSize;
+        float ny = ymin + j * Parameters::voxelSize;
 
         // find closest vertex
         double minDistance = std::numeric_limits<double>::max();
@@ -280,22 +291,24 @@ TrueMap TrueMap::generateRandomCorridor(int radius, int branches, unsigned int s
             }
         }
 
-        int mi = (int) ((closest.x() - Parameters::xMin) / Parameters::voxelSize);
-        int mj = (int) ((closest.y() - Parameters::yMin) / Parameters::voxelSize);
+        int mi = (int) ((closest.x() - xmin) / Parameters::voxelSize);
+        int mj = (int) ((closest.y() - ymin) / Parameters::voxelSize);
 
         if (std::abs(nx - closest.x()) < std::abs(ny - closest.y()))
         {
             // connect vertically
             fillBlock(&map, mi - radius, mi + radius,
                       std::min(mj, j) - radius,
-                      std::max(mj, j) + radius, false);
+                      std::max(mj, j) + radius,
+                      false, xmin, ymin);
             positions.push_back(Parameters::Vec3Type(closest.x(), ny, Parameters::zCenter));
         }
         else
         {
             // connect horizontally
             fillBlock(&map, std::min(mi, i) - radius, std::max(mi, i) + radius,
-                      mj - radius, mj + radius, false);
+                      mj - radius, mj + radius,
+                      false, xmin, ymin);
             positions.push_back(Parameters::Vec3Type(nx, closest.y(), Parameters::zCenter));
         }
     }

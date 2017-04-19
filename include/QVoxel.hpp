@@ -152,11 +152,11 @@ public:
     double filteredReachability(Parameters::NumType x, Parameters::NumType y, Parameters::NumType z)
     {
 //        ROS_INFO("Filtering reachability %f %f %f", x, y, z);
-        if (x < Parameters::xMin || x > Parameters::xMax ||
-            y < Parameters::yMin || y > Parameters::yMax ||
+        if (x <= Parameters::xMin || x >= Parameters::xMax ||
+            y <= Parameters::yMin || y >= Parameters::yMax ||
             z < Parameters::zMin || z > Parameters::zMax)
         {
-            return 0;
+            return 1. - Parameters::priorMean; // TODO return 0 ?
         }
         int i = (int)std::floor((x - Parameters::xMin) / Parameters::voxelSize);
         int j = (int)std::floor((y - Parameters::yMin) / Parameters::voxelSize);

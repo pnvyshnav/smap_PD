@@ -119,7 +119,7 @@ class SmapExplore(Env):
         self.last_reward = self.reward
         if action is not None:
             self.t += 1.
-            self.reward = lib.act(action[0], action[1])
+            self.reward = lib.act(action[0], action[1]) - 10.
         done = self.t >= END_TIME or not lib.inside() or self.reward < -500
         ptr = lib.observe(RAYS)
         # obs = np.array([ptr[i] for i in range(RAYS)])

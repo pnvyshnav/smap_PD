@@ -25,7 +25,7 @@ int _skipFrame = 10;
 bool _egoCentric = false;
 bool _egoCentricScaling = false;
 
-int _egoCentricResolutionScaling = 2;
+int _egoCentricResolutionScaling = 1;
 
 void draw()
 {
@@ -130,39 +130,11 @@ void draw()
     glVertex3f(  x1, y2, 0.f);
     glEnd();
 
-
-    // render observation
-    if (!_observation.empty())
-    {
-        glBindTexture(GL_TEXTURE_2D, obs_tex_id);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,
-                     _observation.size(), 1, 0, GL_LUMINANCE, GL_FLOAT, _observation.data());
-
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, obs_tex_id);
-
-        glBegin(GL_QUADS);
-        x1 = -1; x2 = 1; y1 = -.92; y2 = -.86f;
-        glTexCoord2f(0, 0);
-        glVertex3f(  x1, y1, 0.f);
-        glTexCoord2f(1, 0);
-        glVertex3f(  x2, y1, 0.f);
-        glTexCoord2f(1, 1);
-        glVertex3f(  x2, y2, 0.f);
-        glTexCoord2f(0, 1);
-        glVertex3f(  x1, y2, 0.f);
-        glEnd();
-    }
-
     glDisable(GL_TEXTURE_2D);
 
+    glPushMatrix();
+    float sf = 2.f/(width * Parameters::voxelSize);
+    glScalef(sf, sf, sf);
     // render position trace
     glColor3f(1, .5f, 0);
     glPushMatrix();
@@ -174,9 +146,9 @@ void draw()
     glBegin(GL_LINE_STRIP);
     for (auto &p : _positions)
     {
-        glVertex2f(p.x(), p.y());
+        glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
     }
-    glVertex2f(_robot->position().x(), _robot->position().y());
+    glVertex2f(_robot->position().x(), (GLfloat) ((_robot->position().y() + 1.) * (1.84 / 2.) - 0.84));
     glEnd();
     glPopMatrix();
 
@@ -205,6 +177,40 @@ void draw()
                    (GLfloat) ((y + 1.) * (1.84 / 2.) - 0.84));
     }
     glEnd();
+
+    glPopMatrix(); // scaling
+
+    // render observation
+    if (!_observation.empty())
+    {
+        glColor3f(1, 1, 1);
+        glBindTexture(GL_TEXTURE_2D, obs_tex_id);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,
+                     _observation.size(), 1, 0, GL_LUMINANCE, GL_FLOAT, _observation.data());
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, obs_tex_id);
+
+        glBegin(GL_QUADS);
+        x1 = -1; x2 = 1; y1 = -.92f; y2 = -.86f;
+        glTexCoord2f(0, 0);
+        glVertex3f(  x1, y1, 0.f);
+        glTexCoord2f(1, 0);
+        glVertex3f(  x2, y1, 0.f);
+        glTexCoord2f(1, 1);
+        glVertex3f(  x2, y2, 0.f);
+        glTexCoord2f(0, 1);
+        glVertex3f(  x1, y2, 0.f);
+        glEnd();
+        glDisable(GL_TEXTURE_2D);
+    }
 
     // render velocity
     glColor3f(0, 1, 0);

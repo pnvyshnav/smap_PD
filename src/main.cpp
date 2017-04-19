@@ -66,7 +66,7 @@ int main(int argc, char **argv)
     robot.registerObserver(&handleObservation);
     robot.setYaw(M_PI);
 
-    visualizer = new Visualizer(&trueMap, &map, &robot, false, 1);
+    visualizer = new Visualizer(&trueMap, &map, &robot, false, 1, true);
 
 //    robot.setPosition(Parameters::Vec3Type(0.35f, -0.85f, 0));
     robot.run();
