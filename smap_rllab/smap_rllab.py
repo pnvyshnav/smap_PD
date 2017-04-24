@@ -50,7 +50,6 @@ def load(skip_frame=10):
     lib.reset()
 
 
-
 def isLoaded():
     return lib is not None
     # libp = os.path.abspath(lib)

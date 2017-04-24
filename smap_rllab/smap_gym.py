@@ -13,7 +13,7 @@ END_TIME = 100
 class SmapExplore(gym.Env):
     metadata = {
         'render.modes': ['human', 'rgb_array', 'state_pixels'],
-        'video.frames_per_second' : 1000
+        'video.frames_per_second' : 2
     }
 
     def __init__(self):
