@@ -13,6 +13,10 @@ public:
                bool gymMode = false, int skipFrame = 1, bool egoCentric = true);
     virtual ~Visualizer();
 
+    float *mapView() const;
+    int mapWidth() const;
+    int mapHeight() const;
+
     void render();
     void update();
 
