@@ -135,7 +135,7 @@ class SmapExplore(Env):
         else:
             ptr = lib.observeLocal(RAYS)
             obs = make_nd_array(ptr, (RAYS,), np.float32)
-        obs[-1] = self.t
+        obs = np.append(obs, [self.t])
         # print(obs)
         # print(self.reward)
         return Step(observation=obs, reward=self.reward, done=done)
