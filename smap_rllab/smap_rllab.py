@@ -84,9 +84,10 @@ class SmapExplore(Env):
     @property
     @overrides
     def observation_space(self):
-        upper = np.ones(RAYS + 1)
-        upper[-1] = 1000  # time
-        return spaces.Box(np.zeros(RAYS + 1), upper)
+        if self.global_view:
+            return spaces.Box(np.zeros(self.map_width, self.map_height),
+                              np.ones(self.map_width, self.map_height))
+        return spaces.Box(np.zeros(RAYS), np.ones(RAYS))
 
     @property
     def action_bounds(self):
@@ -135,7 +136,7 @@ class SmapExplore(Env):
         else:
             ptr = lib.observeLocal(RAYS)
             obs = make_nd_array(ptr, (RAYS,), np.float32)
-        obs = np.append(obs, [self.t])
+        # obs = np.append(obs, [self.t])
         # print(obs)
         # print(self.reward)
         return Step(observation=obs, reward=self.reward, done=done)
