@@ -41,8 +41,13 @@ def load(skip_frame=10):
     lib.act.argtypes = [c_float, c_float]
     lib.act.restype = c_float
 
-    lib.observe.argtypes = [c_int]
-    lib.observe.restype = POINTER(c_float)
+    lib.observeLocal.argtypes = [c_int]
+    lib.observeLocal.restype = POINTER(c_float)
+
+    lib.observeGlobal.restype = POINTER(c_float)
+
+    lib.mapWidth.restype = c_int
+    lib.mapHeight.restype = c_int
 
     lib.inside.restype = c_bool
 
@@ -58,7 +63,7 @@ def isLoaded():
 
 
 class SmapExplore(Env):
-    def __init__(self, skip_frame=10):
+    def __init__(self, skip_frame=10, global_view=False):
         if not isLoaded():
             load(skip_frame)
             print("loaded library", lib)
@@ -67,6 +72,9 @@ class SmapExplore(Env):
         self.last_reward = 0.0
         self.t = 0.0
         self.resets = 0
+        self.global_view = global_view
+        self.map_width = lib.mapWidth()
+        self.map_height = lib.mapHeight()
 
     @property
     @overrides
@@ -120,12 +128,13 @@ class SmapExplore(Env):
             self.t += 1.
             self.reward = lib.act(action[0], action[1]) - 10.
         done = self.t >= END_TIME or not lib.inside() or self.reward < -500
-        ptr = lib.observe(RAYS)
-        # obs = np.array([ptr[i] for i in range(RAYS)])
-        # obs = np.frombuffer((c_float * RAYS).from_address(ptr), np.float32).copy()
-        # obs = np.ctypeslib.as_array(ptr,shape=(RAYS,))
-        # ap = cast(ptr, POINTER(c_float * RAYS))
-        obs = make_nd_array(ptr, (RAYS + 1,), np.float32)
+
+        if self.global_view:
+            ptr = lib.observeGlobal()
+            obs = make_nd_array(ptr, (self.map_width, self.map_height), np.float32)
+        else:
+            ptr = lib.observeLocal(RAYS)
+            obs = make_nd_array(ptr, (RAYS,), np.float32)
         obs[-1] = self.t
         # print(obs)
         # print(self.reward)

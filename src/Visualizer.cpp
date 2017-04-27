@@ -11,6 +11,9 @@ float _velocity = 0;
 float _angularVelocity = 0;
 
 std::vector<float> _observation;
+std::vector<float> _occupancies;
+unsigned int _width;
+unsigned int _height;
 
 std::vector<Parameters::Vec3Type> _positions;
 
@@ -41,14 +44,14 @@ void draw()
     glLoadIdentity();
 
     // render map
-    std::vector<float> occupancies;
-    unsigned int width = Parameters::voxelsPerDimensionX;
-    unsigned int height = Parameters::voxelsPerDimensionY;
+    _occupancies.clear();
+    _width = Parameters::voxelsPerDimensionX;
+    _height = Parameters::voxelsPerDimensionY;
     if (!_egoCentric)
     {
-        for (unsigned int y = 0; y < height; ++y)
+        for (unsigned int y = 0; y < _height; ++y)
         {
-            for (unsigned int x = 0; x < width; ++x)
+            for (unsigned int x = 0; x < _width; ++x)
             {
                 for (unsigned int z = 0; z < 1; ++z)
                 {
@@ -56,18 +59,18 @@ void draw()
                     auto _y = Parameters::yMin + y * Parameters::voxelSize;
                     auto _z = Parameters::zMin + z * Parameters::voxelSize;
                     auto voxel = _map->query(_x, _y, _z);
-                    occupancies.push_back(1.f - (float) _map->getVoxelMean(voxel));
+                    _occupancies.push_back(1.f - (float) _map->getVoxelMean(voxel));
                 }
             }
         }
     }
     else
     {
-        width *= _egoCentricResolutionScaling;
-        height *= _egoCentricResolutionScaling;
-        for (unsigned int y = 0; y < height; ++y)
+        _width *= _egoCentricResolutionScaling;
+        _height *= _egoCentricResolutionScaling;
+        for (unsigned int y = 0; y < _height; ++y)
         {
-            for (unsigned int x = 0; x < width; ++x)
+            for (unsigned int x = 0; x < _width; ++x)
             {
                 for (unsigned int z = 0; z < 1; ++z)
                 {
@@ -91,17 +94,17 @@ void draw()
                             rotated[1] * yfactor + _robot->position().y(),
                             rotated[2]);
 //                    double r = _map->filteredReachability(_x, _y, _z);
-                    occupancies.push_back((float) r);
+                    _occupancies.push_back((float) r);
 
 
 //                    auto voxel = _map->query(_x, _y, _z);
 //                    float m = (float) (voxel.type == GEOMETRY_VOXEL ? _map->getVoxelMean(voxel) : Parameters::priorMean);
-//                    occupancies.push_back(1.f - m);
+//                    _occupancies.push_back(1.f - m);
                 }
             }
         }
     }
-    float *map_tex = occupancies.data();
+    float *map_tex = _occupancies.data(); //TODO publish
 
     glBindTexture(GL_TEXTURE_2D, map_tex_id);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -110,7 +113,7 @@ void draw()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,
-                 width, height,
+                 _width, _height,
                  0, GL_LUMINANCE, GL_FLOAT, map_tex);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -133,7 +136,7 @@ void draw()
     glDisable(GL_TEXTURE_2D);
 
     glPushMatrix();
-    float sf = 2.f/(width * Parameters::voxelSize);
+    float sf = 2.f/(_width * Parameters::voxelSize);
     glScalef(sf, sf, sf);
     // render position trace
     glColor3f(1, .5f, 0);
@@ -362,4 +365,19 @@ void Visualizer::setObservation(std::vector<float> observation)
 {
     _observation = observation;
     _positions.push_back(_robot->position());
+}
+
+float *Visualizer::mapView() const
+{
+    return _occupancies.data();
+}
+
+int Visualizer::mapWidth() const
+{
+    return _width;
+}
+
+int Visualizer::mapHeight() const
+{
+    return _height;
 }

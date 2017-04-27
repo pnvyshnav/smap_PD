@@ -77,14 +77,41 @@ extern "C"
      * @param rays Total number of rays to shoot.
      * @return Reachability of each ray.
      */
-    float* observe(int rays)
+    float* observeLocal(int rays)
     {
         observation = robot.getOmniDirectionalReachability((unsigned int) rays);
+        return observation.data();
+
 //        for (int i = 0; i < rays; ++i)
 //            std::cout << observation[i] << " ";
 //        std::cout << std::endl;
-        visualizer->setObservation(observation);
-        return observation.data();
+    }
+
+    /**
+     * Returns complete map view.
+     * @return Voxel occupancies of whole map.
+     */
+    float* observeGlobal()
+    {
+        return visualizer->mapView();
+    }
+
+    /**
+     * Returns the width of the map view.
+     * @return Width in pixels.
+     */
+    int mapWidth()
+    {
+        return visualizer->mapWidth();
+    }
+
+    /**
+     * Returns the height of the map view.
+     * @return Height in pixels.
+     */
+    int mapHeight()
+    {
+        return visualizer->mapHeight();
     }
 
     /**
