@@ -9,6 +9,7 @@ from rllab.envs.normalized_env import normalize
 from rllab.misc.instrument import run_experiment_lite
 from rllab.policies.gaussian_mlp_policy import GaussianMLPPolicy
 from smap_rllab import SmapExplore
+from cnn_policy import GaussianConvPolicy
 
 
 def run_task(*_):
@@ -17,11 +18,23 @@ def run_task(*_):
     env = normalize(env)
     # env = normalize(GymEnv("Pendulum-v0"))
 
-    policy = GaussianMLPPolicy(
+    # policy = GaussianMLPPolicy(
+    #     env_spec=env_spec,
+    #     # The neural network policy should have two hidden layers, each with 4 hidden units.
+    #     hidden_sizes=(32, 32, 16)
+    # )
+    policy = GaussianConvPolicy(
+        name="CNN_Policy",
         env_spec=env_spec,
         # The neural network policy should have two hidden layers, each with 4 hidden units.
-        hidden_sizes=(32, 32, 16)
+        hidden_sizes=(32, 32, 16),
+        conv_filters=3,
+        conv_filter_sizes=(20, 20),
+        conv_strides=(3, 3),
+        conv_pads='valid'
     )
+
+
 
     baseline = LinearFeatureBaseline(env_spec=env_spec)
 
@@ -54,5 +67,4 @@ def main():
     )
 
 if __name__ == "__main__":
-    # main()
-    run_task()
+    main()
