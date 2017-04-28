@@ -1,4 +1,5 @@
 import sys
+
 # Add the ptdraft folder path to the sys.path list
 sys.path.append('/home/eric/dev/rllab/')
 
@@ -29,14 +30,12 @@ def run_task(*_):
         name="CNN_Policy",
         env_spec=env_spec,
         # The neural network policy should have two hidden layers, each with 4 hidden units.
-        hidden_sizes=[32],
+        hidden_sizes=[256],
         conv_filters=[3],
-        conv_filter_sizes=[40],
-        conv_strides=[2],
-        conv_pads=['valid']
+        conv_filter_sizes=[(5, 5)],
+        conv_strides=[1],
+        conv_pads=[0]
     )
-
-
 
     baseline = LinearFeatureBaseline(env_spec=env_spec)
 
@@ -51,15 +50,16 @@ def run_task(*_):
         discount=0.99,
         step_size=0.01,
         # Uncomment both lines (this and the plot parameter below) to enable plotting
-        plot=False,
+        plot=True,
     )
     algo.train()
+
 
 def main():
     run_experiment_lite(
         run_task,
         # Number of parallel workers for sampling
-        n_parallel=3,
+        n_parallel=1,
         # Only keep the snapshot parameters for the last iteration
         snapshot_mode="last",
         # Specifies the seed for the experiment. If this is not provided, a random seed
@@ -67,6 +67,7 @@ def main():
         seed=1,
         plot=True,
     )
+
 
 if __name__ == "__main__":
     # main()
