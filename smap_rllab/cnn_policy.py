@@ -113,15 +113,16 @@ class GaussianConvPolicy(StochasticPolicy, LasagnePowered):
 
         self._l_prob = std_network.output_layer
         self._l_obs = std_network.input_layer
+
+        super(GaussianConvPolicy, self).__init__(env_spec)
+        LasagnePowered.__init__(self, [l_mean, l_log_std])
+
         self._f_dist = ext.compile_function(
             inputs=[obs_var],
             outputs=[mean_var, log_std_var],
         )
 
         self._dist = DiagonalGaussian(action_dim)
-
-        super(GaussianConvPolicy, self).__init__(env_spec)
-        LasagnePowered.__init__(self, [std_network.output_layer])
 
     @property
     def vectorized(self):
@@ -177,6 +178,22 @@ class GaussianConvPolicy(StochasticPolicy, LasagnePowered):
         rnd = np.random.normal(size=means.shape)
         actions = rnd * np.exp(log_stds) + means
         return actions, dict(mean=means, log_std=log_stds)
+
+    def get_reparam_action_sym(self, obs_var, action_var, old_dist_info_vars):
+        """
+        Given observations, old actions, and distribution of old actions, return a symbolically reparameterized
+        representation of the actions in terms of the policy parameters
+        :param obs_var:
+        :param action_var:
+        :param old_dist_info_vars:
+        :return:
+        """
+        new_dist_info_vars = self.dist_info_sym(obs_var, action_var)
+        new_mean_var, new_log_std_var = new_dist_info_vars["mean"], new_dist_info_vars["log_std"]
+        old_mean_var, old_log_std_var = old_dist_info_vars["mean"], old_dist_info_vars["log_std"]
+        epsilon_var = (action_var - old_mean_var) / (TT.exp(old_log_std_var) + 1e-8)
+        new_action_var = new_mean_var + epsilon_var * TT.exp(new_log_std_var)
+        return new_action_var
 
     @property
     def distribution(self):

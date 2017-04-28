@@ -69,5 +69,5 @@ def main():
     )
 
 if __name__ == "__main__":
-    main()
-    # run_task()
+    # main()
+    run_task()
