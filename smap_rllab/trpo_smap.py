@@ -13,10 +13,12 @@ from cnn_policy import GaussianConvPolicy
 
 
 def run_task(*_):
-    env = SmapExplore(skip_frame=100)
+    env = SmapExplore(skip_frame=100, global_view=True)
     env_spec = env.env_spec()
     env = normalize(env)
     # env = normalize(GymEnv("Pendulum-v0"))
+
+    print("Environment specification:", env_spec)
 
     # policy = GaussianMLPPolicy(
     #     env_spec=env_spec,
@@ -27,11 +29,11 @@ def run_task(*_):
         name="CNN_Policy",
         env_spec=env_spec,
         # The neural network policy should have two hidden layers, each with 4 hidden units.
-        hidden_sizes=(32, 32, 16),
-        conv_filters=3,
-        conv_filter_sizes=(20, 20),
-        conv_strides=(3, 3),
-        conv_pads='valid'
+        hidden_sizes=[32],
+        conv_filters=[3],
+        conv_filter_sizes=[40],
+        conv_strides=[2],
+        conv_pads=['valid']
     )
 
 
@@ -68,3 +70,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # run_task()
