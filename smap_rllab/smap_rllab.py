@@ -34,7 +34,7 @@ def make_nd_array(c_pointer, shape, dtype=np.float64, order='C', own_data=True):
 lib = None
 
 
-def load(skip_frame=10):
+def load(skip_frame=1):
     global lib
     lib = cdll.LoadLibrary('/home/wal/catkin_ws/devel/lib/libgym.so')
 
@@ -63,7 +63,7 @@ def isLoaded():
 
 
 class SmapExplore(Env):
-    def __init__(self, skip_frame=10, global_view=False):
+    def __init__(self, skip_frame=5, global_view=False):
         if not isLoaded():
             load(skip_frame)
             print("loaded library", lib)

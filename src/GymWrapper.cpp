@@ -21,13 +21,15 @@ extern "C"
 
     Visualizer *visualizer;
 
+    std::vector<Parameters::Vec3Type> lastPositions;
+
     unsigned int episode = 0;
     double lastAvgError = 0.5 * Parameters::voxelsTotal;
 
     void handleObservation(const Observation &observation)
     {
         map.update(observation, trueMap);
-        visualizer->update();
+        Visualizer::updateMapView();
     }
 
     std::vector<float> observation;
@@ -35,7 +37,7 @@ extern "C"
     /**
      * Initializes environment.
      */
-    void initialize(int skipFrame = 10)
+    void initialize(int skipFrame = 1)
     {
         char *myargv[1];
         int myargc = 1;
@@ -57,7 +59,10 @@ extern "C"
      */
     void reset()
     {
+        visualizer->update();
+
         episode += 1;
+        lastPositions.clear();
         visualizer->setEpisode(episode);
 //        std::cout << "Resetting environment..." << std::endl;
         map.reset();
@@ -166,9 +171,21 @@ extern "C"
         if (!inside() || v.type != GEOMETRY_VOXEL || trueMap.getVoxelMean(v) > 0.5)
             return -1000;
 
+        // multiply by the distance to closest last position
+        // to reinforce exploration of new areas
+        float closestDistance = 1;
+        for (auto &pos : lastPositions)
+        {
+            float dist = pos.distance(robot.position());
+            if (dist < closestDistance)
+                closestDistance = dist;
+        }
+        lastPositions.push_back(robot.position());
+
+
         //if (reachability() < 0.5)
          //   return (float) (-std::abs(diff) * reachability());
-        return (float) diff * 10.f;
+        return (float) diff * 10.f * closestDistance;
     }
 
     void destroy()

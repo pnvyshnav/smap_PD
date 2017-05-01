@@ -26,4 +26,6 @@ public:
     void setObservation(std::vector<float> observation);
 
     void registerPosition(const Parameters::Vec3Type &position);
+
+    static void updateMapView();
 };

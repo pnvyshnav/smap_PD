@@ -12,6 +12,7 @@ float _angularVelocity = 0;
 
 std::vector<float> _observation;
 std::vector<float> _occupancies;
+std::vector<float> _fullMap;
 unsigned int _width;
 unsigned int _height;
 
@@ -32,8 +33,10 @@ int _egoCentricResolutionScaling = 1;
 
 void draw()
 {
-    if (frame++ % _skipFrame != 0)
+    if (frame++ % 5 != 0)
         return;
+
+    Visualizer::updateMapView();
 
     glLoadIdentity();
 
@@ -42,70 +45,6 @@ void draw()
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-
-    // render agent map view
-    _occupancies.clear();
-    _width = Parameters::voxelsPerDimensionX;
-    _height = Parameters::voxelsPerDimensionY;
-    std::vector<float> fullMap;
-    for (unsigned int y = 0; y < _height; ++y)
-    {
-        for (unsigned int x = 0; x < _width; ++x)
-        {
-            for (unsigned int z = 0; z < 1; ++z)
-            {
-                auto _x = Parameters::xMin + x * Parameters::voxelSize;
-                auto _y = Parameters::yMin + y * Parameters::voxelSize;
-                auto _z = Parameters::zMin + z * Parameters::voxelSize;
-                auto voxel = _map->query(_x, _y, _z);
-                fullMap.push_back(1.f - (float) _map->getVoxelMean(voxel));
-            }
-        }
-    }
-    if (!_egoCentric)
-    {
-        _occupancies = fullMap;
-    }
-    else
-    {
-        _width *= _egoCentricResolutionScaling;
-        _height *= _egoCentricResolutionScaling;
-        for (unsigned int y = 0; y < _height; ++y)
-        {
-            for (unsigned int x = 0; x < _width; ++x)
-            {
-                for (unsigned int z = 0; z < 1; ++z)
-                {
-                    auto _x = Parameters::xMin + x * Parameters::voxelSize / _egoCentricResolutionScaling;
-                    auto _y = Parameters::yMin + y * Parameters::voxelSize / _egoCentricResolutionScaling;
-                    auto _z = Parameters::zMin + z * Parameters::voxelSize;
-                    auto direction = Eigen::Vector3f(_x, _y, _z);
-                    auto rotHorizontal = Eigen::AngleAxis<float>(
-                            (float) (_robot->yaw() - M_PI_2), Eigen::Vector3f(0, 0, 1));
-                    Eigen::Vector3f rotated = rotHorizontal * (direction);
-                    double distx = std::abs(rotated[0]);
-                    double disty = std::abs(rotated[1]);
-                    double xfactor = 1, yfactor = 1;
-                    if (_egoCentricScaling)
-                    {
-                        xfactor = std::pow(distx, 1.2);
-                        yfactor = std::pow(disty, 1.2);
-                    }
-                    double r = _map->filteredReachability(
-                            rotated[0] * xfactor + _robot->position().x(),
-                            rotated[1] * yfactor + _robot->position().y(),
-                            rotated[2]);
-//                    double r = _map->filteredReachability(_x, _y, _z);
-                    _occupancies.push_back((float) r);
-
-
-//                    auto voxel = _map->query(_x, _y, _z);
-//                    float m = (float) (voxel.type == GEOMETRY_VOXEL ? _map->getVoxelMean(voxel) : Parameters::priorMean);
-//                    _occupancies.push_back(1.f - m);
-                }
-            }
-        }
-    }
 
     glPushMatrix();
     glTranslatef(-.5f, 0, 0);
@@ -185,8 +124,8 @@ void draw()
         Eigen::Vector3f rotated = rotHorizontal * (direction);
 
         glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
-        float y = (float) (p.y() + rotated[1] * Parameters::sensorRange);
-        glVertex2f((GLfloat) (p.x() + rotated[0] * Parameters::sensorRange),
+        float y = (float) (p.y() + rotated[1] * std::pow(Parameters::sensorRange * _egoCentricScaling, 1.2));
+        glVertex2f((GLfloat) (p.x() + rotated[0] * std::pow(Parameters::sensorRange * _egoCentricScaling, 1.2)),
                    (GLfloat) ((y + 1.) * (1.84 / 2.) - 0.84));
     }
     glEnd();
@@ -199,7 +138,7 @@ void draw()
     glTranslatef(.5f, 0, 0);
     glScalef(.5f, 1, 1);
 
-    map_tex = fullMap.data(); //TODO publish
+    map_tex = _fullMap.data(); //TODO publish
 
     glBindTexture(GL_TEXTURE_2D, map_tex_id);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -471,4 +410,72 @@ int Visualizer::mapHeight() const
 void Visualizer::registerPosition(const Parameters::Vec3Type &position)
 {
     _positions.push_back(position);
+}
+
+void Visualizer::updateMapView()
+{
+    // render agent map view
+    _occupancies.clear();
+    _width = Parameters::voxelsPerDimensionX;
+    _height = Parameters::voxelsPerDimensionY;
+
+    _fullMap.clear();
+    for (unsigned int y = 0; y < _height; ++y)
+    {
+        for (unsigned int x = 0; x < _width; ++x)
+        {
+            for (unsigned int z = 0; z < 1; ++z)
+            {
+                auto _x = Parameters::xMin + x * Parameters::voxelSize;
+                auto _y = Parameters::yMin + y * Parameters::voxelSize;
+                auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                auto voxel = _map->query(_x, _y, _z);
+                _fullMap.push_back(1.f - (float) _map->getVoxelMean(voxel));
+            }
+        }
+    }
+    if (!_egoCentric)
+    {
+        _occupancies = _fullMap;
+    }
+    else
+    {
+        _width *= _egoCentricResolutionScaling;
+        _height *= _egoCentricResolutionScaling;
+        for (unsigned int y = 0; y < _height; ++y)
+        {
+            for (unsigned int x = 0; x < _width; ++x)
+            {
+                for (unsigned int z = 0; z < 1; ++z)
+                {
+                    auto _x = Parameters::xMin + x * Parameters::voxelSize / _egoCentricResolutionScaling;
+                    auto _y = Parameters::yMin + y * Parameters::voxelSize / _egoCentricResolutionScaling;
+                    auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                    auto direction = Eigen::Vector3f(_x, _y, _z);
+                    auto rotHorizontal = Eigen::AngleAxis<float>(
+                            (float) (_robot->yaw() - M_PI_2), Eigen::Vector3f(0, 0, 1));
+                    Eigen::Vector3f rotated = rotHorizontal * (direction);
+                    double distx = std::abs(rotated[0]);
+                    double disty = std::abs(rotated[1]);
+                    double xfactor = 1, yfactor = 1;
+                    if (_egoCentricScaling)
+                    {
+                        xfactor = std::pow(distx, 1.2);
+                        yfactor = std::pow(disty, 1.2);
+                    }
+                    double r = _map->filteredReachability(
+                            rotated[0] * xfactor + _robot->position().x(),
+                            rotated[1] * yfactor + _robot->position().y(),
+                            rotated[2]);
+//                    double r = _map->filteredReachability(_x, _y, _z);
+                    _occupancies.push_back((float) r);
+
+
+//                    auto voxel = _map->query(_x, _y, _z);
+//                    float m = (float) (voxel.type == GEOMETRY_VOXEL ? _map->getVoxelMean(voxel) : Parameters::priorMean);
+//                    _occupancies.push_back(1.f - m);
+                }
+            }
+        }
+    }
 }
