@@ -26,7 +26,7 @@ int _window = 0;
 bool _gymMode = false;
 int _skipFrame = 10;
 bool _egoCentric = false;
-bool _egoCentricScaling = false;
+bool _egoCentricScaling = true;
 
 int _egoCentricResolutionScaling = 1;
 
@@ -43,26 +43,28 @@ void draw()
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    // render map
+    // render agent map view
     _occupancies.clear();
     _width = Parameters::voxelsPerDimensionX;
     _height = Parameters::voxelsPerDimensionY;
-    if (!_egoCentric)
+    std::vector<float> fullMap;
+    for (unsigned int y = 0; y < _height; ++y)
     {
-        for (unsigned int y = 0; y < _height; ++y)
+        for (unsigned int x = 0; x < _width; ++x)
         {
-            for (unsigned int x = 0; x < _width; ++x)
+            for (unsigned int z = 0; z < 1; ++z)
             {
-                for (unsigned int z = 0; z < 1; ++z)
-                {
-                    auto _x = Parameters::xMin + x * Parameters::voxelSize;
-                    auto _y = Parameters::yMin + y * Parameters::voxelSize;
-                    auto _z = Parameters::zMin + z * Parameters::voxelSize;
-                    auto voxel = _map->query(_x, _y, _z);
-                    _occupancies.push_back(1.f - (float) _map->getVoxelMean(voxel));
-                }
+                auto _x = Parameters::xMin + x * Parameters::voxelSize;
+                auto _y = Parameters::yMin + y * Parameters::voxelSize;
+                auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                auto voxel = _map->query(_x, _y, _z);
+                fullMap.push_back(1.f - (float) _map->getVoxelMean(voxel));
             }
         }
+    }
+    if (!_egoCentric)
+    {
+        _occupancies = fullMap;
     }
     else
     {
@@ -86,8 +88,8 @@ void draw()
                     double xfactor = 1, yfactor = 1;
                     if (_egoCentricScaling)
                     {
-                        xfactor = std::pow(distx, 2.);
-                        yfactor = std::pow(disty, 2.);
+                        xfactor = std::pow(distx, 1.2);
+                        yfactor = std::pow(disty, 1.2);
                     }
                     double r = _map->filteredReachability(
                             rotated[0] * xfactor + _robot->position().x(),
@@ -104,6 +106,11 @@ void draw()
             }
         }
     }
+
+    glPushMatrix();
+    glTranslatef(-.5f, 0, 0);
+    glScalef(.5f, 1, 1);
+
     float *map_tex = _occupancies.data(); //TODO publish
 
     glBindTexture(GL_TEXTURE_2D, map_tex_id);
@@ -135,25 +142,28 @@ void draw()
 
     glDisable(GL_TEXTURE_2D);
 
-    glPushMatrix();
-    float sf = 2.f/(_width * Parameters::voxelSize);
-    glScalef(sf, sf, sf);
-    // render position trace
-    glColor3f(1, .5f, 0);
-    glPushMatrix();
-    if (_egoCentric)
+    if (!_egoCentricScaling)
     {
-        glRotated((M_PI_2-_robot->yaw()) * 180./M_PI, 0, 0, 1);
-        glTranslatef(-_robot->position().x(), -_robot->position().y(), 0);
+        // render position trace
+        glPushMatrix();
+        float sf = 2.f / (_width * Parameters::voxelSize);
+        glScalef(sf, sf, sf);
+        glColor3f(1, .5f, 0);
+        glPushMatrix();
+        if (_egoCentric)
+        {
+            glRotated((M_PI_2 - _robot->yaw()) * 180. / M_PI, 0, 0, 1);
+            glTranslatef(-_robot->position().x(), -_robot->position().y(), 0);
+        }
+        glBegin(GL_LINE_STRIP);
+        for (auto &p : _positions)
+        {
+            glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
+        }
+        glVertex2f(_robot->position().x(), (GLfloat) ((_robot->position().y() + 1.) * (1.84 / 2.) - 0.84));
+        glEnd();
+        glPopMatrix();
     }
-    glBegin(GL_LINE_STRIP);
-    for (auto &p : _positions)
-    {
-        glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
-    }
-    glVertex2f(_robot->position().x(), (GLfloat) ((_robot->position().y() + 1.) * (1.84 / 2.) - 0.84));
-    glEnd();
-    glPopMatrix();
 
     glColor3f(1, 0, 0);
     glBegin(GL_POINTS);
@@ -180,6 +190,82 @@ void draw()
                    (GLfloat) ((y + 1.) * (1.84 / 2.) - 0.84));
     }
     glEnd();
+
+    glPopMatrix();
+
+    // draw right side (full map view)
+    glPushMatrix();
+    glColor3f(1, 1, 1);
+    glTranslatef(.5f, 0, 0);
+    glScalef(.5f, 1, 1);
+
+    map_tex = fullMap.data(); //TODO publish
+
+    glBindTexture(GL_TEXTURE_2D, map_tex_id);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,
+                 _width, _height,
+                 0, GL_LUMINANCE, GL_FLOAT, map_tex);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, map_tex_id);
+
+    glBegin(GL_QUADS);
+    glTexCoord2f(0, 0);
+    glVertex3f(  x1, y1, 0.f);
+    glTexCoord2f(1, 0);
+    glVertex3f(  x2, y1, 0.f);
+    glTexCoord2f(1, 1);
+    glVertex3f(  x2, y2, 0.f);
+    glTexCoord2f(0, 1);
+    glVertex3f(  x1, y2, 0.f);
+    glEnd();
+
+    glDisable(GL_TEXTURE_2D);
+
+    // render position trace
+    glPushMatrix();
+    float sf = 2.f / (_width * Parameters::voxelSize);
+    glScalef(sf, sf, sf);
+    glColor3f(1, .5f, 0);
+    glPushMatrix();
+    glBegin(GL_LINE_STRIP);
+    for (auto &p : _positions)
+    {
+        glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
+    }
+    glVertex2f(_robot->position().x(), (GLfloat) ((_robot->position().y() + 1.) * (1.84 / 2.) - 0.84));
+    glEnd();
+    glPopMatrix();
+
+    glColor3f(1, 0, 0);
+    glBegin(GL_POINTS);
+    p = _robot->position();
+    glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
+    glEnd();
+
+    glBegin(GL_LINES);
+    direction = Eigen::Vector3f(_robot->orientation().x(), _robot->orientation().y(), _robot->orientation().z());
+    for (unsigned int hp = 0; hp < Parameters::StereoCameraHorizontalPixels; ++hp)
+    {
+        double angleH = -Parameters::StereoCameraHorizontalFOV/2. + hp * hFactor;
+        auto rotHorizontal = Eigen::AngleAxis<float>((float) angleH, Eigen::Vector3f(0, 0, 1));
+        Eigen::Vector3f rotated = rotHorizontal * (direction);
+
+        glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
+        float y = (float) (p.y() + rotated[1] * Parameters::sensorRange);
+        glVertex2f((GLfloat) (p.x() + rotated[0] * Parameters::sensorRange),
+                   (GLfloat) ((y + 1.) * (1.84 / 2.) - 0.84));
+    }
+    glEnd();
+
+    glPopMatrix();
 
     glPopMatrix(); // scaling
 
@@ -319,7 +405,7 @@ Visualizer::Visualizer(TrueMap *trueMap, MapType *map, FakeRobot<> *robot,
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 
-    glutInitWindowSize(350, 380);
+    glutInitWindowSize(700, 380);
     glutInitWindowPosition(100, 100);
 
     _window = glutCreateWindow("SMAP Gym Environment");
@@ -380,4 +466,9 @@ int Visualizer::mapWidth() const
 int Visualizer::mapHeight() const
 {
     return _height;
+}
+
+void Visualizer::registerPosition(const Parameters::Vec3Type &position)
+{
+    _positions.push_back(position);
 }

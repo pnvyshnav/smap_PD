@@ -24,4 +24,6 @@ public:
     void setVelocity(float velocity);
     void setAngularVelocity(float angularVelocity);
     void setObservation(std::vector<float> observation);
+
+    void registerPosition(const Parameters::Vec3Type &position);
 };

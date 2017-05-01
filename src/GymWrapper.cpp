@@ -148,6 +148,7 @@ extern "C"
         auto p = robot.position();
         robot.setYaw(robot.yaw() - angularVelocity);
         robot.setPosition(p + robot.orientation() * velocity);
+        visualizer->registerPosition(robot.position());
         robot.run();
 
         auto stats = map.stats(trueMap);

@@ -30,11 +30,11 @@ def run_task(*_):
         name="CNN_Policy",
         env_spec=env_spec,
         # The neural network policy should have two hidden layers, each with 4 hidden units.
-        hidden_sizes=[256],
+        hidden_sizes=[32, 32, 16],
         conv_filters=[3],
-        conv_filter_sizes=[(5, 5)],
-        conv_strides=[1],
-        conv_pads=[0]
+        conv_filter_sizes=[(3, 3)],
+        conv_strides=[2],
+        conv_pads=['same']
     )
 
     baseline = LinearFeatureBaseline(env_spec=env_spec)
@@ -50,7 +50,7 @@ def run_task(*_):
         discount=0.99,
         step_size=0.01,
         # Uncomment both lines (this and the plot parameter below) to enable plotting
-        plot=True,
+        plot=False,
     )
     algo.train()
 
@@ -59,7 +59,7 @@ def main():
     run_experiment_lite(
         run_task,
         # Number of parallel workers for sampling
-        n_parallel=1,
+        n_parallel=3,
         # Only keep the snapshot parameters for the last iteration
         snapshot_mode="last",
         # Specifies the seed for the experiment. If this is not provided, a random seed
@@ -70,5 +70,5 @@ def main():
 
 
 if __name__ == "__main__":
-    # main()
-    run_task()
+    main()
+    # run_task()
