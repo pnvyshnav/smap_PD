@@ -161,6 +161,12 @@ public:
         int i = (int)std::floor((x - Parameters::xMin) / Parameters::voxelSize);
         int j = (int)std::floor((y - Parameters::yMin) / Parameters::voxelSize);
         int k = (int)std::floor((z - Parameters::zMin) / Parameters::voxelSize);
+        if (i < 0 || i >= Parameters::voxelsPerDimensionX ||
+            j < 0 || j >= Parameters::voxelsPerDimensionY ||
+            k < 0 || k >= Parameters::voxelsPerDimensionZ)
+        {
+            return 1. - Parameters::priorMean; // TODO return 0 ?
+        }
         double a = (x - Parameters::xMin) / Parameters::voxelSize - (double)i;
         double b = (y - Parameters::yMin) / Parameters::voxelSize - (double)j;
         double c = (z - Parameters::zMin) / Parameters::voxelSize - (double)k;

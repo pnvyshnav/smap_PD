@@ -57,11 +57,15 @@ public:
 
     double getVoxelMean(QBeliefVoxel &voxel) const
     {
+        if (voxel.type != GEOMETRY_VOXEL)
+            return Parameters::priorMean;
         return voxel.node()->getValue().mean();
     }
 
     double getVoxelStd(QBeliefVoxel &voxel) const
     {
+        if (voxel.type != GEOMETRY_VOXEL)
+            return Parameters::priorStd;
         return std::sqrt(voxel.node()->getValue().variance());
     }
 
