@@ -58,6 +58,11 @@ void handleObservation(const Observation &observation)
 
 int main(int argc, char **argv)
 {
+    ROS_INFO("Map size: %i x %i x %i voxels",
+             Parameters::voxelsPerDimensionX,
+             Parameters::voxelsPerDimensionY,
+             Parameters::voxelsPerDimensionZ);
+
     glutInit(&argc, argv);
 
     ros::init(argc, argv, "SMAP");

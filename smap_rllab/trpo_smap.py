@@ -33,7 +33,7 @@ def run_task(*_):
         hidden_sizes=[32, 32],
         conv_filters=[2],
         conv_filter_sizes=[(3, 3)],
-        conv_strides=[2],
+        conv_strides=[1, 2],
         conv_pads=['same']
     )
 
