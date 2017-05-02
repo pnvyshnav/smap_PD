@@ -46,7 +46,7 @@ extern "C"
 
         episode = 0;
 
-        visualizer = new Visualizer(&trueMap, &map, &robot, true, skipFrame);
+        visualizer = new Visualizer(&trueMap, &map, &robot, true, skipFrame, true);
 
         robot.setPosition(Parameters::Vec3Type(0, 0, 0));
         robot.setYaw(M_PI / 2.);

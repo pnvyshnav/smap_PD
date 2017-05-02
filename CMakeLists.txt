@@ -12,6 +12,8 @@ find_package(octomap REQUIRED)
 include_directories(${OCTOMAP_INCLUDE_DIRS})
 link_libraries(${OCTOMAP_LIBRARIES})
 
+find_package(OpenCV REQUIRED)
+
 find_package(OpenMP)
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -198,6 +200,7 @@ target_link_libraries(smap
         ${catkin_LIBRARIES}
         ${PCL_LIBRARIES}
         ${OCTOMAP_LIBRARIES}
+        ${OpenCV_LIBS}
         glfwm GL GLU glut
         "/usr/local/lib/libnlopt.so"
 )
@@ -206,6 +209,7 @@ target_link_libraries(gym
         ${catkin_LIBRARIES}
         ${PCL_LIBRARIES}
         ${OCTOMAP_LIBRARIES}
+        ${OpenCV_LIBS}
         glfwm GL GLU glut
         "/usr/local/lib/libnlopt.so"
         )
