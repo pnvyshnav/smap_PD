@@ -1,6 +1,8 @@
 import sys
 
 # Add the ptdraft folder path to the sys.path list
+from rllab.baselines.gaussian_conv_baseline import GaussianConvBaseline
+
 sys.path.append('/home/eric/dev/rllab/')
 
 from rllab.algos.trpo import TRPO
@@ -37,7 +39,17 @@ def run_task(*_):
         conv_pads=['same']
     )
 
-    baseline = LinearFeatureBaseline(env_spec=env_spec)
+    regressor_args = {
+        'hidden_sizes': [16, 8],
+        'conv_filters': [2],
+        'conv_filter_sizes': [(3, 3)],
+        'conv_strides': [1, 2],
+        'conv_pads': ['same']
+    }
+    baseline = GaussianConvBaseline(
+        env_spec=env_spec,
+        regressor_args=regressor_args
+    )
 
     algo = TRPO(
         env=env,
