@@ -17,8 +17,8 @@ import numpy as np
 import lasagne.nonlinearities as NL
 import theano.tensor as TT
 
-
-class GaussianConvPolicy(StochasticPolicy, LasagnePowered):
+# Value Iteration Network (VIN) Policy
+class VinPolicy(StochasticPolicy, LasagnePowered):
     def __init__(
             self,
             name,
@@ -198,3 +198,90 @@ class GaussianConvPolicy(StochasticPolicy, LasagnePowered):
     @property
     def distribution(self):
         return self._dist
+
+
+class VinBlock(object):
+    """VIN block"""
+    def __init__(self, in_x, in_s1, in_s2, in_x_channels, imsize, batchsize=128,
+                 state_batch_size=1, l_h=150, l_q=10, k=0):
+        """
+        Allocate a VIN block with shared variable internal parameters.
+
+        :type in_x: theano.tensor.dtensor4
+        :param in_x: symbolic input image tensor, of shape [batchsize, in_x_channels, imsize[0], imsize[1]]
+        Typically : first channel is image, second is the reward prior.
+
+        :type in_s1: theano.tensor.bmatrix
+        :param in_s1: symbolic input batches of vertical positions, of shape [batchsize, state_batch_size]
+
+        :type in_s2: theano.tensor.bmatrix
+        :param in_s2: symbolic input batches of horizontal positions, of shape [batchsize, state_batch_size]
+
+        :type in_x_channels: int32
+        :param in_x_channels: number of input channels
+
+        :type imsize: tuple or list of length 2
+        :param imsize: (image height, image width)
+
+        :type batchsize: int32
+        :param batchsize: batch size
+
+        :type state_batch_size: int32
+        :param state_batch_size: number of state inputs for each sample
+
+        :type l_h: int32
+        :param l_h: number of channels in first hidden layer
+
+        :type l_q: int32
+        :param l_q: number of channels in q layer (~actions)
+
+        :type k: int32
+        :param k: number of VI iterations (actually, real number of iterations is k+1)
+
+        """
+        self.bias = theano.shared((np.random.randn(l_h) * 0.01).astype(theano.config.floatX))  # 150 parameters
+        self.w0 = init_weights_T(l_h, in_x_channels, 3, 3)  # 1350 parameters
+        # initial conv layer over image+reward prior
+        self.h = conv2D_keep_shape(in_x, self.w0, image_shape=[batchsize, self.w0.shape.eval()[1],
+                                                               imsize[0], imsize[1]],
+                                   filter_shape=self.w0.shape.eval())
+        self.h = self.h + self.bias.dimshuffle('x', 0, 'x', 'x')
+
+        self.w1 = init_weights_T(1, l_h, 1, 1)  # 150 parameters
+        self.r = conv2D_keep_shape(self.h, self.w1, image_shape=[batchsize, self.w0.shape.eval()[0],
+                                                                 imsize[0], imsize[1]],
+                                   filter_shape=self.w1.shape.eval())
+
+        # weights from inputs to q layer (~reward in Bellman equation)
+        self.w = init_weights_T(l_q, 1, 3, 3)  # 90 parameters
+        # feedback weights from v layer into q layer (~transition probabilities in Bellman equation)
+        self.w_fb = init_weights_T(l_q, 1, 3, 3)  # 90 parameters
+
+        self.q = conv2D_keep_shape(self.r, self.w, image_shape=[batchsize, self.w1.shape.eval()[0],
+                                                                imsize[0], imsize[1]],
+                                   filter_shape=self.w.shape.eval())
+        self.v = T.max(self.q, axis=1, keepdims=True)
+
+        for i in range(0, k-1):
+            self.q = conv2D_keep_shape(T.concatenate([self.r, self.v], axis=1), T.concatenate([self.w, self.w_fb],
+                                                                                              axis=1),
+                                       image_shape=[batchsize, self.w1.shape.eval()[0]+1, imsize[0], imsize[1]],
+                                       filter_shape=T.concatenate([self.w, self.w_fb], axis=1).shape.eval())
+            self.v = T.max(self.q, axis=1, keepdims=True)
+
+        # do one last convolution
+        self.q = conv2D_keep_shape(T.concatenate([self.r, self.v], axis=1), T.concatenate([self.w, self.w_fb], axis=1),
+                                   image_shape=[batchsize, self.w1.shape.eval()[0]+1, imsize[0], imsize[1]],
+                                   filter_shape=T.concatenate([self.w, self.w_fb], axis=1).shape.eval())
+
+        # Select the conv-net channels at the state position (S1,S2).
+        # This intuitively corresponds to each channel representing an action, and the convnet the Q function.
+        # The tricky thing is we want to select the same (S1,S2) position *for each* channel and for each sample
+        self.q_out = self.q[T.extra_ops.repeat(T.arange(self.q.shape[0]), state_batch_size), :, in_s1.flatten(),
+                     in_s2.flatten()]
+
+        # softmax output weights
+        self.w_o = init_weights_T(l_q, 8)  # 80 parameters
+        self.output = T.nnet.softmax(T.dot(self.q_out, self.w_o))
+
+        self.params = [self.w0, self.bias, self.w1, self.w, self.w_fb, self.w_o]

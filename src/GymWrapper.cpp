@@ -64,11 +64,24 @@ extern "C"
         episode += 1;
         lastPositions.clear();
         visualizer->setEpisode(episode);
+
 //        std::cout << "Resetting environment..." << std::endl;
         map.reset();
+
+        float difficulty = std::max(1.f, 500.f / episode);
+        int easiestRadius = 10;
+        int easiestBranches = 50;
+        int hardestRadius = 2;
+        int hardestBranches = 20;
+
+        // compute corridor map parameterized by difficulty
+        int radius = (int) ((1.f - difficulty) * easiestRadius + difficulty * hardestRadius);
+        int branches = (int) ((1.f - difficulty) * easiestBranches + difficulty * hardestBranches);
+
         //trueMap = TrueMap::generateRandomCorridor();
 //        std::cout << "Shuffling environment..." << std::endl;
-        trueMap.shuffleCorridor();
+        trueMap.shuffleCorridor(radius, branches, difficulty);
+
         robot.setPosition(Parameters::Vec3Type(0, 0, 0));
         robot.setYaw(M_PI / 2.);
 //        std::cout << "Running robot..." << std::endl;

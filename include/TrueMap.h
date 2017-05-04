@@ -17,13 +17,16 @@ public:
     static TrueMap generateCorridor2();
     static TrueMap generateRandomCorridor(int radius = 2, int branches = 20,
                                           unsigned int samplingWidth = 32, unsigned int samplingHeight = 32,
+                                          float difficulty = 0.5f,
                                           unsigned int seed = (unsigned int) time(NULL));
 
     /**
      * Alters the map with a new random map.
      */
     void shuffle();
-    void shuffleCorridor(int radius = 2, int branches = 20, unsigned int seed = (unsigned int) time(NULL));
+    void shuffleCorridor(int radius = 2, int branches = 20,
+                         float difficulty = 0.5f,
+                         unsigned int seed = (unsigned int) time(NULL));
 
     static inline bool insideMap(const Parameters::Vec3Type &point)
     {
@@ -45,6 +48,9 @@ public:
     TrueMap operator=(TrueMap &map);
     TrueMap operator=(TrueMap map);
 
+    Parameters::Vec3Type start() const;
+    Parameters::Vec3Type goal() const;
+
 private:
     TrueMap();
 
@@ -65,5 +71,6 @@ private:
 
     static TrueMap _generateFromObstacles(const std::vector<TrueMap::Rectangle> &obstacles);
 
+    Parameters::Vec3Type _start, _goal;
 };
 

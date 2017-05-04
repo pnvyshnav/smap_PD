@@ -85,8 +85,7 @@ class SmapExplore(Env):
     @overrides
     def observation_space(self):
         if self.global_view:
-            return spaces.Box(np.zeros((self.map_width, self.map_height)),
-                              np.ones((self.map_width, self.map_height)))
+            return spaces.Box(low=0, high=1, shape=(self.map_width, self.map_height, 2))
         return spaces.Box(np.zeros(RAYS), np.ones(RAYS))
 
     @property
@@ -133,6 +132,10 @@ class SmapExplore(Env):
         if self.global_view:
             ptr = lib.observeGlobal()
             obs = make_nd_array(ptr, (self.map_width, self.map_height), np.float32)
+            # encode current position in extra channel (one-hot encoding)
+            pos = np.zeros((self.map_width, self.map_height))
+            pos[int(self.map_width/2), int(self.map_height/2)] = 1
+            obs = np.asarray([obs, pos])
         else:
             ptr = lib.observeLocal(RAYS)
             obs = make_nd_array(ptr, (RAYS,), np.float32)

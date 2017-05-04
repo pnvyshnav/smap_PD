@@ -32,16 +32,28 @@ def run_task(*_):
         name="CNN_Policy",
         env_spec=env_spec,
         # The neural network policy should have two hidden layers, each with 4 hidden units.
-        hidden_sizes=[32, 32],
-        conv_filters=[2],
-        conv_filter_sizes=[(3, 3)],
-        conv_strides=[1, 2],
+        hidden_sizes=[64, 32, 32],
+        conv_filters=[100, 150, 150],
+        conv_filter_sizes=[(3, 3), (3, 3), (3, 3)],
+        conv_strides=[1, 1, 2],
         conv_pads=['same']
     )
 
+    # regressor_args GaussianConvPolicy= {
+    #     'hidden_sizes': [32, 32],
+    #     'conv_filters': [2],
+    #     'conv_filter_sizes': [(3, 3)],
+    #     'conv_strides': [1, 2],
+    #     'conv_pads': ['same']
+    # }
+    # policy = GaussianConvBaseline(
+    #     env_spec=env_spec,
+    #     regressor_args=regressor_args
+    # )
+
     regressor_args = {
         'hidden_sizes': [16, 8],
-        'conv_filters': [2],
+        'conv_filters': [50, 50],
         'conv_filter_sizes': [(3, 3)],
         'conv_strides': [1, 2],
         'conv_pads': ['same']
@@ -55,12 +67,12 @@ def run_task(*_):
         env=env,
         policy=policy,
         baseline=baseline,
-        batch_size=4000,
+        batch_size=1000,
         whole_paths=True,
         max_path_length=600,
         n_itr=1000,
         discount=0.99,
-        step_size=0.01,
+        step_size=0.1,
         # Uncomment both lines (this and the plot parameter below) to enable plotting
         plot=False,
     )
@@ -71,7 +83,7 @@ def main():
     run_experiment_lite(
         run_task,
         # Number of parallel workers for sampling
-        n_parallel=1,
+        n_parallel=3,
         # Only keep the snapshot parameters for the last iteration
         snapshot_mode="last",
         # Specifies the seed for the experiment. If this is not provided, a random seed

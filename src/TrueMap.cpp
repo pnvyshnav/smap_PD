@@ -8,6 +8,27 @@
 #include "../include/TrueMap.h"
 #include "../include/PointCloud.h"
 
+/**
+ * Computes indices of sorted array.
+ * Src: http://stackoverflow.com/a/12399290
+ * @tparam T Type of vector.
+ * @param v Vector values to be sorted.
+ * @return Indices of ascendingly sorted values.
+ */
+template <typename T>
+std::vector<size_t> sort_indexes(const std::vector<T> &v)
+{
+    // initialize original index locations
+    std::vector<size_t> idx(v.size());
+    std::iota(idx.begin(), idx.end(), 0);
+
+    // sort indexes based on comparing values in v
+    std::sort(idx.begin(), idx.end(),
+         [&v](size_t i1, size_t i2) {return v[i1] < v[i2];});
+
+    return idx;
+}
+
 TrueMap::TrueMap() : octomap::OcTree(Parameters::voxelSize), QVoxelMap(this)
 {
 }
@@ -236,6 +257,7 @@ void fillBlock(TrueMap *map, int x1, int x2, int y1, int y2, bool value = false,
 
 TrueMap TrueMap::generateRandomCorridor(int radius, int branches,
                                         unsigned int samplingWidth, unsigned int samplingHeight,
+                                        float difficulty,
                                         unsigned int seed)
 {
     srand(seed);
@@ -313,24 +335,33 @@ TrueMap TrueMap::generateRandomCorridor(int radius, int branches,
         }
     }
 
-    return map;
+    // find start / goal positions
+    std::vector<float> distances;
+    for (int i = 0; i < positions.size(); ++i)
+    {
+        for (int j = i+1; j < positions.size(); ++j)
+        {
+            distances.push_back((float)positions[i].distance(positions[j]));
+        }
+    }
+    auto sorted = sort_indexes(distances);
+    int difficultyIndex = std::max(0, std::min((int)distances.size()-1, (int)(difficulty * distances.size())));
+    int count = 0;
+    for (int i = 0; i < positions.size(); ++i)
+    {
+        for (int j = i+1; j < positions.size(); ++j)
+        {
+            if (count++ == difficultyIndex)
+            {
 
-//    // find start / goal positions
-//    max_dist = 0
-//    start, goal = (0,0), (0,0)
-//    for x1, y1 in positions:
-//        i1, j1 = (x1-Parameters::xMin) / Parameters::voxelSize, (y1-Parameters::yMin) / Parameters::voxelSize
-//        if world[i1, j1] > 1e-4:
-//            continue
-//        for x2, y2 in positions:
-//            i2, j2 = (x2-Parameters::xMin) / Parameters::voxelSize, (y2-Parameters::yMin) / Parameters::voxelSize
-//            if world[i2, j2] > 1e-4:
-//                continue
-//            dist = (x1-x2)**2 + (y1-y2)**2
-//            if dist > max_dist:
-//                max_dist = dist
-//                start = (x1,y1)
-//                goal = (x2, y2)
+                map._start = positions[i];
+                map._goal = positions[j];
+                break;
+            }
+        }
+    }
+
+    return map;
 }
 
 TrueMap TrueMap::operator=(TrueMap &map)
@@ -373,7 +404,7 @@ TrueMap TrueMap::operator=(TrueMap map)
     return *this;
 }
 
-void TrueMap::shuffleCorridor(int radius, int branches, unsigned int seed)
+void TrueMap::shuffleCorridor(int radius, int branches, float difficulty, unsigned int seed)
 {
     srand(seed);
 
@@ -442,4 +473,40 @@ void TrueMap::shuffleCorridor(int radius, int branches, unsigned int seed)
             positions.push_back(Parameters::Vec3Type(nx, closest.y(), Parameters::zCenter));
         }
     }
+
+    // find start / goal positions
+    std::vector<float> distances;
+    for (int i = 0; i < positions.size(); ++i)
+    {
+        for (int j = i+1; j < positions.size(); ++j)
+        {
+            distances.push_back((float)positions[i].distance(positions[j]));
+        }
+    }
+    auto sorted = sort_indexes(distances);
+    int difficultyIndex = std::max(0, std::min((int)distances.size()-1, (int)(difficulty * distances.size())));
+    int count = 0;
+    for (int i = 0; i < positions.size(); ++i)
+    {
+        for (int j = i+1; j < positions.size(); ++j)
+        {
+            if (count++ == difficultyIndex)
+            {
+
+                _start = positions[i];
+                _goal = positions[j];
+                break;
+            }
+        }
+    }
+}
+
+Parameters::Vec3Type TrueMap::start() const
+{
+    return _start;
+}
+
+Parameters::Vec3Type TrueMap::goal() const
+{
+    return _goal;
 }
