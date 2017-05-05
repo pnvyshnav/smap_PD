@@ -1,6 +1,7 @@
 import sys
 
 # Add the ptdraft folder path to the sys.path list
+from rllab.algos.npo import NPO
 from rllab.baselines.gaussian_conv_baseline import GaussianConvBaseline
 
 sys.path.append('/home/eric/dev/rllab/')
@@ -11,12 +12,13 @@ from rllab.envs.gym_env import GymEnv
 from rllab.envs.normalized_env import normalize
 from rllab.misc.instrument import run_experiment_lite
 from rllab.policies.gaussian_mlp_policy import GaussianMLPPolicy
+from rllab.policies.categorical_conv_policy import CategoricalConvPolicy
 from smap_rllab import SmapExplore
 from cnn_policy import GaussianConvPolicy
 
 
 def run_task(*_):
-    env = SmapExplore(skip_frame=100, global_view=True)
+    env = SmapExplore(skip_frame=100, global_view=True, discrete_actions=True)
     env_spec = env.env_spec()
     env = normalize(env)
     # env = normalize(GymEnv("Pendulum-v0"))
@@ -28,15 +30,27 @@ def run_task(*_):
     #     # The neural network policy should have two hidden layers, each with 4 hidden units.
     #     hidden_sizes=(32, 32, 16)
     # )
-    policy = GaussianConvPolicy(
+
+    # policy = GaussianConvPolicy(
+    #     name="CNN_Policy",
+    #     env_spec=env_spec,
+    #     # The neural network policy should have two hidden layers, each with 4 hidden units.
+    #     hidden_sizes=[200, 100, 50],
+    #     conv_filters=[150, 150, 150],
+    #     conv_filter_sizes=[(2,2), (2,2), (2,2)],
+    #     conv_strides=[1, 2, 2],
+    #     conv_pads=[0] #['same']
+    # )
+
+    policy = CategoricalConvPolicy(
         name="CNN_Policy",
         env_spec=env_spec,
         # The neural network policy should have two hidden layers, each with 4 hidden units.
-        hidden_sizes=[64, 32, 32],
-        conv_filters=[100, 150, 150],
-        conv_filter_sizes=[(3, 3), (3, 3), (3, 3)],
-        conv_strides=[1, 1, 2],
-        conv_pads=['same']
+        hidden_sizes=[100, 80, 50],
+        conv_filters=[150, 150, 100],
+        conv_filter_sizes=[(2,2), (2,2), (2,2)],
+        conv_strides=[1, 2, 2],
+        conv_pads=[0] #['same']
     )
 
     # regressor_args GaussianConvPolicy= {
@@ -67,12 +81,12 @@ def run_task(*_):
         env=env,
         policy=policy,
         baseline=baseline,
-        batch_size=1000,
+        batch_size=4000,
         whole_paths=True,
         max_path_length=600,
-        n_itr=1000,
+        n_itr=5000,
         discount=0.99,
-        step_size=0.1,
+        step_size=0.02,
         # Uncomment both lines (this and the plot parameter below) to enable plotting
         plot=False,
     )

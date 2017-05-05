@@ -35,26 +35,6 @@ extern "C"
     std::vector<float> observation;
 
     /**
-     * Initializes environment.
-     */
-    void initialize(int skipFrame = 1)
-    {
-        char *myargv[1];
-        int myargc = 1;
-        myargv[0] = strdup("SMAP Gym Environment");
-        glutInit(&myargc, myargv);
-
-        episode = 0;
-
-        visualizer = new Visualizer(&trueMap, &map, &robot, true, skipFrame, true);
-
-        robot.setPosition(Parameters::Vec3Type(0, 0, 0));
-        robot.setYaw(M_PI / 2.);
-        robot.registerObserver(&handleObservation);
-        robot.run();
-    }
-
-    /**
      * Resets the environment.
      */
     void reset()
@@ -68,25 +48,48 @@ extern "C"
 //        std::cout << "Resetting environment..." << std::endl;
         map.reset();
 
-        float difficulty = std::max(1.f, 500.f / episode);
+        float difficulty = std::min(1.f, (float)episode / 2000.f);
+//        std::cout << "Difficulty: " << difficulty << std::endl;
         int easiestRadius = 10;
         int easiestBranches = 50;
-        int hardestRadius = 2;
-        int hardestBranches = 20;
+        int hardestRadius = 4;
+        int hardestBranches = 35;
 
         // compute corridor map parameterized by difficulty
         int radius = (int) ((1.f - difficulty) * easiestRadius + difficulty * hardestRadius);
         int branches = (int) ((1.f - difficulty) * easiestBranches + difficulty * hardestBranches);
 
+//        std::cout << "radius: " << radius << "   branches: " << branches << std::endl;
         //trueMap = TrueMap::generateRandomCorridor();
 //        std::cout << "Shuffling environment..." << std::endl;
         trueMap.shuffleCorridor(radius, branches, difficulty);
 
+//        robot.setPosition(trueMap.start()); //Parameters::Vec3Type(0, 0, 0));
+//        robot.setYaw(rand() * M_PI / RAND_MAX);
         robot.setPosition(Parameters::Vec3Type(0, 0, 0));
         robot.setYaw(M_PI / 2.);
+
 //        std::cout << "Running robot..." << std::endl;
         robot.run();
 //        std::cout << "Finished reset" << std::endl;
+    }
+
+    /**
+     * Initializes environment.
+     */
+    void initialize(int skipFrame = 1)
+    {
+        char *myargv[1];
+        int myargc = 1;
+        myargv[0] = strdup("SMAP Gym Environment");
+        glutInit(&myargc, myargv);
+
+        episode = 0;
+
+        visualizer = new Visualizer(&trueMap, &map, &robot, true, skipFrame, true);
+        robot.registerObserver(&handleObservation);
+
+        reset();
     }
 
     /**
@@ -112,6 +115,15 @@ extern "C"
     float* observeGlobal()
     {
         return visualizer->mapView();
+    }
+
+    /**
+     * Returns one-hot encoding of goal.
+     * @return Transformed goal map (dependent on wether ego-centric orientation is active).
+     */
+    float* goalView()
+    {
+        return visualizer->goalView();
     }
 
     /**
@@ -182,23 +194,24 @@ extern "C"
 
         auto v = trueMap.query(robot.position());
         if (!inside() || v.type != GEOMETRY_VOXEL || trueMap.getVoxelMean(v) > 0.5)
-            return -1000;
+            return -10000;
 
         // multiply by the distance to closest last position
         // to reinforce exploration of new areas
-        float closestDistance = 1;
+        double closestDistance = 1;
         for (auto &pos : lastPositions)
         {
-            float dist = pos.distance(robot.position());
+            auto dist = pos.distance(robot.position());
             if (dist < closestDistance)
                 closestDistance = dist;
         }
+        closestDistance = closestDistance*3. - Parameters::voxelSize * 3.;
         lastPositions.push_back(robot.position());
 
 
         //if (reachability() < 0.5)
          //   return (float) (-std::abs(diff) * reachability());
-        return (float) diff * 10.f * closestDistance;
+        return (float) (diff * closestDistance);
     }
 
     void destroy()

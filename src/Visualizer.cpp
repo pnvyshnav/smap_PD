@@ -15,6 +15,7 @@ float _angularVelocity = 0;
 
 std::vector<float> _observation;
 std::vector<float> _occupancies;
+std::vector<float> _goalEncoding;
 std::vector<float> _fullMap;
 unsigned int _width;
 unsigned int _height;
@@ -36,8 +37,8 @@ int _egoCentricResolutionScaling = 1;
 
 void draw()
 {
-    if (_gymMode && frame++ % 5 != 0)
-        return;
+//    if (_gymMode && frame++ % 5 != 0)
+//        return;
 
     Visualizer::updateMapView();
 
@@ -48,6 +49,12 @@ void draw()
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+
+
+
+    //////////////////////////////////////////
+    //      LEFT SIDE (observed map view)
+    //////////////////////////////////////////
 
     glPushMatrix();
     glTranslatef(-.5f, 0, 0);
@@ -114,7 +121,12 @@ void draw()
 
     glPopMatrix();
 
-    // draw right side (full map view)
+
+
+    //////////////////////////////////////////
+    //      RIGHT SIDE (full map view)
+    //////////////////////////////////////////
+
     glPushMatrix();
     glColor3f(1, 1, 1);
     glTranslatef(.5f, 0, 0);
@@ -165,6 +177,18 @@ void draw()
     glEnd();
     glPopMatrix();
 
+    // draw start & goal
+    glBegin(GL_POINTS);
+    glColor3f(1, 0, 0);
+    p = _trueMap->start();
+    glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
+    glColor3f(0, 1, 0);
+    p = _trueMap->goal();
+    glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
+    glEnd();
+
+    // draw robot
+
     glColor3f(1, 0, 0);
     glBegin(GL_POINTS);
     p = _robot->position();
@@ -189,6 +213,12 @@ void draw()
     glPopMatrix();
 
     glPopMatrix(); // scaling
+
+
+
+    //////////////////////////////////////////
+    //           BOTTOM ELEMENTS
+    //////////////////////////////////////////
 
     // render observation
     if (!_observation.empty())
@@ -416,6 +446,13 @@ void Visualizer::updateMapView()
             }
         }
     }
+    cv::Mat goalMat = cv::Mat(
+            Parameters::voxelsPerDimensionY,
+            Parameters::voxelsPerDimensionX,
+            CV_32F
+    );
+    goalMat.at<float>((int) ((_trueMap->goal().y() - Parameters::yMin) / Parameters::voxelSize),
+                      (int) ((_trueMap->goal().x() - Parameters::xMin) / Parameters::voxelSize)) = 1.f;
     _occupancies = _fullMap;
     if (_egoCentric)
     {
@@ -434,14 +471,19 @@ void Visualizer::updateMapView()
         cv::Point2f center3(
                 .5f*Parameters::voxelsPerDimensionX,
                 .5f*Parameters::voxelsPerDimensionY);
-        cv::Mat_<float> rotMat = cv::getRotationMatrix2D(center3, _robot->yaw() * 180.f / M_PI - 90.f, 1.25);
+        cv::Mat_<float> rotMat = cv::getRotationMatrix2D(center3, _robot->yaw() * 180.f / M_PI - 90.f, 1.);
         cv::Mat_<float> transMat = (cv::Mat_<float>(2,3) << 1, 0, -center2.x, 0, 1, -center2.y);
 
         cv::Mat rotated, translated;
         cv::warpAffine(m, translated, transMat, m.size(), CV_INTER_LINEAR, 0, 0.5);
         cv::warpAffine(translated, rotated, rotMat, m.size(), CV_INTER_LINEAR, 0, 0.5);
         _occupancies.assign((float*) rotated.datastart, (float*) rotated.dataend);
+
+        // transform goal encoding
+        cv::warpAffine(goalMat, translated, transMat, m.size(), CV_INTER_LINEAR, 0, 0.5);
+        cv::warpAffine(translated, goalMat, rotMat, m.size(), CV_INTER_LINEAR, 0, 0.5);
     }
+    _goalEncoding.assign((float*) goalMat.datastart, (float*) goalMat.dataend);
 //    if (!_egoCentric)
 //    {
 //        _occupancies = _fullMap;
@@ -486,4 +528,9 @@ void Visualizer::updateMapView()
 //            }
 //        }
 //    }
+}
+
+float *Visualizer::goalView() const
+{
+    return _goalEncoding.data();
 }

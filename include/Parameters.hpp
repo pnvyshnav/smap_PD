@@ -82,7 +82,7 @@ public:
 
     static const bool sensorTruncatedGaussianNoise = false;
     static constexpr NumType sensorRange = (const NumType) 0.6; // TODO was 1.5
-    static constexpr NumType sensorNoiseStd = (const NumType) 0.05; // TODO was 0.2 //(sensorRange / 10.); // TODO revert
+    static constexpr NumType sensorNoiseStd = (const NumType) 0.0005; // TODO was 0.2 //(sensorRange / 10.); // TODO revert
 
     static constexpr double FakeRobotAngularVelocity = 15. * M_PI / 180.;
 //    static const unsigned int StereoCameraHorizontalPixels = 8;

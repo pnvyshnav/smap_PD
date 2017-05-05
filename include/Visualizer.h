@@ -14,6 +14,7 @@ public:
     virtual ~Visualizer();
 
     float *mapView() const;
+    float *goalView() const;
     int mapWidth() const;
     int mapHeight() const;
 

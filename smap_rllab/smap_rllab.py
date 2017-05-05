@@ -2,7 +2,7 @@ from collections import namedtuple
 from ctypes import *
 import _ctypes
 import numpy as np
-import os, sys
+import os, sys, math
 
 from rllab import spaces
 from rllab.envs.base import Env, Step
@@ -11,6 +11,21 @@ from rllab.misc.overrides import overrides
 
 RAYS = 32
 END_TIME = 2000
+
+# DISCRETE_ACTIONS = [
+#     (0.025, 0),
+#     (0.05, 0),
+#     (0, -.1),
+#     (0, .1),
+#     (0.025, -.03),
+#     (0.025, .03),
+# ]
+
+DISCRETE_ACTIONS = [
+    (0.05, 0),
+    (0, -math.pi/2.),
+    (0, math.pi/2.),
+]
 
 
 def make_nd_array(c_pointer, shape, dtype=np.float64, order='C', own_data=True):
@@ -45,6 +60,7 @@ def load(skip_frame=1):
     lib.observeLocal.restype = POINTER(c_float)
 
     lib.observeGlobal.restype = POINTER(c_float)
+    lib.goalView.restype = POINTER(c_float)
 
     lib.mapWidth.restype = c_int
     lib.mapHeight.restype = c_int
@@ -63,7 +79,7 @@ def isLoaded():
 
 
 class SmapExplore(Env):
-    def __init__(self, skip_frame=5, global_view=False):
+    def __init__(self, skip_frame=5, global_view=False, discrete_actions=False):
         if not isLoaded():
             load(skip_frame)
             print("loaded library", lib)
@@ -75,10 +91,13 @@ class SmapExplore(Env):
         self.global_view = global_view
         self.map_width = lib.mapWidth()
         self.map_height = lib.mapHeight()
+        self.discrete_actions = discrete_actions
 
     @property
     @overrides
     def action_space(self):
+        if self.discrete_actions:
+            return spaces.Discrete(len(DISCRETE_ACTIONS))
         return spaces.Box(np.array([0, -0.1]), np.array([+0.05, +0.1]))
 
     @property
@@ -125,8 +144,10 @@ class SmapExplore(Env):
         self.reward = 0.
         self.last_reward = self.reward
         if action is not None:
+            if self.discrete_actions:
+                action = DISCRETE_ACTIONS[action]
             self.t += 1.
-            self.reward = lib.act(action[0], action[1]) - 10.
+            self.reward = lib.act(action[0], action[1])
         done = self.t >= END_TIME or not lib.inside() or self.reward < -500
 
         if self.global_view:

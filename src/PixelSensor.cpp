@@ -24,7 +24,7 @@ Observation PixelSensor::observe(TrueMap &trueMap) const
         octomap::point3d end_ray = _position + _orientation * Parameters::sensorRange;
         if (!trueMap.computeRay(_position, end_ray, positions) || positions.empty())
         {
-            ROS_ERROR("Voxels on _ray could not be computed.");
+            ROS_ERROR("Voxels on ray could not be computed.");
             return Measurement::hole(ray());
         }
         else

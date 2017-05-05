@@ -237,9 +237,9 @@ void fillBlock(TrueMap *map, int x1, int x2, int y1, int y2, bool value = false,
                float ymin = Parameters::yMin,
                float zmin = Parameters::zMin)
 {
-    for (int x = std::max(1, std::min(x1, x2)); x <= std::min((int)Parameters::voxelsPerDimensionX-1, std::max(x1, x2)); ++x)
+    for (int x = std::max(1, std::min(x1, x2)); x <= std::min((int)Parameters::voxelsPerDimensionX-2, std::max(x1, x2)); ++x)
     {
-        for (int y = std::max(1, std::min(y1, y2)); y <= std::min((int)Parameters::voxelsPerDimensionY-1, std::max(y1, y2)); ++y)
+        for (int y = std::max(1, std::min(y1, y2)); y <= std::min((int)Parameters::voxelsPerDimensionY-2, std::max(y1, y2)); ++y)
         {
             for (int z = 0; z <= Parameters::voxelsPerDimensionZ; ++z)
             {
