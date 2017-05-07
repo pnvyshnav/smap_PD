@@ -148,8 +148,8 @@ public:
 #endif
 
 #if defined(PLANNER_2D_TEST)
-    static const unsigned int StereoCameraHorizontalPixels = 16; // TODO was 8
-    static constexpr double StereoCameraHorizontalFOV = 90. * M_PI / 180.;
+    static const unsigned int StereoCameraHorizontalPixels = 50; //16; // TODO was 8
+    static constexpr double StereoCameraHorizontalFOV = 2 * M_PI; //90. * M_PI / 180.;
 #endif
 
     static constexpr NumType xCenter = (const NumType) ((xMax + xMin) / 2.0);

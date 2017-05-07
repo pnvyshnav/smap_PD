@@ -16,6 +16,7 @@ float _angularVelocity = 0;
 std::vector<float> _observation;
 std::vector<float> _occupancies;
 std::vector<float> _goalEncoding;
+std::vector<float> _positionEncoding;
 std::vector<float> _fullMap;
 unsigned int _width;
 unsigned int _height;
@@ -455,6 +456,15 @@ void Visualizer::updateMapView()
     int row = (int) ((_trueMap->goal().y() - Parameters::yMin) / Parameters::voxelSize);
     int col = (int) ((_trueMap->goal().x() - Parameters::xMin) / Parameters::voxelSize);
     goalMat.at<float>(row, col) = 10.f;
+    cv::Mat posMat = cv::Mat(
+            Parameters::voxelsPerDimensionY,
+            Parameters::voxelsPerDimensionX,
+            CV_32F,
+            cv::Scalar(0.f)
+    );
+    row = (int) ((_robot->position().y() - Parameters::yMin) / Parameters::voxelSize);
+    col = (int) ((_robot->position().x() - Parameters::xMin) / Parameters::voxelSize);
+    posMat.at<float>(row, col) = 10.f;
     _occupancies = _fullMap;
     if (_egoCentric)
     {
@@ -484,8 +494,13 @@ void Visualizer::updateMapView()
         // transform goal encoding
         cv::warpAffine(goalMat, translated, transMat, m.size(), CV_INTER_LINEAR, 0, 0);
         cv::warpAffine(translated, goalMat, rotMat, m.size(), CV_INTER_LINEAR, 0, 0);
+
+        // transform position encoding
+        cv::warpAffine(posMat, translated, transMat, m.size(), CV_INTER_LINEAR, 0, 0);
+        cv::warpAffine(translated, posMat, rotMat, m.size(), CV_INTER_LINEAR, 0, 0);
     }
     _goalEncoding.assign((float*) goalMat.datastart, (float*) goalMat.dataend);
+    _positionEncoding.assign((float*) posMat.datastart, (float*) posMat.dataend);
 //    if (!_egoCentric)
 //    {
 //        _occupancies = _fullMap;
@@ -535,4 +550,9 @@ void Visualizer::updateMapView()
 float *Visualizer::goalView() const
 {
     return _goalEncoding.data();
+}
+
+float *Visualizer::positionView() const
+{
+    return _positionEncoding.data();
 }

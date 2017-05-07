@@ -18,7 +18,9 @@ from cnn_policy import GaussianConvPolicy
 
 
 def run_task(*_):
-    env = SmapExplore(skip_frame=100, global_view=True, discrete_actions=True, debug=False)
+    env = SmapExplore(skip_frame=100, global_view=True,
+                      discrete_actions=True, debug=False,
+                      holonomic_actions=True)
     env_spec = env.env_spec()
     env = normalize(env)
     # env = normalize(GymEnv("Pendulum-v0"))
@@ -75,7 +77,7 @@ def run_task(*_):
         regressor_args=regressor_args
     )
 
-    algo = TRPO(
+    algo = NPO(
         env=env,
         policy=policy,
         baseline=baseline,
@@ -106,5 +108,5 @@ def main():
 
 
 if __name__ == "__main__":
-    # main()
-    run_task()
+    main()
+    # run_task()

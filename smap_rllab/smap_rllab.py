@@ -18,6 +18,8 @@ TASK = 1
 # 0 Exploration task
 # 1 Navigation task
 
+HOLONOMIC_ACTIONS = False # can directly change deltaX, deltaY and deltaYaw
+
 RAYS = 32
 END_TIME = 2000
 
@@ -63,11 +65,15 @@ def load(skip_frame=1, debug=False):
     lib.act.argtypes = [c_float, c_float]
     lib.act.restype = c_float
 
+    lib.actHolonomic.argtypes = [c_float, c_float, c_float]
+    lib.actHolonomic.restype = c_float
+
     lib.observeLocal.argtypes = [c_int]
     lib.observeLocal.restype = POINTER(c_float)
 
     lib.observeGlobal.restype = POINTER(c_float)
     lib.goalView.restype = POINTER(c_float)
+    lib.positionView.restype = POINTER(c_float)
 
     lib.mapWidth.restype = c_int
     lib.mapHeight.restype = c_int
@@ -87,8 +93,8 @@ def isLoaded():
 
 
 class SmapExplore(Env):
-    def __init__(self, skip_frame=5, global_view=False, discrete_actions=False, debug=False):
-        global DISCRETE_ACTIONS
+    def __init__(self, skip_frame=5, global_view=False, discrete_actions=False, holonomic_actions=False, debug=False):
+        global DISCRETE_ACTIONS, HOLONOMIC_ACTIONS
         if not isLoaded():
             load(skip_frame, debug)
             print("loaded library", lib)
@@ -101,6 +107,8 @@ class SmapExplore(Env):
         self.map_width = lib.mapWidth()
         self.map_height = lib.mapHeight()
         self.last_action = None
+
+        HOLONOMIC_ACTIONS = holonomic_actions
 
         self.debug = debug
         if self.debug:
@@ -122,24 +130,39 @@ class SmapExplore(Env):
 
         self.discrete_actions = discrete_actions
         if self.discrete_actions:
-            DISCRETE_ACTIONS = [
-                (lib.voxelSize(), 0),
-                (0, -math.pi/2.),
-                (0, math.pi/2.),
-            ]
+            if HOLONOMIC_ACTIONS:
+                DISCRETE_ACTIONS = [
+                    ( lib.voxelSize(), 0, 0),
+                    (-lib.voxelSize(), 0, 0),
+                    (0,  lib.voxelSize(), 0),
+                    (0, -lib.voxelSize(), 0),
+                    ( lib.voxelSize(),  lib.voxelSize(), 0),
+                    (-lib.voxelSize(), -lib.voxelSize(), 0),
+                    (-lib.voxelSize(),  lib.voxelSize(), 0),
+                    ( lib.voxelSize(), -lib.voxelSize(), 0)
+                ]
+            else:
+                DISCRETE_ACTIONS = [
+                    (lib.voxelSize(), 0),
+                    (0, -math.pi/2.),
+                    (0, math.pi/2.),
+                ]
 
     @property
     @overrides
     def action_space(self):
         if self.discrete_actions:
             return spaces.Discrete(len(DISCRETE_ACTIONS))
-        return spaces.Box(np.array([0, -0.1]), np.array([+0.05, +0.1]))
+        if HOLONOMIC_ACTIONS:
+            return spaces.Box(np.array([-0.05, -0.05]), np.array([+0.05, +0.05]))
+        else:
+            return spaces.Box(np.array([0, -0.1]), np.array([+0.05, +0.1]))
 
     @property
     @overrides
     def observation_space(self):
         if self.global_view:
-            return spaces.Box(low=0, high=1, shape=(self.map_width, self.map_height, 2))
+            return spaces.Box(low=0, high=1, shape=(self.map_width, self.map_height, 3))
         return spaces.Box(np.zeros(RAYS), np.ones(RAYS))
 
     @property
@@ -181,12 +204,16 @@ class SmapExplore(Env):
         if action is not None:
             reward_prior = 0
             if self.discrete_actions:
-                if action in (1,2):
+                if not HOLONOMIC_ACTIONS and action in (1,2):
                     # turning gets lower reward
                     reward_prior = -0.1
                 action = DISCRETE_ACTIONS[action]
             self.t += 1.
-            self.reward = reward_prior + lib.act(action[0], action[1])
+            if HOLONOMIC_ACTIONS:
+                # TODO holonomic change in yaw angle not supported
+                self.reward = reward_prior + lib.actHolonomic(action[0], action[1], 0)
+            else:
+                self.reward = reward_prior + lib.act(action[0], action[1])
             self.last_action = action
         done = self.t >= END_TIME or not lib.inside() or self.reward < -500
 
@@ -194,23 +221,23 @@ class SmapExplore(Env):
             ptr = lib.observeGlobal()
             obs = make_nd_array(ptr, (self.map_width, self.map_height), np.float32)
             # encode current position in extra channel (one-hot encoding)
-            pos = np.zeros((self.map_width, self.map_height))
-            pos[int(self.map_width/2), int(self.map_height/2)] = 1
+            ptr = lib.positionView()
+            pos = make_nd_array(ptr, (self.map_width, self.map_height), np.float32)
             if TASK == 0:
                 obs = np.asarray([obs, pos])
             elif TASK == 1:
                 ptr = lib.goalView()
                 goal = make_nd_array(ptr, (self.map_width, self.map_height), np.float32)
                 if self.debug:
-                    self.axes[0].imshow(obs, vmin=0, vmax=1, cmap='gray')
-                    self.axes[1].imshow(goal, vmin=0, vmax=1, cmap='gray')
-                    self.axes[2].imshow(pos, vmin=0, vmax=1, cmap='gray')
+                    self.axes[0].imshow(obs, vmin=0, vmax=1, cmap='gray', origin='lower')
+                    self.axes[1].imshow(goal, vmin=0, vmax=1, cmap='gray', origin='lower')
+                    self.axes[2].imshow(pos, vmin=0, vmax=1, cmap='gray', origin='lower')
 
                     self.fig.canvas.draw()
                     plt.show(block=False)
                     plt.pause(0.001)
 
-                obs = np.asarray([obs, goal])
+                obs = np.asarray([obs, pos, goal])
 
                 if self.reward > 500:
                     if self.debug:

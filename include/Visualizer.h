@@ -15,6 +15,7 @@ public:
 
     float *mapView() const;
     float *goalView() const;
+    float *positionView() const;
     int mapWidth() const;
     int mapHeight() const;
 

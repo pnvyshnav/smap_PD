@@ -70,6 +70,7 @@ void reset()
 //        robot.setYaw(rand() * M_PI / RAND_MAX);
 //    robot.setPosition(Parameters::Vec3Type(0, 0, 0));
     robot.setYaw((rand()%4) * M_PI / 2.);
+    visualizer->registerPosition(robot.position());
 
 //        std::cout << "Running robot..." << std::endl;
     robot.run();
@@ -101,7 +102,7 @@ void initialize(int skipFrame = 1, int task = 0, bool debug = false)
 
     episode = 0;
 
-    visualizer = new Visualizer(&trueMap, &map, &robot, true, skipFrame, true);
+    visualizer = new Visualizer(&trueMap, &map, &robot, true, skipFrame, false);
     robot.registerObserver(&handleObservation);
 
     reset();
@@ -139,6 +140,15 @@ float* observeGlobal()
 float* goalView()
 {
     return visualizer->goalView();
+}
+
+/**
+ * Returns one-hot encoding of position.
+ * @return Transformed position map (dependent on wether ego-centric orientation is active).
+ */
+float* positionView()
+{
+    return visualizer->positionView();
 }
 
 /**
@@ -189,19 +199,20 @@ bool inside()
 }
 
 /**
- * Makes the robot perform a translational and rotational movement
+ * Sets the robot to target position and orientation,
  * and returns the reward of such action.
- * @param velocity Translational velocity (positive is forward).
- * @param angularVelocity Rotational velocity (positive is right turn).
+ * @param position Absolute desired position.
+ * @param yaw Desired orientation in radians.
  * @return Reward.
  */
-float act(float velocity, float angularVelocity)
+float actAbsolute(Parameters::Vec3Type position, double yaw)
 {
-    visualizer->setVelocity(velocity);
-    visualizer->setAngularVelocity(angularVelocity);
-    auto p = robot.position();
-    robot.setYaw(robot.yaw() - angularVelocity);
-    robot.setPosition(p + robot.orientation() * velocity);
+    double velocity = (position - robot.position()).norm();
+    double angularVelocity = yaw - robot.yaw();
+    visualizer->setVelocity((float) velocity);
+    visualizer->setAngularVelocity((float) angularVelocity);
+    robot.setYaw(yaw);
+    robot.setPosition(position);
     visualizer->registerPosition(robot.position());
     robot.run();
 
@@ -248,6 +259,33 @@ float act(float velocity, float angularVelocity)
         else
             return -.1f;
     }
+}
+
+/**
+ * Makes the robot perform a translational and rotational movement
+ * and returns the reward of such action.
+ * @param velocity Translational velocity (positive is forward).
+ * @param angularVelocity Rotational velocity (positive is right turn).
+ * @return Reward.
+ */
+float act(float velocity, float angularVelocity)
+{
+    return actAbsolute(robot.position() + robot.orientation() * velocity,
+                       robot.yaw() + angularVelocity);
+}
+
+/**
+ * Makes the robot perform a holonomic movement and returns the reward
+ * of such action.
+ * @param delta_x The positional change in x.
+ * @param delta_y The positional change in y.
+ * @param delta_yaw The rotational change in yaw angle (radians).
+ * @return
+ */
+float actHolonomic(float delta_x, float delta_y, float delta_yaw)
+{
+    return actAbsolute(robot.position() + Parameters::Vec3Type(delta_x, delta_y, 0),
+                       robot.yaw() + delta_yaw);
 }
 
 void destroy()
