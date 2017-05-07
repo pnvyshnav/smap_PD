@@ -70,6 +70,7 @@ int main(int argc, char **argv)
 
     robot.registerObserver(&handleObservation);
     robot.setYaw(M_PI);
+    robot.setPosition(trueMap.start());
 
     visualizer = new Visualizer(&trueMap, &map, &robot, false, 1, true);
 

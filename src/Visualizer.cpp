@@ -449,10 +449,12 @@ void Visualizer::updateMapView()
     cv::Mat goalMat = cv::Mat(
             Parameters::voxelsPerDimensionY,
             Parameters::voxelsPerDimensionX,
-            CV_32F
+            CV_32F,
+            cv::Scalar(0.f)
     );
-    goalMat.at<float>((int) ((_trueMap->goal().y() - Parameters::yMin) / Parameters::voxelSize),
-                      (int) ((_trueMap->goal().x() - Parameters::xMin) / Parameters::voxelSize)) = 1.f;
+    int row = (int) ((_trueMap->goal().y() - Parameters::yMin) / Parameters::voxelSize);
+    int col = (int) ((_trueMap->goal().x() - Parameters::xMin) / Parameters::voxelSize);
+    goalMat.at<float>(row, col) = 10.f;
     _occupancies = _fullMap;
     if (_egoCentric)
     {
@@ -480,8 +482,8 @@ void Visualizer::updateMapView()
         _occupancies.assign((float*) rotated.datastart, (float*) rotated.dataend);
 
         // transform goal encoding
-        cv::warpAffine(goalMat, translated, transMat, m.size(), CV_INTER_LINEAR, 0, 0.5);
-        cv::warpAffine(translated, goalMat, rotMat, m.size(), CV_INTER_LINEAR, 0, 0.5);
+        cv::warpAffine(goalMat, translated, transMat, m.size(), CV_INTER_LINEAR, 0, 0);
+        cv::warpAffine(translated, goalMat, rotMat, m.size(), CV_INTER_LINEAR, 0, 0);
     }
     _goalEncoding.assign((float*) goalMat.datastart, (float*) goalMat.dataend);
 //    if (!_egoCentric)

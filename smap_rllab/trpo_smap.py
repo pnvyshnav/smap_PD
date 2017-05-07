@@ -18,12 +18,10 @@ from cnn_policy import GaussianConvPolicy
 
 
 def run_task(*_):
-    env = SmapExplore(skip_frame=100, global_view=True, discrete_actions=True)
+    env = SmapExplore(skip_frame=100, global_view=True, discrete_actions=True, debug=False)
     env_spec = env.env_spec()
     env = normalize(env)
     # env = normalize(GymEnv("Pendulum-v0"))
-
-    print("Environment specification:", env_spec)
 
     # policy = GaussianMLPPolicy(
     #     env_spec=env_spec,
@@ -97,7 +95,7 @@ def main():
     run_experiment_lite(
         run_task,
         # Number of parallel workers for sampling
-        n_parallel=3,
+        n_parallel=1,
         # Only keep the snapshot parameters for the last iteration
         snapshot_mode="last",
         # Specifies the seed for the experiment. If this is not provided, a random seed
@@ -108,5 +106,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-    # run_task()
+    # main()
+    run_task()
