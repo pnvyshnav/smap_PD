@@ -3,7 +3,6 @@ from rllab.core.lasagne_layers import ParamLayer
 from rllab.core.lasagne_powered import LasagnePowered
 import lasagne.layers as L
 from rllab.core.network import ConvNetwork
-from rllab.distributions.categorical import Categorical
 from rllab.distributions.diagonal_gaussian import DiagonalGaussian
 from rllab.policies.base import StochasticPolicy
 from rllab.misc import tensor_utils
@@ -32,120 +31,177 @@ class VinPolicy(StochasticPolicy, LasagnePowered):
             self,
             name,
             env_spec,
-            conv_filters, conv_filter_sizes, conv_strides, conv_pads,
-            hidden_sizes=[],
+            conv_filters,
+            conv_filter_sizes,
+            conv_strides,
+            conv_pads,
+            hidden_sizes=(32, 32),
+            learn_std=True,
+            init_std=1.0,
+            min_std=1e-6,
             hidden_nonlinearity=NL.rectify,
-            output_nonlinearity=NL.softmax,
+            output_nonlinearity=None,
+            mean_network=None,
+            std_network=None,
+            std_hidden_nonlinearity=NL.rectify,
+            std_hidden_sizes=(32, 32),
+            adaptive_std=False,
     ):
         """
         :param env_spec: A spec for the mdp.
         :param hidden_sizes: list of sizes for the fully connected hidden layers
         :param hidden_nonlinearity: nonlinearity used for each hidden layer
-        :param prob_network: manually specified network for this policy, other network params
+        :param std_network: manually specified network for this policy, other network params
         are ignored
         :return:
         """
         Serializable.quick_init(self, locals())
-
-        assert isinstance(env_spec.action_space, Discrete)
+        assert isinstance(env_spec.action_space, Box)
+        # assert isinstance(env_spec.action_space, Discrete)
 
         self._env_spec = env_spec
+        self.min_std = min_std
 
-        # prob_network = ConvNetwork(
-        #     input_shape=env_spec.observation_space.shape,
-        #     output_dim=env_spec.action_space.n,
-        #     conv_filters=conv_filters,
-        #     conv_filter_sizes=conv_filter_sizes,
-        #     conv_strides=conv_strides,
-        #     conv_pads=conv_pads,
-        #     hidden_sizes=hidden_sizes,
-        #     hidden_nonlinearity=hidden_nonlinearity,
-        #     output_nonlinearity=NL.softmax,
-        #     name="prob_network",
-        # )
+        action_dim = env_spec.action_space.flat_dim
 
-        self.im_size = env_spec.observation_space.shape[:2]  # input image size
-        self.k = 1  # number of VI iterations
-        np.random.seed(0)
+        # create network
+        if mean_network is None:
+            mean_network = ConvNetwork(
+                input_shape=env_spec.observation_space.shape,
+                output_dim=action_dim,
+                conv_filters=conv_filters,
+                conv_filter_sizes=conv_filter_sizes,
+                conv_strides=conv_strides,
+                conv_pads=conv_pads,
+                hidden_sizes=hidden_sizes,
+                hidden_nonlinearity=hidden_nonlinearity,
+                output_nonlinearity=output_nonlinearity,
+                name="mean_network",
+            )
+        self._mean_network = mean_network
 
-        theano.config.blas.ldflags = "-L/usr/local/lib -lopenblas"
+        l_mean = mean_network.output_layer
+        obs_var = mean_network.input_layer.input_var
 
-        # X input : l=2 stacked images: obstacle map and reward function prior
-        self.X = T.ftensor4(name="X")
-        # S1,S2 input : state position (vertical and horizontal position)
-        self.S1 = T.bmatrix("S1")  # state first dimension * statebatchsize
-        self.S2 = T.bmatrix("S2")  # state second dimension * statebatchsize
-        self.y = T.bvector("y")  # output action * statebatchsize
+        if std_network is None:
+            std_network = ConvNetwork(
+                input_shape=env_spec.observation_space.shape,
+                output_dim=action_dim,
+                conv_filters=conv_filters,
+                conv_filter_sizes=conv_filter_sizes,
+                conv_strides=conv_strides,
+                conv_pads=conv_pads,
+                hidden_sizes=std_hidden_sizes,
+                hidden_nonlinearity=std_hidden_nonlinearity,
+                output_nonlinearity=None,
+                name="std_network",
+            )
+            if adaptive_std:
+                l_log_std = std_network.output_layer
+            else:
+                l_log_std = ParamLayer(
+                    mean_network.input_layer,
+                    num_units=action_dim,
+                    param=lasagne.init.Constant(np.log(init_std)),
+                    name="output_log_std",
+                    trainable=learn_std,
+                )
+        else:
+            l_log_std = std_network.output_layer
 
-        l = 2  # channels in input layer
-        l_h = 150  # channels in initial hidden layer
-        l_q = 10  # channels in q layer (~actions)
+        mean_var, log_std_var = L.get_output([l_mean, l_log_std])
 
-        self.vin_net = VinBlock(in_x=self.X, in_s1=self.S1, in_s2=self.S2, in_x_channels=l,
-                                imsize=self.im_size, batchsize=self.batchsize,
-                                state_batch_size=self.statebatchsize,
-                                l_h=l_h, l_q=l_q,
-                                k=self.k)
-        self.p_of_y = self.vin_net.output
-        self.params = self.vin_net.params
-        # Total 1910 parameters
+        if self.min_std is not None:
+            log_std_var = TT.maximum(log_std_var, np.log(min_std))
 
-        self.cost = -T.mean(T.log(self.p_of_y)[T.arange(self.y.shape[0]),
-                                               self.y], dtype=theano.config.floatX)
-        self.y_pred = T.argmax(self.p_of_y, axis=1)
-        self.err = T.mean(T.neq(self.y_pred, self.y.flatten()), dtype=theano.config.floatX)
+        self._mean_var, self._log_std_var = mean_var, log_std_var
 
-        self.computeloss = theano.function(inputs=[self.X, self.S1, self.S2, self.y],
-                                           outputs=[self.err, self.cost])
-        self.y_out = theano.function(inputs=[self.X, self.S1, self.S2], outputs=[self.y_pred])
+        self._l_mean = l_mean
+        self._l_log_std = l_log_std
 
-        self._l_prob = self.y_pred # prob_network.output_layer
-        self._l_obs = self.vin_net.input_layer
-        self._f_prob = self.y_out   # ext.compile_function(
-                                    #     [prob_network.input_layer.input_var],
-                                    #     L.get_output(prob_network.output_layer)
-                                    # )
+        # self._l_prob = std_network.output_layer
+        # self._l_obs = std_network.input_layer
 
-        self._dist = Categorical(env_spec.action_space.n)
+        LasagnePowered.__init__(self, [l_mean, l_log_std])
+        super(GaussianConvPolicy, self).__init__(env_spec)
 
-        super(VinPolicy, self).__init__(env_spec)
-        LasagnePowered.__init__(self, [
-            self._l_prob # prob_network.output_layer
-        ])
+        self._f_dist = ext.compile_function(
+            inputs=[obs_var],
+            outputs=[mean_var, log_std_var],
+        )
+
+        self._dist = DiagonalGaussian(action_dim)
 
     @property
     def vectorized(self):
         return True
 
+    # @overrides
+    # def dist_info_sym(self, obs_var, state_info_vars=None):
+    #     return dict(
+    #         prob=L.get_output(
+    #             self._l_prob,
+    #             {self._l_obs: obs_var}
+    #         )
+    #     )
     @overrides
     def dist_info_sym(self, obs_var, state_info_vars=None):
-        return dict(
-            prob=L.get_output(
-                self._l_prob,
-                {self._l_obs: obs_var}
-            )
-        )
+        mean_var, log_std_var = L.get_output([self._l_mean, self._l_log_std], obs_var)
+        if self.min_std is not None:
+            log_std_var = TT.maximum(log_std_var, np.log(self.min_std))
+        return dict(mean=mean_var, log_std=log_std_var)
 
     @overrides
     def dist_info(self, obs, state_infos=None):
-        return dict(prob=self._f_prob(obs))
+        return dict(prob=self._f_dist(obs))
 
     # The return value is a pair. The first item is a matrix (N, A), where each
     # entry corresponds to the action value taken. The second item is a vector
     # of length N, where each entry is the density value for that action, under
     # the current policy
+    # @overrides
+    # def get_action(self, observation):
+    #     flat_obs = self.observation_space.flatten(observation)
+    #     prob = self._f_dist([flat_obs])[0]
+    #     action = self.action_space.weighted_sample(prob)
+    #     return action, dict(prob=prob)
+    #
+    # def get_actions(self, observations):
+    #     flat_obs = self.observation_space.flatten_n(observations)
+    #     probs = self._f_dist(flat_obs)
+    #     actions = list(map(self.action_space.weighted_sample, probs))
+    #     return actions, dict(prob=probs)
+
     @overrides
     def get_action(self, observation):
         flat_obs = self.observation_space.flatten(observation)
-        prob = self._f_prob([flat_obs])[0]
-        action = self.action_space.weighted_sample(prob)
-        return action, dict(prob=prob)
+        mean, log_std = [x[0] for x in self._f_dist([flat_obs])]
+        rnd = np.random.normal(size=mean.shape)
+        action = rnd * np.exp(log_std) + mean
+        return action, dict(mean=mean, log_std=log_std)
 
     def get_actions(self, observations):
         flat_obs = self.observation_space.flatten_n(observations)
-        probs = self._f_prob(flat_obs)
-        actions = list(map(self.action_space.weighted_sample, probs))
-        return actions, dict(prob=probs)
+        means, log_stds = self._f_dist(flat_obs)
+        rnd = np.random.normal(size=means.shape)
+        actions = rnd * np.exp(log_stds) + means
+        return actions, dict(mean=means, log_std=log_stds)
+
+    def get_reparam_action_sym(self, obs_var, action_var, old_dist_info_vars):
+        """
+        Given observations, old actions, and distribution of old actions, return a symbolically reparameterized
+        representation of the actions in terms of the policy parameters
+        :param obs_var:
+        :param action_var:
+        :param old_dist_info_vars:
+        :return:
+        """
+        new_dist_info_vars = self.dist_info_sym(obs_var, action_var)
+        new_mean_var, new_log_std_var = new_dist_info_vars["mean"], new_dist_info_vars["log_std"]
+        old_mean_var, old_log_std_var = old_dist_info_vars["mean"], old_dist_info_vars["log_std"]
+        epsilon_var = (action_var - old_mean_var) / (TT.exp(old_log_std_var) + 1e-8)
+        new_action_var = new_mean_var + epsilon_var * TT.exp(new_log_std_var)
+        return new_action_var
 
     @property
     def distribution(self):

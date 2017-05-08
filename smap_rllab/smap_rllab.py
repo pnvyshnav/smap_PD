@@ -1,12 +1,7 @@
-from collections import namedtuple
 from ctypes import *
-import _ctypes
 import numpy as np
 import os, sys, math
-import time
 
-import pylab as plb
-import matplotlib
 import matplotlib.pyplot as plt
 
 from rllab import spaces
@@ -85,7 +80,7 @@ def load(skip_frame=1, debug=False):
     lib.reset()
 
 
-def isLoaded():
+def is_loaded():
     return lib is not None
     # libp = os.path.abspath(lib)
     # ret = os.system("lsof -p %d | grep %s > /dev/null" % (os.getpid(), libp))
@@ -95,7 +90,7 @@ def isLoaded():
 class SmapExplore(Env):
     def __init__(self, skip_frame=5, global_view=False, discrete_actions=False, holonomic_actions=False, debug=False):
         global DISCRETE_ACTIONS, HOLONOMIC_ACTIONS
-        if not isLoaded():
+        if not is_loaded():
             load(skip_frame, debug)
             print("loaded library", lib)
         self.skip_frame = skip_frame
@@ -126,7 +121,6 @@ class SmapExplore(Env):
             self.fig.canvas.draw()
             plt.show(block=False)
             plt.pause(0.0001)
-
 
         self.discrete_actions = discrete_actions
         if self.discrete_actions:
@@ -180,16 +174,7 @@ class SmapExplore(Env):
         self.reward = 0.0
         self.t = 0.0
         self.resets += 1
-        # if self.resets >= 5:
-        #     lib.destroy()
-        #     handle = lib._handle
-        #     del lib
-        #     # while isLoaded('/home/eric/catkin_ws/build/smap/devel/lib/libgym.so'):
-        #     _ctypes.dlclose(handle)
-        #     self.resets = 0
-        #     load()
-        # else:
-        if not isLoaded():
+        if not is_loaded():
             load(self.skip_frame)
         else:
             lib.reset()
@@ -198,7 +183,6 @@ class SmapExplore(Env):
 
     @overrides
     def step(self, action):
-        step_reward = 0.
         self.reward = 0.
         self.last_reward = self.reward
         if action is not None:
@@ -211,6 +195,7 @@ class SmapExplore(Env):
             self.t += 1.
             if HOLONOMIC_ACTIONS:
                 # TODO holonomic change in yaw angle not supported
+                # in order to keep action space two-dimensional
                 self.reward = reward_prior + lib.actHolonomic(action[0], action[1], 0)
             else:
                 self.reward = reward_prior + lib.act(action[0], action[1])

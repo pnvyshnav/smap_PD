@@ -455,7 +455,7 @@ void Visualizer::updateMapView()
     );
     int row = (int) ((_trueMap->goal().y() - Parameters::yMin) / Parameters::voxelSize);
     int col = (int) ((_trueMap->goal().x() - Parameters::xMin) / Parameters::voxelSize);
-    goalMat.at<float>(row, col) = 10.f;
+    goalMat.at<float>(row, col) = 1.f;
     cv::Mat posMat = cv::Mat(
             Parameters::voxelsPerDimensionY,
             Parameters::voxelsPerDimensionX,
@@ -464,7 +464,7 @@ void Visualizer::updateMapView()
     );
     row = (int) ((_robot->position().y() - Parameters::yMin) / Parameters::voxelSize);
     col = (int) ((_robot->position().x() - Parameters::xMin) / Parameters::voxelSize);
-    posMat.at<float>(row, col) = 10.f;
+    posMat.at<float>(row, col) = 1.f;
     _occupancies = _fullMap;
     if (_egoCentric)
     {

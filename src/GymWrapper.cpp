@@ -257,7 +257,8 @@ float actAbsolute(Parameters::Vec3Type position, double yaw)
         if (robot.position().distance(trueMap.goal()) < Parameters::voxelSize)
             return 1000;
         else
-            return -.1f;
+            // TODO return a negative constant
+            return (float) -robot.position().distance(trueMap.goal());
     }
 }
 

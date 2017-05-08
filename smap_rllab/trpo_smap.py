@@ -65,13 +65,13 @@ def run_task(*_):
     #     regressor_args=regressor_args
     # )
 
-    regressor_args = {
-        'hidden_sizes': [16, 8],
-        'conv_filters': [50, 50],
-        'conv_filter_sizes': [(3, 3)],
-        'conv_strides': [1, 2],
-        'conv_pads': ['same']
-    }
+    regressor_args = dict(
+        hidden_sizes=[100, 80, 50],
+        conv_filters=[150, 150, 100],
+        conv_filter_sizes=[(2,2), (2,2), (2,2)],
+        conv_strides=[1, 2, 2],
+        conv_pads=[0]
+    )
     baseline = GaussianConvBaseline(
         env_spec=env_spec,
         regressor_args=regressor_args
@@ -86,7 +86,7 @@ def run_task(*_):
         max_path_length=600,
         n_itr=5000,
         discount=0.99,
-        step_size=0.02,
+        step_size=0.01,
         # Uncomment both lines (this and the plot parameter below) to enable plotting
         plot=False,
     )
