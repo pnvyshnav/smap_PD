@@ -156,7 +156,7 @@ class SmapExplore(Env):
     @overrides
     def observation_space(self):
         if self.global_view:
-            return spaces.Box(low=0, high=1, shape=(self.map_width, self.map_height, 3))
+            return spaces.Box(low=0, high=1, shape=(self.map_height, self.map_width, 3))
         return spaces.Box(np.zeros(RAYS), np.ones(RAYS))
 
     @property

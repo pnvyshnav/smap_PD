@@ -15,6 +15,7 @@ from rllab.policies.gaussian_mlp_policy import GaussianMLPPolicy
 from rllab.policies.categorical_conv_policy import CategoricalConvPolicy
 from smap_rllab import SmapExplore
 from cnn_policy import GaussianConvPolicy
+from categorical_conv_baseline import CategoricalConvBaseline
 
 
 def run_task(*_):
@@ -72,7 +73,7 @@ def run_task(*_):
         conv_strides=[1, 2, 2],
         conv_pads=[0]
     )
-    baseline = GaussianConvBaseline(
+    baseline = CategoricalConvBaseline(
         env_spec=env_spec,
         regressor_args=regressor_args
     )
