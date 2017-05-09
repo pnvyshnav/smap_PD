@@ -19,18 +19,19 @@ from categorical_conv_baseline import CategoricalConvBaseline
 
 
 def run_task(*_):
-    env = SmapExplore(skip_frame=100, global_view=True,
-                      discrete_actions=True, debug=False,
+    env = SmapExplore(skip_frame=100, global_view=False,
+                      discrete_actions=False, debug=False,
                       holonomic_actions=True)
     env_spec = env.env_spec()
     env = normalize(env)
     # env = normalize(GymEnv("Pendulum-v0"))
 
-    # policy = GaussianMLPPolicy(
-    #     env_spec=env_spec,
-    #     # The neural network policy should have two hidden layers, each with 4 hidden units.
-    #     hidden_sizes=(32, 32, 16)
-    # )
+    policy = GaussianMLPPolicy(
+        env_spec=env_spec,
+        # The neural network policy should have two hidden layers, each with 4 hidden units.
+        hidden_sizes=(32, 32, 16)
+    )
+    baseline = LinearFeatureBaseline(env_spec=env_spec)
 
     # policy = GaussianConvPolicy(
     #     name="CNN_Policy",
@@ -43,16 +44,16 @@ def run_task(*_):
     #     conv_pads=[0] #['same']
     # )
 
-    policy = CategoricalConvPolicy(
-        name="CNN_Policy",
-        env_spec=env_spec,
-        # The neural network policy should have two hidden layers, each with 4 hidden units.
-        hidden_sizes=[32, 16],
-        conv_filters=[32, 32, 32],
-        conv_filter_sizes=[(3,3), (3,3), (3,3)],
-        conv_strides=[1, 2, 2],
-        conv_pads=['same', 'same', 'same'] #['same']
-    )
+    # policy = CategoricalConvPolicy(
+    #     name="CNN_Policy",
+    #     env_spec=env_spec,
+    #     # The neural network policy should have two hidden layers, each with 4 hidden units.
+    #     hidden_sizes=[32, 16],
+    #     conv_filters=[32, 32, 32],
+    #     conv_filter_sizes=[(3,3), (3,3), (3,3)],
+    #     conv_strides=[1, 2, 2],
+    #     conv_pads=['same', 'same', 'same'] #['same']
+    # )
 
     # regressor_args GaussianConvPolicy = {
     #     'hidden_sizes': [32, 32],
@@ -66,19 +67,20 @@ def run_task(*_):
     #     regressor_args=regressor_args
     # )
 
-    regressor_args = dict(
-        hidden_sizes=[16, 16],
-        conv_filters=[16, 16],
-        conv_filter_sizes=[(3,3), (3,3)],
-        conv_strides=[1, 2],
-        conv_pads=['same', 'same']
-    )
-    baseline = CategoricalConvBaseline(
-        env_spec=env_spec,
-        regressor_args=regressor_args
-    )
+# TODO this was the right baseline
+    # regressor_args = dict(
+    #     hidden_sizes=[16, 16],
+    #     conv_filters=[16, 16],
+    #     conv_filter_sizes=[(3,3), (3,3)],
+    #     conv_strides=[1, 2],
+    #     conv_pads=['same', 'same']
+    # )
+    # baseline = CategoricalConvBaseline(
+    #     env_spec=env_spec,
+    #     regressor_args=regressor_args
+    # )
 
-    algo = NPO(
+    algo = TRPO(
         env=env,
         policy=policy,
         baseline=baseline,
@@ -89,7 +91,7 @@ def run_task(*_):
         discount=0.99,
         step_size=0.01,
         # Uncomment both lines (this and the plot parameter below) to enable plotting
-        plot=False,
+        plot=True,
     )
     algo.train()
 

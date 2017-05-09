@@ -33,6 +33,7 @@ bool _gymMode = false;
 int _skipFrame = 10;
 bool _egoCentric = false;
 bool _egoCentricScaling = false;
+bool _showGoal = true;
 
 int _egoCentricResolutionScaling = 1;
 
@@ -183,9 +184,12 @@ void draw()
     glColor3f(1, 0, 0);
     p = _trueMap->start();
     glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
-    glColor3f(0, 1, 0);
-    p = _trueMap->goal();
-    glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
+    if (_showGoal)
+    {
+        glColor3f(0, 1, 0);
+        p = _trueMap->goal();
+        glVertex2f(p.x(), (GLfloat) ((p.y() + 1.) * (1.84 / 2.) - 0.84));
+    }
     glEnd();
 
     // draw robot
@@ -345,7 +349,7 @@ void Visualizer::render()
 }
 
 Visualizer::Visualizer(TrueMap *trueMap, MapType *map, FakeRobot<> *robot,
-                       bool gymMode, int skipFrame, bool egoCentric)
+                       bool gymMode, int skipFrame, bool egoCentric, bool showGoal)
 {
     _trueMap = trueMap;
     _map = map;
@@ -354,6 +358,7 @@ Visualizer::Visualizer(TrueMap *trueMap, MapType *map, FakeRobot<> *robot,
     _gymMode = gymMode;
     _skipFrame = skipFrame;
     _egoCentric = egoCentric;
+    _showGoal = showGoal;
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 

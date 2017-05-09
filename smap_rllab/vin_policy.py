@@ -17,13 +17,13 @@ from rllab.misc.overrides import overrides
 import numpy as np
 import lasagne.nonlinearities as NL
 import theano
-import theano.tensor as TT
+import theano.tensor as T
 
 import pickle
 import scipy.io as sio
 import time
 
-from theano_utils import *
+from .theano_utils import *
 
 
 # Value Iteration Network (VIN) Policy
@@ -412,29 +412,29 @@ class VinBlock(object):
         self.q = conv2D_keep_shape(self.r, self.w, image_shape=[batchsize, self.w1.shape.eval()[0],
                                                                 imsize[0], imsize[1]],
                                    filter_shape=self.w.shape.eval())
-        self.v = TT.max(self.q, axis=1, keepdims=True)
+        self.v = T.max(self.q, axis=1, keepdims=True)
 
         for i in range(0, k - 1):
-            self.q = conv2D_keep_shape(TT.concatenate([self.r, self.v], axis=1), TT.concatenate([self.w, self.w_fb],
+            self.q = conv2D_keep_shape(T.concatenate([self.r, self.v], axis=1), T.concatenate([self.w, self.w_fb],
                                                                                                 axis=1),
                                        image_shape=[batchsize, self.w1.shape.eval()[0] + 1, imsize[0], imsize[1]],
-                                       filter_shape=TT.concatenate([self.w, self.w_fb], axis=1).shape.eval())
+                                       filter_shape=T.concatenate([self.w, self.w_fb], axis=1).shape.eval())
             self.v = T.max(self.q, axis=1, keepdims=True)
 
         # do one last convolution
-        self.q = conv2D_keep_shape(TT.concatenate([self.r, self.v], axis=1),
-                                   TT.concatenate([self.w, self.w_fb], axis=1),
+        self.q = conv2D_keep_shape(T.concatenate([self.r, self.v], axis=1),
+                                   T.concatenate([self.w, self.w_fb], axis=1),
                                    image_shape=[batchsize, self.w1.shape.eval()[0] + 1, imsize[0], imsize[1]],
-                                   filter_shape=TT.concatenate([self.w, self.w_fb], axis=1).shape.eval())
+                                   filter_shape=T.concatenate([self.w, self.w_fb], axis=1).shape.eval())
 
         # Select the conv-net channels at the state position (S1,S2).
         # This intuitively corresponds to each channel representing an action, and the convnet the Q function.
         # The tricky thing is we want to select the same (S1,S2) position *for each* channel and for each sample
-        self.q_out = self.q[TT.extra_ops.repeat(TT.arange(self.q.shape[0]), state_batch_size), :, in_s1.flatten(),
+        self.q_out = self.q[T.extra_ops.repeat(T.arange(self.q.shape[0]), state_batch_size), :, in_s1.flatten(),
                      in_s2.flatten()]
 
         # softmax output weights
         self.w_o = init_weights_T(l_q, 8)  # 80 parameters
-        self.output = TT.nnet.softmax(TT.dot(self.q_out, self.w_o))
+        self.output = T.nnet.softmax(T.dot(self.q_out, self.w_o))
 
         self.params = [self.w0, self.bias, self.w1, self.w, self.w_fb, self.w_o]

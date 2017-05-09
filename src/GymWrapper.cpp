@@ -102,7 +102,11 @@ void initialize(int skipFrame = 1, int task = 0, bool debug = false)
 
     episode = 0;
 
-    visualizer = new Visualizer(&trueMap, &map, &robot, true, skipFrame, false);
+    visualizer = new Visualizer(&trueMap, &map,
+                                &robot, true,
+                                skipFrame, false,
+                                task == 1
+    );
     robot.registerObserver(&handleObservation);
 
     reset();
@@ -178,6 +182,26 @@ float reachability()
     return (float) map.filteredReachability(robot.position().x(), robot.position().y(), robot.position().z());
 }
 
+float positionX()
+{
+    return robot.position().x();
+}
+
+float positionY()
+{
+    return robot.position().y();
+}
+
+float goalX()
+{
+    return trueMap.goal().x();
+}
+
+float goalY()
+{
+    return trueMap.goal().y();
+}
+
 /**
  * Returns the voxel size.
  * @return Voxel size.
@@ -219,23 +243,23 @@ float actAbsolute(Parameters::Vec3Type position, double yaw)
     if (DEBUG)
         visualizer->update();
 
-    auto stats = map.stats(trueMap);
-    auto errors = VoxelStatistics::selectError(stats);
-    double avg_error = 0;
-    for (double e : errors)
-        avg_error += 1.-e;
-    //std::cout << avg_error << std::endl;
-    //avg_error /= errors.size();
-
-    double diff = std::abs(avg_error - lastAvgError);
-    lastAvgError = avg_error;
-
     auto v = trueMap.query(robot.position());
     if (!inside() || v.type != GEOMETRY_VOXEL || trueMap.getVoxelMean(v) > 0.5)
         return -1;
 
     if (TASK == 0) // EXPLORATION
     {
+        auto stats = map.stats(trueMap);
+        auto errors = VoxelStatistics::selectError(stats);
+        double avg_error = 0;
+        for (double e : errors)
+            avg_error += 1.-e;
+        //std::cout << avg_error << std::endl;
+        //avg_error /= errors.size();
+
+        double diff = std::abs(avg_error - lastAvgError);
+        lastAvgError = avg_error;
+
         // multiply by the distance to closest last position
         // to reinforce exploration of new areas
         double closestDistance = 1;

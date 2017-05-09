@@ -19,7 +19,7 @@ HOLONOMIC_ACTIONS = False
 RAYS = 32
 END_TIME = 2000
 
-DEBUGGING_PLOTS = 3
+OBS_CHANNELS = None
 
 # DISCRETE_ACTIONS = [
 #     (0.025, 0),
@@ -75,6 +75,11 @@ def load(skip_frame=1, debug=False):
     lib.mapHeight.restype = c_int
     lib.voxelSize.restype = c_float
 
+    lib.positionX.restype = c_float
+    lib.positionY.restype = c_float
+    lib.goalX.restype = c_float
+    lib.goalY.restype = c_float
+
     lib.inside.restype = c_bool
 
     lib.initialize(skip_frame, TASK, debug)
@@ -87,7 +92,7 @@ def is_loaded():
 
 class SmapExplore(Env):
     def __init__(self, skip_frame=5, global_view=False, discrete_actions=False, holonomic_actions=False, debug=False):
-        global DISCRETE_ACTIONS, HOLONOMIC_ACTIONS
+        global DISCRETE_ACTIONS, HOLONOMIC_ACTIONS, OBS_CHANNELS
         if not is_loaded():
             load(skip_frame, debug)
             print("loaded library", lib)
@@ -103,13 +108,19 @@ class SmapExplore(Env):
 
         HOLONOMIC_ACTIONS = holonomic_actions
 
+        OBS_CHANNELS = 3
+        if TASK == 0:
+            OBS_CHANNELS = 2
+        if not global_view:
+            OBS_CHANNELS = 1
+
         self.debug = debug
         if self.debug:
             self.fig = plt.figure()
-            self.axes = [self.fig.add_subplot(1, DEBUGGING_PLOTS, i) for i in range(1,1+DEBUGGING_PLOTS)]
+            self.axes = [self.fig.add_subplot(1, OBS_CHANNELS, i) for i in range(1,1+OBS_CHANNELS)]
 
-            for i in range(DEBUGGING_PLOTS):
-                self.axes[i].set_title(["obs", "goal", "pos"][i])
+            for i in range(OBS_CHANNELS):
+                self.axes[i].set_title(["obs", "pos", "goal"][i])
                 self.axes[i].get_xaxis().set_visible(False)
                 self.axes[i].get_yaxis().set_visible(False)
                 self.axes[i].set_aspect('equal')
@@ -154,8 +165,13 @@ class SmapExplore(Env):
     @overrides
     def observation_space(self):
         if self.global_view:
-            return spaces.Box(low=0, high=1, shape=(self.map_height, self.map_width, 3))
-        return spaces.Box(np.zeros(RAYS), np.ones(RAYS))
+            return spaces.Box(low=0, high=1, shape=(self.map_height, self.map_width, OBS_CHANNELS))
+        if TASK == 0:
+            # additionally encodes position
+            return spaces.Box(np.zeros(RAYS + 2), np.ones(RAYS + 2))
+        else:
+            # additionally encodes position + goal
+            return spaces.Box(np.zeros(RAYS + 4), np.ones(RAYS + 4))
 
     @property
     def action_bounds(self):
@@ -198,7 +214,12 @@ class SmapExplore(Env):
             else:
                 self.reward = reward_prior + lib.act(action[0], action[1])
             self.last_action = action
-        done = self.t >= END_TIME or not lib.inside() or self.reward < -.5
+
+        done = False
+        if self.t >= END_TIME or not lib.inside() or self.reward < -.5:
+            if self.debug:
+                print("\nRobot crashed or time is up.")
+            done = True
 
         if self.global_view:
             ptr = lib.observeGlobal()
@@ -208,13 +229,20 @@ class SmapExplore(Env):
             pos = make_nd_array(ptr, (self.map_width, self.map_height), np.float32)
             if TASK == 0:
                 obs = np.asarray([obs, pos])
+                if self.debug:
+                    self.axes[0].imshow(obs, vmin=0, vmax=1, cmap='gray', origin='lower')
+                    self.axes[1].imshow(pos, vmin=0, vmax=1, cmap='gray', origin='lower')
+
+                    self.fig.canvas.draw()
+                    plt.show(block=False)
+                    plt.pause(0.001)
             elif TASK == 1:
                 ptr = lib.goalView()
                 goal = make_nd_array(ptr, (self.map_width, self.map_height), np.float32)
                 if self.debug:
                     self.axes[0].imshow(obs, vmin=0, vmax=1, cmap='gray', origin='lower')
-                    self.axes[1].imshow(goal, vmin=0, vmax=1, cmap='gray', origin='lower')
-                    self.axes[2].imshow(pos, vmin=0, vmax=1, cmap='gray', origin='lower')
+                    self.axes[1].imshow(pos, vmin=0, vmax=1, cmap='gray', origin='lower')
+                    self.axes[2].imshow(goal, vmin=0, vmax=1, cmap='gray', origin='lower')
 
                     self.fig.canvas.draw()
                     plt.show(block=False)
@@ -223,12 +251,31 @@ class SmapExplore(Env):
                 obs = np.asarray([obs, pos, goal])
 
                 if self.reward > 0.5:
-                    if self.debug:
-                        print("\nFOUND GOAL!!!")
+                    # if self.debug:
+                    print("\nFOUND GOAL!!!")
                     done = True
         else:
             ptr = lib.observeLocal(RAYS)
             obs = make_nd_array(ptr, (RAYS,), np.float32)
+            position = [lib.positionX(), lib.positionY()]
+            if TASK == 0:
+                # encode position
+                obs = np.append(obs, position)
+            else:
+                # encode position + goal
+                goal = [lib.goalX(), lib.goalY()]
+                obs = np.append(obs, position)
+                obs = np.append(obs, goal)
+                if self.reward > 0.5:
+                    # if self.debug:
+                    print("\nFOUND GOAL!!!")
+                    done = True
+            if self.debug:
+                self.axes[0].imshow(np.vstack([obs]*len(obs)), vmin=0, vmax=1, cmap='gray', origin='lower')
+
+                self.fig.canvas.draw()
+                plt.show(block=False)
+                plt.pause(0.001)
         # obs = np.append(obs, [self.t])
         # print(obs)
         # print(self.reward)

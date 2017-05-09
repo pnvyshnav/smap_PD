@@ -10,7 +10,8 @@ class Visualizer
 {
 public:
     Visualizer(TrueMap *trueMap, MapType *map, FakeRobot<> *robot,
-               bool gymMode = false, int skipFrame = 1, bool egoCentric = true);
+               bool gymMode = false, int skipFrame = 1,
+               bool egoCentric = true, bool showGoal = true);
     virtual ~Visualizer();
 
     float *mapView() const;
