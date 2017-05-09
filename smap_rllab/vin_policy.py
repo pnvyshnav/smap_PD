@@ -23,7 +23,7 @@ import pickle
 import scipy.io as sio
 import time
 
-from .theano_utils import *
+from theano_utils import *
 
 
 # Value Iteration Network (VIN) Policy
