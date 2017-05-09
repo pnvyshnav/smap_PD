@@ -1,12 +1,11 @@
 import sys
 
 # Add the ptdraft folder path to the sys.path list
-from rllab.algos.npo import NPO
-from rllab.baselines.gaussian_conv_baseline import GaussianConvBaseline
-
-sys.path.append('/home/eric/dev/rllab/')
+# sys.path.append('/home/eric/dev/rllab/')
 
 from rllab.algos.trpo import TRPO
+from rllab.algos.npo import NPO
+from rllab.baselines.gaussian_conv_baseline import GaussianConvBaseline
 from rllab.baselines.linear_feature_baseline import LinearFeatureBaseline
 from rllab.envs.gym_env import GymEnv
 from rllab.envs.normalized_env import normalize
@@ -16,6 +15,7 @@ from rllab.policies.categorical_conv_policy import CategoricalConvPolicy
 from smap_rllab import SmapExplore
 from cnn_policy import GaussianConvPolicy
 from categorical_conv_baseline import CategoricalConvBaseline
+from vin_policy import VinPolicy
 
 
 def run_task(*_):
@@ -26,7 +26,15 @@ def run_task(*_):
     env = normalize(env)
     # env = normalize(GymEnv("Pendulum-v0"))
 
-    policy = GaussianMLPPolicy(
+    # policy = GaussianMLPPolicy(
+    #     env_spec=env_spec,
+    #     # The neural network policy should have two hidden layers, each with 4 hidden units.
+    #     hidden_sizes=(32, 32, 16)
+    # )
+    # baseline = LinearFeatureBaseline(env_spec=env_spec)
+
+
+    policy = VinPolicy(
         env_spec=env_spec,
         # The neural network policy should have two hidden layers, each with 4 hidden units.
         hidden_sizes=(32, 32, 16)

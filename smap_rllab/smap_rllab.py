@@ -13,6 +13,9 @@ TASK = 1
 # 0 Exploration task
 # 1 Navigation task
 
+VIN_OBS = True
+# make observations suitable for Value Iteration Networks
+
 HOLONOMIC_ACTIONS = False
 # holonomic actions can directly change deltaX, deltaY and deltaYaw
 
@@ -91,8 +94,9 @@ def is_loaded():
 
 
 class SmapExplore(Env):
-    def __init__(self, skip_frame=5, global_view=False, discrete_actions=False, holonomic_actions=False, debug=False):
-        global DISCRETE_ACTIONS, HOLONOMIC_ACTIONS, OBS_CHANNELS
+    def __init__(self, skip_frame=5, global_view=False, discrete_actions=False,
+                 holonomic_actions=False, vin_observations=False, debug=False):
+        global DISCRETE_ACTIONS, HOLONOMIC_ACTIONS, OBS_CHANNELS, VIN_OBS
         if not is_loaded():
             load(skip_frame, debug)
             print("loaded library", lib)
@@ -107,6 +111,7 @@ class SmapExplore(Env):
         self.last_action = None
 
         HOLONOMIC_ACTIONS = holonomic_actions
+        VIN_OBS = vin_observations
 
         OBS_CHANNELS = 3
         if TASK == 0:
@@ -164,14 +169,18 @@ class SmapExplore(Env):
     @property
     @overrides
     def observation_space(self):
+        if VIN_OBS:
+            # VIN observations are flattened ((ImageObstacles), (ImageGoal), position.X, position.Y)
+            return spaces.Box(np.array([0]*(self.map_height*self.map_width*2) + [-1]*2),
+                              np.ones(self.map_height*self.map_width*2 + 2))
         if self.global_view:
             return spaces.Box(low=0, high=1, shape=(self.map_height, self.map_width, OBS_CHANNELS))
         if TASK == 0:
             # additionally encodes position
-            return spaces.Box(np.zeros(RAYS + 2), np.ones(RAYS + 2))
+            return spaces.Box(np.array([0]*RAYS + [-1]*2), np.ones(RAYS + 2))
         else:
             # additionally encodes position + goal
-            return spaces.Box(np.zeros(RAYS + 4), np.ones(RAYS + 4))
+            return spaces.Box(np.array([0]*RAYS + [-1]*4), np.ones(RAYS + 4))
 
     @property
     def action_bounds(self):
@@ -218,7 +227,7 @@ class SmapExplore(Env):
         done = False
         if self.t >= END_TIME or not lib.inside() or self.reward < -.5:
             if self.debug:
-                print("\nRobot crashed or time is up.")
+                print("\nRobot has crashed or time is up.")
             done = True
 
         if self.global_view:

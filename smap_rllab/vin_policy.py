@@ -25,25 +25,26 @@ import time
 
 from .theano_utils import *
 
+# obs:
+# ((ImageObstacles), (ImageGoal), position.X, position.Y)
 
 # Value Iteration Network (VIN) Policy
 class VinPolicy(StochasticPolicy, LasagnePowered):
     def __init__(
             self,
-            name,
             env_spec,
-            conv_filters, conv_filter_sizes, conv_strides, conv_pads,
-            hidden_sizes=[],
-            hidden_nonlinearity=NL.rectify,
-            output_nonlinearity=NL.softmax,
+            image_size,
+            l_hidden=150,
+            l_q=10,
+            k=1
     ):
         """
-        :param env_spec: A spec for the mdp.
-        :param hidden_sizes: list of sizes for the fully connected hidden layers
-        :param hidden_nonlinearity: nonlinearity used for each hidden layer
-        :param prob_network: manually specified network for this policy, other network params
-        are ignored
-        :return:
+        Create a policy based on Value Iteration Networks.
+        :param env_spec: 
+        :param image_size: 
+        :param l_hidden: 
+        :param l_q: 
+        :param k: 
         """
         Serializable.quick_init(self, locals())
 

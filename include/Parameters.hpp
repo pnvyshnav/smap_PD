@@ -70,11 +70,11 @@ public:
     static constexpr double SimulationFinalTime = 5.0;
 
 #if defined(FAKE_2D)
-    static constexpr float voxelSize = 0.1; // was 0.05
-    static constexpr float xMin = -1.1 + voxelSize * 0.5;
-    static constexpr float xMax = 1.1 + voxelSize * 0.5;
-    static constexpr float yMin = -1.1 + voxelSize * 0.5;
-    static constexpr float yMax = 1.1 + voxelSize * 0.5;
+    static constexpr float voxelSize = 0.08; // was 0.05
+    static constexpr float xMin = -1; //-1.1 + voxelSize * 0.5;
+    static constexpr float xMax = 1; //1.1 + voxelSize * 0.5;
+    static constexpr float yMin = -1; //-1.1 + voxelSize * 0.5;
+    static constexpr float yMax = 1; //1.1 + voxelSize * 0.5;
     static constexpr float zMin = 0;//(const NumType) (-1. - voxelSize / 2.);
     static constexpr float zMax = voxelSize; //(const NumType) (1. + voxelSize / 2.);
 
