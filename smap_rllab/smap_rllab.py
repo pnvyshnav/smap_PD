@@ -13,7 +13,8 @@ TASK = 1
 # 0 Exploration task
 # 1 Navigation task
 
-HOLONOMIC_ACTIONS = False # can directly change deltaX, deltaY and deltaYaw
+HOLONOMIC_ACTIONS = False
+# holonomic actions can directly change deltaX, deltaY and deltaYaw
 
 RAYS = 32
 END_TIME = 2000
@@ -82,9 +83,6 @@ def load(skip_frame=1, debug=False):
 
 def is_loaded():
     return lib is not None
-    # libp = os.path.abspath(lib)
-    # ret = os.system("lsof -p %d | grep %s > /dev/null" % (os.getpid(), libp))
-    # return (ret == 0)
 
 
 class SmapExplore(Env):
@@ -239,12 +237,6 @@ class SmapExplore(Env):
     def env_spec(self):
         return EnvSpec(observation_space=self.observation_space,
                        action_space=self.action_space)
-
-
-# def env_spec():
-#     se = SmapExplore()
-#     return EnvSpec(observation_space=se.observation_space,
-#                    action_space=se.action_space)
 
 if __name__ == "__main__":
     os.system("/home/wal/catkin_ws/devel/lib/smap/smap")

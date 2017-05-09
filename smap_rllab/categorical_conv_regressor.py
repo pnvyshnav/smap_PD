@@ -66,7 +66,7 @@ class CategoricalConvRegressor(LasagnePowered):
             conv_pads=conv_pads,
             hidden_sizes=hidden_sizes,
             hidden_nonlinearity=hidden_nonlinearity,
-            output_nonlinearity=None,
+            output_nonlinearity=NL.softmax,
         )
 
         l_prob = prob_network.output_layer
@@ -78,14 +78,15 @@ class CategoricalConvRegressor(LasagnePowered):
         old_prob_var = TT.matrix("old_prob")
 
         x_mean_var = theano.shared(
-            np.zeros((1,) + input_shape),
+            np.zeros((1, np.prod(input_shape)), dtype=theano.config.floatX),
             name="x_mean",
-            broadcastable=(True,) + (False,) * len(input_shape)
+            broadcastable=(True, False), #(True,) + (False,) * len(input_shape),
+
         )
         x_std_var = theano.shared(
-            np.ones((1,) + input_shape),
+            np.zeros((1, np.prod(input_shape)), dtype=theano.config.floatX),
             name="x_std",
-            broadcastable=(True,) + (False,) * len(input_shape)
+            broadcastable=(True, False), #(True,) + (False,) * len(input_shape),
         )
 
         normalized_xs_var = (xs_var - x_mean_var) / x_std_var
@@ -151,7 +152,7 @@ class CategoricalConvRegressor(LasagnePowered):
         logger.record_tabular(prefix + 'dLoss', loss_before - loss_after)
 
     def predict(self, xs):
-        return self._f_predict(np.asarray(xs))
+        return self._f_predict(xs)
 
     def predict_log_likelihood(self, xs, ys):
         prob = self._f_prob(np.asarray(xs))
