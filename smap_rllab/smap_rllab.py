@@ -198,7 +198,7 @@ class SmapExplore(Env):
             else:
                 self.reward = reward_prior + lib.act(action[0], action[1])
             self.last_action = action
-        done = self.t >= END_TIME or not lib.inside() or self.reward < -500
+        done = self.t >= END_TIME or not lib.inside() or self.reward < -.5
 
         if self.global_view:
             ptr = lib.observeGlobal()
@@ -222,7 +222,7 @@ class SmapExplore(Env):
 
                 obs = np.asarray([obs, pos, goal])
 
-                if self.reward > 500:
+                if self.reward > 0.5:
                     if self.debug:
                         print("\nFOUND GOAL!!!")
                     done = True
