@@ -427,6 +427,9 @@ void Visualizer::registerPosition(const Parameters::Vec3Type &position)
 
 void Visualizer::updateMapView()
 {
+    if (!_trueMap->insideMap(_robot->position()))
+        return;
+
     // render agent map view
     _occupancies.clear();
     _width = Parameters::voxelsPerDimensionX;

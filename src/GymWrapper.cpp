@@ -232,7 +232,7 @@ float actAbsolute(Parameters::Vec3Type position, double yaw)
 
     auto v = trueMap.query(robot.position());
     if (!inside() || v.type != GEOMETRY_VOXEL || trueMap.getVoxelMean(v) > 0.5)
-        return -10000;
+        return -1;
 
     if (TASK == 0) // EXPLORATION
     {
@@ -255,10 +255,10 @@ float actAbsolute(Parameters::Vec3Type position, double yaw)
     else if (TASK == 1) // NAVIGATION
     {
         if (robot.position().distance(trueMap.goal()) < Parameters::voxelSize)
-            return 1000;
+            return 1;
         else
             // TODO return a negative constant
-            return (float) -robot.position().distance(trueMap.goal());
+            return (float) -.001; //-robot.position().distance(trueMap.goal());
     }
 }
 

@@ -47,14 +47,14 @@ def run_task(*_):
         name="CNN_Policy",
         env_spec=env_spec,
         # The neural network policy should have two hidden layers, each with 4 hidden units.
-        hidden_sizes=[100, 80, 50],
-        conv_filters=[150, 150, 100],
-        conv_filter_sizes=[(2,2), (2,2), (2,2)],
+        hidden_sizes=[32, 16],
+        conv_filters=[32, 32, 32],
+        conv_filter_sizes=[(3,3), (3,3), (3,3)],
         conv_strides=[1, 2, 2],
-        conv_pads=[0] #['same']
+        conv_pads=['same', 'same', 'same'] #['same']
     )
 
-    # regressor_args GaussianConvPolicy= {
+    # regressor_args GaussianConvPolicy = {
     #     'hidden_sizes': [32, 32],
     #     'conv_filters': [2],
     #     'conv_filter_sizes': [(3, 3)],
@@ -67,11 +67,11 @@ def run_task(*_):
     # )
 
     regressor_args = dict(
-        hidden_sizes=[100, 80, 50],
-        conv_filters=[150, 150, 100],
-        conv_filter_sizes=[(2,2), (2,2), (2,2)],
-        conv_strides=[1, 2, 2],
-        conv_pads=[0]
+        hidden_sizes=[16, 16],
+        conv_filters=[16, 16],
+        conv_filter_sizes=[(3,3), (3,3)],
+        conv_strides=[1, 2],
+        conv_pads=['same', 'same']
     )
     baseline = CategoricalConvBaseline(
         env_spec=env_spec,
