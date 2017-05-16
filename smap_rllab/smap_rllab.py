@@ -118,6 +118,8 @@ class SmapExplore(Env):
             OBS_CHANNELS = 2
         if not global_view:
             OBS_CHANNELS = 1
+        if VIN_OBS:
+            OBS_CHANNELS = 2
 
         self.debug = debug
         if self.debug:
@@ -171,8 +173,9 @@ class SmapExplore(Env):
     def observation_space(self):
         if VIN_OBS:
             # VIN observations are flattened ((ImageObstacles), (ImageGoal), position.X, position.Y)
-            return spaces.Box(np.array([0]*(self.map_height*self.map_width*2) + [-1]*2),
-                              np.ones(self.map_height*self.map_width*2 + 2))
+            # return spaces.Box(np.array([0]*(self.map_height*self.map_width*2) + [-1]*2),
+            #                   np.ones(self.map_height*self.map_width*2 + 2))
+            return spaces.Box(low=0, high=1, shape=(self.map_height, self.map_width, OBS_CHANNELS))
         if self.global_view:
             return spaces.Box(low=0, high=1, shape=(self.map_height, self.map_width, OBS_CHANNELS))
         if TASK == 0:
@@ -260,8 +263,8 @@ class SmapExplore(Env):
                 obs = np.asarray([obs, pos, goal])
 
                 if self.reward > 0.5:
-                    # if self.debug:
-                    print("\nFOUND GOAL!!!")
+                    if self.debug:
+                        print("\nFOUND GOAL!!!")
                     done = True
         else:
             ptr = lib.observeLocal(RAYS)
@@ -276,8 +279,8 @@ class SmapExplore(Env):
                 obs = np.append(obs, position)
                 obs = np.append(obs, goal)
                 if self.reward > 0.5:
-                    # if self.debug:
-                    print("\nFOUND GOAL!!!")
+                    if self.debug:
+                        print("\nFOUND GOAL!!!")
                     done = True
             if self.debug:
                 self.axes[0].imshow(np.vstack([obs]*len(obs)), vmin=0, vmax=1, cmap='gray', origin='lower')
@@ -293,6 +296,9 @@ class SmapExplore(Env):
     def env_spec(self):
         return EnvSpec(observation_space=self.observation_space,
                        action_space=self.action_space)
+
+    def image_size(self):
+        return lib.mapWidth(), lib.mapHeight()
 
 if __name__ == "__main__":
     os.system("/home/wal/catkin_ws/devel/lib/smap/smap")

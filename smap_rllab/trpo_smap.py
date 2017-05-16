@@ -10,6 +10,7 @@ from rllab.baselines.linear_feature_baseline import LinearFeatureBaseline
 from rllab.envs.gym_env import GymEnv
 from rllab.envs.normalized_env import normalize
 from rllab.misc.instrument import run_experiment_lite
+from rllab.policies.gaussian_gru_policy import GaussianGRUPolicy
 from rllab.policies.gaussian_mlp_policy import GaussianMLPPolicy
 from rllab.policies.categorical_conv_policy import CategoricalConvPolicy
 from smap_rllab import SmapExplore
@@ -21,7 +22,8 @@ from vin_policy import VinPolicy
 def run_task(*_):
     env = SmapExplore(skip_frame=100, global_view=False,
                       discrete_actions=False, debug=False,
-                      holonomic_actions=True)
+                      holonomic_actions=True, vin_observations=False)
+    image_size = env.image_size()
     env_spec = env.env_spec()
     env = normalize(env)
     # env = normalize(GymEnv("Pendulum-v0"))
@@ -31,15 +33,18 @@ def run_task(*_):
     #     # The neural network policy should have two hidden layers, each with 4 hidden units.
     #     hidden_sizes=(32, 32, 16)
     # )
-    # baseline = LinearFeatureBaseline(env_spec=env_spec)
-
-
-    policy = VinPolicy(
+    policy = GaussianGRUPolicy(
         env_spec=env_spec,
         # The neural network policy should have two hidden layers, each with 4 hidden units.
-        hidden_sizes=(32, 32, 16)
+        hidden_sizes=(32,) # only one layer is allowed
     )
     baseline = LinearFeatureBaseline(env_spec=env_spec)
+
+
+    # policy = VinPolicy(
+    #     env_spec=env_spec,
+    #     image_size=(image_size, image_size),
+    # )
 
     # policy = GaussianConvPolicy(
     #     name="CNN_Policy",
@@ -76,17 +81,17 @@ def run_task(*_):
     # )
 
 # TODO this was the right baseline
-    # regressor_args = dict(
-    #     hidden_sizes=[16, 16],
-    #     conv_filters=[16, 16],
-    #     conv_filter_sizes=[(3,3), (3,3)],
-    #     conv_strides=[1, 2],
-    #     conv_pads=['same', 'same']
-    # )
-    # baseline = CategoricalConvBaseline(
-    #     env_spec=env_spec,
-    #     regressor_args=regressor_args
-    # )
+#     regressor_args = dict(
+#         hidden_sizes=[16, 16],
+#         conv_filters=[16, 16],
+#         conv_filter_sizes=[(3,3), (3,3)],
+#         conv_strides=[1, 2],
+#         conv_pads=['same', 'same']
+#     )
+#     baseline = CategoricalConvBaseline(
+#         env_spec=env_spec,
+#         regressor_args=regressor_args
+#     )
 
     algo = TRPO(
         env=env,

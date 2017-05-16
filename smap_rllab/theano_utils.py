@@ -16,7 +16,7 @@ def conv2D_keep_shape(x, w, image_shape, filter_shape, subsample=(1, 1)):
                                             kerns=w,
                                             border_mode='full',
                                             subsample=subsample,
-                                            )[:, :, fs/2:ims+fs/2, fs/2:ims+fs/2]
+                                            )[:, :, fs//2:ims+fs//2, fs//2:ims+fs//2]
 
 
 def rmsprop_updates_T(cost, params, stepsize=0.001, rho=0.9, epsilon=1e-6):

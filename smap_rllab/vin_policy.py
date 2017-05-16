@@ -23,7 +23,7 @@ import pickle
 import scipy.io as sio
 import time
 
-from .theano_utils import *
+from theano_utils import *
 
 # obs:
 # ((ImageObstacles), (ImageGoal), position.X, position.Y)
@@ -40,11 +40,11 @@ class VinPolicy(StochasticPolicy, LasagnePowered):
     ):
         """
         Create a policy based on Value Iteration Networks.
-        :param env_spec: 
-        :param image_size: 
-        :param l_hidden: 
-        :param l_q: 
-        :param k: 
+        :param env_spec: gym environment specification
+        :param image_size: (height, width) of input image(s)
+        :param l_hidden: number of channels in first hidden layer
+        :param l_q: number of channels in Q layer (~actions)
+        :param k: number of value iterations
         """
         Serializable.quick_init(self, locals())
 
@@ -65,11 +65,11 @@ class VinPolicy(StochasticPolicy, LasagnePowered):
         #     name="prob_network",
         # )
 
-        self.im_size = env_spec.observation_space.shape[:2]  # input image size
+        self.image_size = image_size # env_spec.observation_space.shape[:2]  # input image size
         self.k = 1  # number of VI iterations
         np.random.seed(0)
 
-        theano.config.blas.ldflags = "-L/usr/local/lib -lopenblas"
+        theano.config.blas.ldflags = "-L/usr/lib -lopenblas"
 
         # X input : l=2 stacked images: obstacle map and reward function prior
         self.X = T.ftensor4(name="X")
@@ -78,14 +78,13 @@ class VinPolicy(StochasticPolicy, LasagnePowered):
         self.S2 = T.bmatrix("S2")  # state second dimension * statebatchsize
         self.y = T.bvector("y")  # output action * statebatchsize
 
-        l = 2  # channels in input layer
-        l_h = 150  # channels in initial hidden layer
-        l_q = 10  # channels in q layer (~actions)
+        in_x_channels = 2  # channels in input layer
 
-        self.vin_net = VinBlock(in_x=self.X, in_s1=self.S1, in_s2=self.S2, in_x_channels=l,
-                                imsize=self.im_size, batchsize=self.batchsize,
-                                state_batch_size=self.statebatchsize,
-                                l_h=l_h, l_q=l_q,
+        self.vin_net = VinBlock(in_x=self.X, in_s1=self.S1, in_s2=self.S2,
+                                in_x_channels=in_x_channels,
+                                imsize=self.image_size,
+                                state_batch_size=1,
+                                l_h=l_hidden, l_q=l_q,
                                 k=self.k)
         self.p_of_y = self.vin_net.output
         self.params = self.vin_net.params
@@ -101,7 +100,7 @@ class VinPolicy(StochasticPolicy, LasagnePowered):
         self.y_out = theano.function(inputs=[self.X, self.S1, self.S2], outputs=[self.y_pred])
 
         self._l_prob = self.y_pred # prob_network.output_layer
-        self._l_obs = self.vin_net.input_layer
+        self._l_obs = self.X # self.vin_net.input_layer
         self._f_prob = self.y_out   # ext.compile_function(
                                     #     [prob_network.input_layer.input_var],
                                     #     L.get_output(prob_network.output_layer)
@@ -121,10 +120,10 @@ class VinPolicy(StochasticPolicy, LasagnePowered):
     @overrides
     def dist_info_sym(self, obs_var, state_info_vars=None):
         return dict(
-            prob=L.get_output(
-                self._l_prob,
-                {self._l_obs: obs_var}
-            )
+            prob=self.y_out([obs_var]) #L.get_output(
+            #     self._l_prob,
+            #     {self._l_obs: obs_var}
+            # )
         )
 
     @overrides
@@ -138,15 +137,23 @@ class VinPolicy(StochasticPolicy, LasagnePowered):
     @overrides
     def get_action(self, observation):
         flat_obs = self.observation_space.flatten(observation)
-        prob = self._f_prob([flat_obs])[0]
+        # convert flattened observation space to [X, S1, S2]
+        image_pixels = self.image_size**2
+        X1 = np.reshape(flat_obs[image_pixels], (self.image_size, self.image_size))
+        X2 = np.reshape(flat_obs[image_pixels:image_pixels*2], (self.image_size, self.image_size))
+        X = np.array([X1, X2])
+        S1 = flat_obs[-2]
+        S2 = flat_obs[-1]
+        prob = self._f_prob([X, S1, S2])[0] # self._f_prob([flat_obs])[0]
         action = self.action_space.weighted_sample(prob)
         return action, dict(prob=prob)
 
     def get_actions(self, observations):
-        flat_obs = self.observation_space.flatten_n(observations)
-        probs = self._f_prob(flat_obs)
-        actions = list(map(self.action_space.weighted_sample, probs))
-        return actions, dict(prob=probs)
+        raise NotImplementedError("VinPolicy.get_actions() has not been implemented!")
+        # flat_obs = self.observation_space.flatten_n(observations)
+        # probs = self._f_prob(flat_obs)
+        # actions = list(map(self.action_space.weighted_sample, probs))
+        # return actions, dict(prob=probs)
 
     @property
     def distribution(self):
@@ -392,8 +399,12 @@ class VinBlock(object):
         :param k: number of VI iterations (actually, real number of iterations is k+1)
 
         """
+
+        self.input_shape = (l_h, in_x_channels, 3, 3)
+
         self.bias = theano.shared((np.random.randn(l_h) * 0.01).astype(theano.config.floatX))  # 150 parameters
         self.w0 = init_weights_T(l_h, in_x_channels, 3, 3)  # 1350 parameters
+
         # initial conv layer over image+reward prior
         self.h = conv2D_keep_shape(in_x, self.w0, image_shape=[batchsize, self.w0.shape.eval()[1],
                                                                imsize[0], imsize[1]],
