@@ -5,29 +5,6 @@
 #include "TrueMap.h"
 #include "BeliefMap.h"
 
-/**
- * Class representing the results of computing the inverse sensor cause model.
- */
-struct InverseCauseModel
-{
-    InverseCauseModel()
-    {}
-
-    InverseCauseModel(const InverseCauseModel &icm)
-            : posteriorOnRay(icm.posteriorOnRay),
-              posteriorInfinity(icm.posteriorInfinity),
-              rayLength(icm.rayLength)
-    {
-        for (auto &key : icm.ray)
-            ray.push_back(octomap::OcTreeKey(key));
-    }
-
-    std::valarray<Parameters::NumType> posteriorOnRay;
-    Parameters::NumType posteriorInfinity;
-    std::vector<octomap::OcTreeKey> ray;
-    unsigned int rayLength;
-};
-
 class Sensor : public Observable
 {
 public:
@@ -58,9 +35,14 @@ public:
      * @param causeVoxel The actual cause voxel.
      * @return Likelihood between 0 and 1.
      */
-    virtual Parameters::NumType likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const;
+    static Parameters::NumType likelihoodGivenCause(const Measurement &measurement, const QVoxel &causeVoxel);
 
-    virtual InverseCauseModel *computeInverseCauseModel(Measurement measurement, BeliefMap &beliefMap) const;
+    static InverseCauseModel inverseCauseModel(const Measurement &measurement, const BeliefMap &beliefMap);
+
+    inline SensorRay ray() const
+    {
+        return SensorRay(_position, _orientation, _range);
+    }
 
 protected:
     Parameters::Vec3Type _position;
@@ -68,5 +50,5 @@ protected:
     const Parameters::NumType _range;
 
 private:
-    static octomap::KeyRay ray; // avoid wasteful constructions
+    static octomap::KeyRay _keyRay; // avoid wasteful constructions
 };

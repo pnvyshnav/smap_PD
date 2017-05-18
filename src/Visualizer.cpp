@@ -6,7 +6,6 @@
 #include "../include/Parameters.hpp"
 #include "../include/StereoCameraSensor.h"
 #include "../include/FakeRobot.hpp"
-#include "../include/TrajectoryPlanner.h"
 
 #include <visualization_msgs/Marker.h>
 #include <nav_msgs/GridCells.h>
@@ -77,7 +76,7 @@ void Visualizer::publishTrueMap(const Observable *visualizable)
                     continue;
 #else
                 if (z > 12 && (trueMap->getVoxelMean(voxel) < 0.5 && voxel.position.norm() < 1.5 || voxel.position.norm() < 0.6))
-                // remove voxel
+                    // remove voxel
                     continue;
                 else
                     cell.action = 0;
@@ -232,7 +231,7 @@ void Visualizer::publishBeliefMap(const Observable *visualizable)
             cell.scale.y = Parameters::voxelSize;
             cell.scale.z = Parameters::voxelSize;
             cell.color.a = 1;
-            float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
+            float intensity = (float) (1.0 - voxel.node()->getValue().mean());
             cell.color.r = intensity;
             cell.color.g = intensity;
             cell.color.b = intensity;
@@ -328,7 +327,7 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
                 cell.scale.y = Parameters::voxelSize;
                 cell.scale.z = Parameters::voxelSize;
                 cell.color.a = 1.0;
-                float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
+                float intensity = (float) (1.0 - voxel.node()->getValue().mean());
                 cell.color.r = intensity;
                 cell.color.g = intensity;
                 cell.color.b = intensity;
@@ -382,22 +381,22 @@ void Visualizer::publishLogOddsMapFull(const Observable *visualizable)
 //                    // remove voxel
 //                    continue;
 //                else {
-                    cell.action = 0;
+                cell.action = 0;
 
-                    if (voxel.node()) {
-                        float intensity = (float) (1.0 - logOddsMap->getVoxelMean(voxel));
+                if (voxel.node()) {
+                    float intensity = (float) (1.0 - logOddsMap->getVoxelMean(voxel));
+                    cell.color.r = intensity;
+                    cell.color.g = intensity;
+                    cell.color.b = intensity;
+                } else {
+                    if (pos.norm() > 1.4) {
+                        float intensity = (float) (1.0 - Parameters::priorMean);
                         cell.color.r = intensity;
                         cell.color.g = intensity;
                         cell.color.b = intensity;
-                    } else {
-                        if (pos.norm() > 1.4) {
-                            float intensity = (float) (1.0 - Parameters::priorMean);
-                            cell.color.r = intensity;
-                            cell.color.g = intensity;
-                            cell.color.b = intensity;
-                        } else
-                            continue;
-                    }
+                    } else
+                        continue;
+                }
 //                }
                 cell.type = visualization_msgs::Marker::CUBE;
                 cell.header.frame_id = "map";
@@ -571,10 +570,10 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
     visualization_msgs::MarkerArray markers;
 
     auto colors = std::vector<std::vector<double> > {
-        {0, 0, 1}, // TODO remove
-        {1, 0, 0},
-        {0, 0.4, 0},
-        {0, 0, 1}
+            {0, 0, 1}, // TODO remove
+            {1, 0, 0},
+            {0, 0.4, 0},
+            {0, 0, 1}
     };
 
 #if defined(PLANNER_2D_TEST)
@@ -584,104 +583,104 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
     unsigned int splineId = 0;
 //    for (auto &spline : robot->splines())
 //    {
-        visualization_msgs::Marker marker;
-        marker.action = 0;
-        marker.id = (int) visualizable->observableId() + counter++;
-        unsigned int color = (unsigned int) (splineId % colors.size());
-        marker.type = visualization_msgs::Marker::LINE_STRIP;
-        marker.header.frame_id = "map";
-        marker.scale.x = 0.01;
-        marker.scale.y = 0.01;
-        marker.scale.z = 0.01;
-        marker.color.a = 1;
-        marker.color.r = (float)colors[color][0];
-        marker.color.g = (float)colors[color][1];
-        marker.color.b = (float)colors[color][2];
+    visualization_msgs::Marker marker;
+    marker.action = 0;
+    marker.id = (int) visualizable->observableId() + counter++;
+    unsigned int color = (unsigned int) (splineId % colors.size());
+    marker.type = visualization_msgs::Marker::LINE_STRIP;
+    marker.header.frame_id = "map";
+    marker.scale.x = 0.01;
+    marker.scale.y = 0.01;
+    marker.scale.z = 0.01;
+    marker.color.a = 1;
+    marker.color.r = (float)colors[color][0];
+    marker.color.g = (float)colors[color][1];
+    marker.color.b = (float)colors[color][2];
 
-        visualization_msgs::Marker wayPoints;
-        wayPoints.action = 0;
-        wayPoints.id = (int) visualizable->observableId() + counter++;
-        wayPoints.type = visualization_msgs::Marker::POINTS;
-        wayPoints.header.frame_id = "map";
-        wayPoints.scale.x = 0.02;
-        wayPoints.scale.y = 0.02;
-        wayPoints.scale.z = 0.02;
-        wayPoints.color.a = 1;
-        wayPoints.color.r = (float)colors[color][0];
-        wayPoints.color.g = (float)colors[color][1];
-        wayPoints.color.b = (float)colors[color][2];
+    visualization_msgs::Marker wayPoints;
+    wayPoints.action = 0;
+    wayPoints.id = (int) visualizable->observableId() + counter++;
+    wayPoints.type = visualization_msgs::Marker::POINTS;
+    wayPoints.header.frame_id = "map";
+    wayPoints.scale.x = 0.02;
+    wayPoints.scale.y = 0.02;
+    wayPoints.scale.z = 0.02;
+    wayPoints.color.a = 1;
+    wayPoints.color.r = (float)colors[color][0];
+    wayPoints.color.g = (float)colors[color][1];
+    wayPoints.color.b = (float)colors[color][2];
 
-        auto trajectory = Trajectory(robot->trajectory());
+    auto trajectory = Trajectory(robot->trajectory());
 #ifdef SIMULATION_TIME
-        for (double x = 0; x <= Parameters::SimulationFinalTime; x += Parameters::SimulationTimeStep)
+    for (double x = 0; x <= Parameters::SimulationFinalTime; x += Parameters::SimulationTimeStep)
         {
             auto result = trajectory.evaluateAtTime(x);
 #else
-        for (double x = 0; x <= 1.01; x += 0.05)
-        {
-            auto result = trajectory.evaluate(x);
+    for (double x = 0; x <= 1.01; x += 0.05)
+    {
+        auto result = trajectory.evaluate(x);
 #endif
-            geometry_msgs::Point p;
-            p.x = result.point.x;
-            p.y = result.point.y;
-            p.z = 0.5;
-            marker.points.push_back(p);
-            p.z = 0.51;
-            wayPoints.points.push_back(p);
-        }
-        markers.markers.push_back(marker);
-        markers.markers.push_back(wayPoints);
+        geometry_msgs::Point p;
+        p.x = result.point.x;
+        p.y = result.point.y;
+        p.z = 0.5;
+        marker.points.push_back(p);
+        p.z = 0.51;
+        wayPoints.points.push_back(p);
+    }
+    markers.markers.push_back(marker);
+    markers.markers.push_back(wayPoints);
 
-        // visualize all trajectory voxels
-        visualization_msgs::Marker trajectoryVoxels;
-        trajectoryVoxels.action = 0;
-        trajectoryVoxels.id = (int) 5;
-        trajectoryVoxels.type = visualization_msgs::Marker::POINTS;
-        trajectoryVoxels.header.frame_id = "map";
-        trajectoryVoxels.scale.x = 0.1;
-        trajectoryVoxels.scale.y = 0.1;
-        trajectoryVoxels.scale.z = 0.1;
-        trajectoryVoxels.color.a = 0.5;
-        trajectoryVoxels.color.r = (float)colors[color][0];
-        trajectoryVoxels.color.g = (float)colors[color][1];
-        trajectoryVoxels.color.b = (float)colors[color][2];
-        //robot->selectSpline(splineId); // TODO messes up simulation
-        for (auto &coords : robot->trajectory().splineVoxelPositions(*trueMap))
-        {
-            geometry_msgs::Point p;
-            p.x = coords.x();
-            p.y = coords.y();
-            p.z = 0.51;
-            trajectoryVoxels.points.push_back(p);
-        }
-        allTrajectoryVoxels.markers.push_back(trajectoryVoxels);
+    // visualize all trajectory voxels
+    visualization_msgs::Marker trajectoryVoxels;
+    trajectoryVoxels.action = 0;
+    trajectoryVoxels.id = (int) 5;
+    trajectoryVoxels.type = visualization_msgs::Marker::POINTS;
+    trajectoryVoxels.header.frame_id = "map";
+    trajectoryVoxels.scale.x = 0.1;
+    trajectoryVoxels.scale.y = 0.1;
+    trajectoryVoxels.scale.z = 0.1;
+    trajectoryVoxels.color.a = 0.5;
+    trajectoryVoxels.color.r = (float)colors[color][0];
+    trajectoryVoxels.color.g = (float)colors[color][1];
+    trajectoryVoxels.color.b = (float)colors[color][2];
+    //robot->selectSpline(splineId); // TODO messes up simulation
+    for (auto &coords : robot->trajectory().splineVoxelPositions(*trueMap))
+    {
+        geometry_msgs::Point p;
+        p.x = coords.x();
+        p.y = coords.y();
+        p.z = 0.51;
+        trajectoryVoxels.points.push_back(p);
+    }
+    allTrajectoryVoxels.markers.push_back(trajectoryVoxels);
 
-        // visualize all trajectory voxels
-        visualization_msgs::Marker trajectoryFutureVoxels;
-        trajectoryFutureVoxels.action = 0;
-        trajectoryFutureVoxels.id = (int) 10;
-        trajectoryFutureVoxels.type = visualization_msgs::Marker::POINTS;
-        trajectoryFutureVoxels.header.frame_id = "map";
-        trajectoryFutureVoxels.scale.x = 0.1;
-        trajectoryFutureVoxels.scale.y = 0.1;
-        trajectoryFutureVoxels.scale.z = 0.1;
-        trajectoryFutureVoxels.color.a = 0.6;
-        trajectoryFutureVoxels.color.r = 0.8;
-        trajectoryFutureVoxels.color.g = 0.6;
-        trajectoryFutureVoxels.color.b = 0.0;
-        //robot->selectSpline(splineId); // TODO messes up simulation
-        for (auto &key : robot->currentSplineFutureVoxels())
-        {
-            auto coords = trueMap->keyToCoord(key);
-            geometry_msgs::Point p;
-            p.x = coords.x();
-            p.y = coords.y();
-            p.z = 0.52;
-            trajectoryFutureVoxels.points.push_back(p);
-        }
-        allTrajectoryVoxels.markers.push_back(trajectoryFutureVoxels);
+    // visualize all trajectory voxels
+    visualization_msgs::Marker trajectoryFutureVoxels;
+    trajectoryFutureVoxels.action = 0;
+    trajectoryFutureVoxels.id = (int) 10;
+    trajectoryFutureVoxels.type = visualization_msgs::Marker::POINTS;
+    trajectoryFutureVoxels.header.frame_id = "map";
+    trajectoryFutureVoxels.scale.x = 0.1;
+    trajectoryFutureVoxels.scale.y = 0.1;
+    trajectoryFutureVoxels.scale.z = 0.1;
+    trajectoryFutureVoxels.color.a = 0.6;
+    trajectoryFutureVoxels.color.r = 0.8;
+    trajectoryFutureVoxels.color.g = 0.6;
+    trajectoryFutureVoxels.color.b = 0.0;
+    //robot->selectSpline(splineId); // TODO messes up simulation
+    for (auto &key : robot->currentSplineFutureVoxels())
+    {
+        auto coords = trueMap->keyToCoord(key);
+        geometry_msgs::Point p;
+        p.x = coords.x();
+        p.y = coords.y();
+        p.z = 0.52;
+        trajectoryFutureVoxels.points.push_back(p);
+    }
+    allTrajectoryVoxels.markers.push_back(trajectoryFutureVoxels);
 
-        ++splineId;
+    ++splineId;
 //    }
 
     splinePublisher.publish(markers);
@@ -705,40 +704,5 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
     finalTrajectoryPublisher.publish(robotPosition);
 #endif
 
-    ros::spinOnce();
-}
-
-void Visualizer::publishTrajectoryPlanner(const Observable *visualizable)
-{
-    ros::Rate loop_rate(PaintRate);
-
-    loop_rate.sleep();
-    visualization_msgs::MarkerArray markers;
-
-    auto trajectoryPlanner = (TrajectoryPlanner*) visualizable;
-    visualization_msgs::Marker wayPoints;
-    wayPoints.action = 0;
-    wayPoints.id = (int) visualizable->observableId();
-    wayPoints.type = visualization_msgs::Marker::LINE_STRIP;
-    wayPoints.header.frame_id = "map";
-    wayPoints.scale.x = 0.01;
-    wayPoints.scale.y = 0.01;
-    wayPoints.scale.z = 0.01;
-    wayPoints.color.a = 1;
-    wayPoints.color.r = 0.4f;
-    wayPoints.color.g = 0.8f;
-    wayPoints.color.b = 0.0f;
-
-    for (double x = 0; x <= 1.01; x += 0.05)
-    {
-        auto result = trajectoryPlanner->currentEvaluationCandidate().evaluate(x);
-        geometry_msgs::Point p;
-        p.x = result.point.x;
-        p.y = result.point.y;
-        p.z = 0.55;
-        wayPoints.points.push_back(p);
-    }
-    markers.markers.push_back(wayPoints);
-    evaluationPublisher.publish(markers);
     ros::spinOnce();
 }

@@ -70,13 +70,6 @@ std::vector<PixelSensor> StereoCameraSensor::pixels() const
     return _pixelSensors;
 }
 
-Parameters::NumType StereoCameraSensor::likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const
-{
-    // TODO improve architecture (should the Measurement own a Sensor?)
-    PixelSensor pixelSensor(measurement.sensor->position(), measurement.sensor->orientation());
-    return pixelSensor.likelihoodGivenCause(measurement, causeVoxel);
-}
-
 void StereoCameraSensor::setPosition(const Parameters::Vec3Type &position)
 {
     Sensor::setPosition(position);

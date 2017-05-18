@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "Parameters.hpp"
+#include "SensorRay.hpp"
 
 enum GeometryType
 {
@@ -12,7 +13,6 @@ enum GeometryType
     GEOMETRY_HOLE
 };
 
-class Sensor;
 struct Measurement
 {
     /**
@@ -21,32 +21,32 @@ struct Measurement
     const Parameters::NumType value;
 
     /**
-     * Sensor that produced this measurement.
+     * Ray of sensor that produced this measurement.
      */
-    const std::shared_ptr<Sensor> sensor;
+    const SensorRay sensor;
 
     /**
      * Determines which geometry was sensed.
      */
     const GeometryType geometry;
 
-    static Measurement hole(const std::shared_ptr<Sensor> &sensor)
+    static Measurement hole(const SensorRay &sensor)
     {
         return Measurement(sensor, std::numeric_limits<Parameters::NumType>::infinity(), GEOMETRY_HOLE);
     }
 
-    static Measurement spurious(const std::shared_ptr<Sensor> &sensor)
+    static Measurement spurious(const SensorRay &sensor)
     {
         return Measurement(sensor, std::numeric_limits<Parameters::NumType>::infinity(), GEOMETRY_SPURIOUS);
     }
 
-    static Measurement voxel(const std::shared_ptr<Sensor> &sensor, Parameters::NumType value)
+    static Measurement voxel(const SensorRay &sensor, Parameters::NumType value)
     {
         return Measurement(sensor, value);
     }
 
 private:
-    Measurement(const std::shared_ptr<Sensor> sensor, Parameters::NumType value, GeometryType geometry = GEOMETRY_VOXEL)
+    Measurement(const SensorRay sensor, Parameters::NumType value, GeometryType geometry = GEOMETRY_VOXEL)
             : sensor(sensor), value(value), geometry(geometry)
     {}
 };

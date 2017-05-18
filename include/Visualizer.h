@@ -26,7 +26,6 @@ public:
     void publishStereoCameraSensor(const Observable *visualizable);
     void publishRay(TrueMap &trueMap, Sensor &sensor);
     void publishFakeRobot(const Observable *visualizable, const TrueMap *trueMap);
-    void publishTrajectoryPlanner(const Observable *visualizable);
 
     static const int PaintRate = 200;
 

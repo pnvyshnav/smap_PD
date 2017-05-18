@@ -17,31 +17,57 @@
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
 
+#include <depth_image_proc/depth_conversions.h>
+
 #include <cmath>
 
 #include "../include/Sensor.h"
 
 
-typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, geometry_msgs::TransformStamped> SyncPolicy;
+#if INPUT_TYPE == INPUT_EUROC
 
+
+//
+// Calibration data from EuROC MAV dataset
+//
 const tf::Transform Drone::vicon(tf::Matrix3x3(
         0.33638, -0.01749,  0.94156,
         -0.02078, -0.99972, -0.01114,
         0.94150, -0.01582, -0.33665
 ), tf::Vector3(0.06901, -0.02781, -0.12395));
-
 const tf::Transform Drone::camera(tf::Matrix3x3(
         0.0125552670891, -0.999755099723, 0.0182237714554,
         0.999598781151, 0.0130119051815, 0.0251588363115,
         -0.0253898008918, 0.0179005838253, 0.999517347078
 ), tf::Vector3(-0.0198435579556, 0.0453689425024, 0.00786212447038));
 
+#elif INPUT_TYPE == INPUT_SNAPDRAGON
+//
+// Calibration data from Snapdragon Flight Stereo Camera
+//
+constexpr float focalX = 281.620143146f;
+constexpr float focalY = 282.560278566f;
+constexpr float principalPointX = 335.626405147f;
+constexpr float principalPointY = 241.833393408f;
+image_geometry::PinholeCameraModel snapdragonCameraModel;
+sensor_msgs::CameraInfo snapdragonCameraInfo;
+
+#endif
 
 Drone::Drone() : _stopRequested(false)
 {
+#if INPUT_TYPE == INPUT_SNAPDRAGON
+    snapdragonCameraInfo.K = { {
+                            focalX, 0     , principalPointX
+                          , 0     , focalY, principalPointY
+                          , 0     , 0     , 1 }};
+    snapdragonCameraModel.fromCameraInfo(snapdragonCameraInfo);
+#endif
 }
 
-void Drone::handleMeasurements(Drone::PointCloudMessage &pointsMsg, Drone::TransformationMessage &transformationMsg)
+
+#if INPUT_TYPE == INPUT_EUROC
+void Drone::handleMeasurements(PointsMessageConstPtr pointsMsg, TransformationMessageConstPtr transformationMsg)
 {
     // convert messages to usable data types
     pcl::PCLPointCloud2 pcl_pc2;
@@ -179,10 +205,152 @@ void Drone::handleMeasurements(Drone::PointCloudMessage &pointsMsg, Drone::Trans
     publishObservation(observation);
 }
 
+#elif INPUT_TYPE == INPUT_SNAPDRAGON
+
+void Drone::handleMeasurements(PointsMessageConstPtr depthImage, TransformationMessageConstPtr pose)
+{
+    sensor_msgs::ImageConstPtr imgPtr(depthImage);
+    sensor_msgs::PointCloud2Ptr cloud2Ptr(new sensor_msgs::PointCloud2);
+    depth_image_proc::convert<float>(imgPtr, cloud2Ptr, snapdragonCameraModel); // TODO set maximum range? Parameters::sensorRange
+
+    // convert messages to usable data types
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::fromROSMsg(*cloud2Ptr, *pointCloud);
+
+#ifndef PREPROCESSED_INPUT
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFiltered(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::VoxelGrid<pcl::PointXYZ> sor;
+    sor.setInputCloud(pointCloud);
+    sor.setLeafSize(Parameters::PointCloudResolution,
+                    Parameters::PointCloudResolution,
+                    Parameters::PointCloudResolution);
+    sor.filter(*pointCloudFiltered);
+
+    ROS_INFO("Point Cloud size reduced from %i to %i points.",
+             (int)pointCloud->size(), (int)pointCloudFiltered->size());
+#ifdef SKIP_LARGE_POINTCLOUDS
+    if (pointCloudFiltered->size() > 1500)
+    {
+        ROS_WARN("SKIPPING POINT CLOUD (TOO LARGE).");
+        return;
+    }
+#endif
+    pointCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(pointCloudFiltered);
+
+    auto position = pose->pose.position;
+    auto orientation = pose->pose.orientation;
+
+    tf::Transform transformation;
+    transformation.setOrigin(tf::Vector3(position.x, position.y, position.z));
+    transformation.setRotation(tf::Quaternion(orientation.x, orientation.y, orientation.z, orientation.w));
+
+    //TODO broadcast tf and transformed PointCloud2 for debugging
+    static tf::TransformBroadcaster br;
+    auto time = ros::Time::now(); // uses simulation time from ros bag clock
+    tf::StampedTransform tr2(transformation, time, "map", "tf_drone");
+    br.sendTransform(tr2);
+    geometry_msgs::TransformStamped tfMsg;
+    tf::transformStampedTFToMsg(tr2, tfMsg);
+    _tfDronePub.publish(tfMsg);
+
+    sensor_msgs::PointCloud2 pointsTfMsg(*cloud2Ptr);
+    pointsTfMsg.header.frame_id = "tf_drone";
+    pointsTfMsg.header.stamp = time;
+    _tfPointCloudPub.publish(pointsTfMsg);
+
+    // publish downsampled point cloud
+    sensor_msgs::PointCloud2 downsampledPointsTfMsg;
+    pcl::toROSMsg(*pointCloudFiltered, downsampledPointsTfMsg);
+    downsampledPointsTfMsg.header.frame_id = "tf_drone";
+    downsampledPointsTfMsg.header.stamp = time;
+    _tfDownsampledPointCloudPub.publish(downsampledPointsTfMsg);
+#else
+    tf::StampedTransform stampedTransform;
+    tf::transformStampedMsgToTF(*transformationMsg, stampedTransform);
+    tf::Transform transformation(stampedTransform);
+#endif
+
+    Parameters::Vec3Type origin((float) transformation.getOrigin().x(),
+                                (float) transformation.getOrigin().y(),
+                                (float) transformation.getOrigin().z());
+
+#ifdef LOG_DETAILS
+    ROS_INFO("Sensor Position:  %.3f %.3f %.3f", transformation.getOrigin().x(), transformation.getOrigin().y(),
+    transformation.getOrigin().z());
+    //ROS_INFO("Sensor Direction: %.3f %.3f %.3f", direction.x(), direction.y(), direction.z());
+#endif
+
+    if (std::isnan(transformation.getOrigin().x()))
+    {
+        ROS_WARN("Measured transformation origin is invalid.");
+        return;
+    }
+
+    auto firstValidPoint = pointCloud->begin();
+    while (firstValidPoint != pointCloud->end() && std::isnan(firstValidPoint->x))
+        ++firstValidPoint;
+    if (firstValidPoint == pointCloud->end())
+    {
+        ROS_WARN("Measured point cloud did not contain any valid points.");
+        return;
+    }
+
+#ifdef LOG_DETAILS
+    float xmin = firstValidPoint->x;
+    float ymin = firstValidPoint->y;
+    float zmin = firstValidPoint->z;
+    float xmax = firstValidPoint->x;
+    float ymax = firstValidPoint->y;
+    float zmax = firstValidPoint->z;
+#endif
+
+    unsigned int nans = 0;
+    std::vector<Measurement> measurements;
+    for (auto &p = firstValidPoint; p < pointCloud->end(); ++p)
+    {
+        if (std::isnan(p->x))
+        {
+            ++nans;
+            continue;
+        }
+
+        tf::Vector3 point(p->x, p->y, p->z);
+        point = transformation * point;
+        point -= transformation.getOrigin();
+
+#ifdef LOG_DETAILS
+        xmin = std::min(xmin, (float)point.x());
+        ymin = std::min(ymin, (float)point.y());
+        zmin = std::min(zmin, (float)point.z());
+        xmax = std::max(xmax, (float)point.x());
+        ymax = std::max(ymax, (float)point.y());
+        zmax = std::max(zmax, (float)point.z());
+#endif
+
+        //Parameters::Vec3Type pixel(point->x, point->y, point->z);
+        Parameters::NumType measuredRange = point.length();
+        point.normalize();
+        Parameters::Vec3Type pixelDirection(point.x(), point.y(), point.z());
+        Sensor sensor(origin, pixelDirection); // TODO check Parameters::sensorRange
+        measurements.push_back(Measurement::voxel(sensor.ray(), measuredRange));
+    }
+#ifdef LOG_DETAILS
+    ROS_INFO("PointCloud");
+    ROS_INFO("\tDimensions:");
+    ROS_INFO("\t\tMin: %f %f %f", xmin, ymin, zmin);
+    ROS_INFO("\t\tMax: %f %f %f", xmax, ymax, zmax);
+    ROS_INFO("\tNaN points: %d of %d (%.2f%%)", (int)nans, (int)pointCloud->size(), (float)(nans*100./pointCloud->size()));
+#endif
+    Observation observation(measurements);
+    publishObservation(observation);
+}
+
+#endif
+
 void Drone::run()
 {
     ros::NodeHandle nodeHandle;
-    message_filters::Subscriber<sensor_msgs::PointCloud2> pointsSub(
+    message_filters::Subscriber<PointsMessage> pointsSub(
             nodeHandle,
 #ifdef PREPROCESSED_INPUT
             "tf_downsampled_points",
@@ -191,7 +359,7 @@ void Drone::run()
 #endif
             1);
 
-    message_filters::Subscriber<geometry_msgs::TransformStamped> transformationSub(
+    message_filters::Subscriber<TransformationMessage> transformationSub(
             nodeHandle,
 #ifdef PREPROCESSED_INPUT
             "tf_drone",
@@ -240,25 +408,25 @@ void Drone::runOffline(std::string filename)
     ROS_INFO("View size: %d", (int)view.size());
 
 //    rosbag::View view(bag, std::bind(queryBag, std::placeholders::_1));
-    sensor_msgs::PointCloud2::ConstPtr points = NULL;
-    geometry_msgs::TransformStamped::ConstPtr transformation = NULL;
+    PointsMessageConstPtr points = nullptr;
+    TransformationMessageConstPtr transformation = nullptr;
     int step = 0;
     for (rosbag::MessageInstance &msg : view)
     {
         ++step;
         if (msg.getTopic() == "/tf_points")
         {
-            points = msg.instantiate<sensor_msgs::PointCloud2>();
+            points = msg.instantiate<PointsMessage>();
         }
         else if (msg.getTopic() == "/tf_drone")
         {
-            transformation = msg.instantiate<geometry_msgs::TransformStamped>();
+            transformation = msg.instantiate<TransformationMessage>();
         }
-        if (points != NULL && transformation != NULL)
+        if (points != nullptr && transformation != nullptr)
         {
             handleMeasurements(points, transformation);
-            points = NULL;
-            transformation = NULL;
+            points = nullptr;
+            transformation = nullptr;
             if (step % 10 == 0)
                 ROS_INFO("Updated for message %d.", step);
         }
@@ -266,4 +434,3 @@ void Drone::runOffline(std::string filename)
 
     bag.close();
 }
-

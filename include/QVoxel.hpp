@@ -65,7 +65,7 @@ public:
         return QTypedVoxel<NODE>(node, position, GEOMETRY_VOXEL, key);
     }
 
-    const NODE *node() const
+    NODE *node() const
     {
         return (NODE*)_node;
     }

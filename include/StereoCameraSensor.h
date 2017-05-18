@@ -21,14 +21,6 @@ public:
 
     std::vector<PixelSensor> pixels() const;
 
-    /**
-     * @brief Computes the likelihood of the measurement given the true voxel that caused the measurement.
-     * @param measurement The measurement.
-     * @param causeVoxel The true cause voxel.
-     * @return Likelihood between 0 and 1.
-     */
-    Parameters::NumType likelihoodGivenCause(Measurement measurement, QVoxel causeVoxel) const;
-
     void setPosition(const Parameters::Vec3Type &position);
     void setOrientation(const Parameters::Vec3Type &orientation);
     void resetOrientation(const Parameters::Vec3Type &orientation);

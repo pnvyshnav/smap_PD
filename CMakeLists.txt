@@ -12,6 +12,8 @@ find_package(octomap REQUIRED)
 include_directories(${OCTOMAP_INCLUDE_DIRS})
 link_libraries(${OCTOMAP_LIBRARIES})
 
+find_package(OpenCV REQUIRED)
+
 find_package(OpenMP)
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -30,6 +32,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   message_generation
   rosbag
+  depth_image_proc
+  image_geometry
 )
 
 ## System dependencies are found with CMake's conventions
@@ -172,7 +176,7 @@ add_executable(smap src/main.cpp
         include/TruncatedGaussianDistribution.hpp
         include/TrueMap.h
         src/TrueMap.cpp
-        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp src/Visualizer.cpp include/Visualizer.h include/Observable.hpp src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp include/LogOddsMap.h include/Statistics.hpp tinyspline/tinyspline.c tinyspline/tinysplinecpp.cpp src/TrajectoryPlanner.cpp include/TrajectoryPlanner.h src/Trajectory.cpp include/Trajectory.h src/Trajectory.cpp include/StatisticsMap.hpp src/PointCloud.cpp include/PointCloud.h)
+        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp src/Visualizer.cpp include/Visualizer.h include/Observable.hpp src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp include/LogOddsMap.h include/Statistics.hpp include/StatisticsMap.hpp src/PointCloud.cpp include/PointCloud.h include/InverseCauseModel.h include/SensorRay.hpp src/InverseCauseModel.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -183,6 +187,7 @@ target_link_libraries(smap
         ${catkin_LIBRARIES}
         ${PCL_LIBRARIES}
         ${OCTOMAP_LIBRARIES}
+        ${OpenCV_LIBS}
 )
 
 #############

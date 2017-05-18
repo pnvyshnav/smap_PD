@@ -8,9 +8,9 @@
 
 #include <octomap/OcTree.h>
 
-#define FAKE_2D
-#define PLANNER_2D_TEST
-#define SIMULATE_TIME
+//#define FAKE_2D
+//#define PLANNER_2D_TEST
+//#define SIMULATE_TIME
 //#define ONLY_HANDCRAFTED_TRAJECTORIES
 //#define REPLANNING
 //#define FAKE_3D
@@ -19,12 +19,12 @@
 #define MANY_STEPS
 //#define COMPUTE_UPDATED_EVOLUTION
 
-//#define REAL_3D
+#define REAL_3D
 
-//#define ENABLE_VISUALIZATION
+#define ENABLE_VISUALIZATION
 
 //#define PUBLISH_STATS // publish statistics via ROS topic
-//#define SLIM_STATS
+#define SLIM_STATS
 
 
 class Parameters
@@ -59,7 +59,12 @@ public:
     // Fake sensor measurements
     //
     static const bool deterministicSensorMeasurements = false;
-    static const unsigned int FakeRobotNumSteps = 500;
+    static const unsigned int FakeRobotNumSteps = 600;
+
+    //
+    // Real sensor measurements
+    //
+    static constexpr float PointCloudResolution = 0.3f;
 
     //
     // Trajectory evaluation
@@ -70,11 +75,11 @@ public:
     static constexpr double SimulationFinalTime = 5.0;
 
 #if defined(FAKE_2D)
-    static constexpr float voxelSize = 0.1;
-    static constexpr float xMin = -1. + voxelSize * 0.5;
-    static constexpr float xMax = 1. + voxelSize * 0.5;
-    static constexpr float yMin = -1. + voxelSize * 0.5;
-    static constexpr float yMax = 1. + voxelSize * 0.5;
+    static constexpr float voxelSize = 0.08; // was 0.05
+    static constexpr float xMin = -1; //-1.1 + voxelSize * 0.5;
+    static constexpr float xMax = 1; //1.1 + voxelSize * 0.5;
+    static constexpr float yMin = -1; //-1.1 + voxelSize * 0.5;
+    static constexpr float yMax = 1; //1.1 + voxelSize * 0.5;
     static constexpr float zMin = 0;//(const NumType) (-1. - voxelSize / 2.);
     static constexpr float zMax = voxelSize; //(const NumType) (1. + voxelSize / 2.);
 
@@ -166,11 +171,6 @@ public:
 
     static constexpr NumType priorMean = .5;
     static constexpr NumType priorStd = .5;
-
-    //
-    // Real sensor measurements
-    //
-    static constexpr float PointCloudResolution = (float)voxelSize;
 
     //
     // Inverse Sensor Model

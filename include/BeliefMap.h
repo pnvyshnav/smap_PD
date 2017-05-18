@@ -14,6 +14,7 @@
 #include "Observation.hpp"
 #include "Observable.hpp"
 #include "TrueMap.h"
+#include "InverseCauseModel.h"
 
 class InverseCauseModel;
 class BeliefMap
@@ -31,7 +32,7 @@ public:
 
     BeliefMap &operator=(const BeliefMap &map);
 
-    Belief *belief(const octomap::OcTreeKey &key) const;
+    Belief belief(const octomap::OcTreeKey &key) const;
 
     BeliefVoxel *updateNode(const octomap::point3d& position, const Belief &belief);
     BeliefVoxel *updateNode(const octomap::OcTreeKey& key, const Belief &belief);
@@ -46,8 +47,6 @@ public:
     // TODO remove trueMap argument
     bool update(const Observation &observation, const TrueMap &trueMap);
 
-    InverseCauseModel *icm;
-
     void reset();
 
     std::vector<QBeliefVoxel> updatedVoxels() const
@@ -57,12 +56,16 @@ public:
 
     double getVoxelMean(QBeliefVoxel &voxel) const
     {
-        return voxel.node()->getValue()->mean();
+        if (voxel.type != GEOMETRY_VOXEL)
+            return Parameters::priorMean;
+        return voxel.node()->getValue().mean();
     }
 
     double getVoxelStd(QBeliefVoxel &voxel) const
     {
-        return std::sqrt(voxel.node()->getValue()->variance());
+        if (voxel.type != GEOMETRY_VOXEL)
+            return Parameters::priorStd;
+        return std::sqrt(voxel.node()->getValue().variance());
     }
 
     std::string mapType() const
@@ -70,11 +73,20 @@ public:
         return "Belief";
     }
 
+    InverseCauseModel icm() const
+    {
+        return _icm;
+    }
+
+protected:
+    BeliefVoxel *updateNodeRecurs(BeliefVoxel *node, bool node_just_created,
+                                  const octomap::OcTreeKey &key,
+                                  unsigned int depth, const Belief &belief);
+
 private:
     std::vector<QBeliefVoxel> _lastUpdatedVoxels;
-    BeliefVoxel *_updateNodeRecurs(BeliefVoxel* node, bool node_just_created,
-                                   const octomap::OcTreeKey& key,
-                                   unsigned int depth, const Belief &belief);
+
+    InverseCauseModel _icm;
 
     void _expandNode(BeliefVoxel *node);
     BeliefVoxel *_createNodeChild(BeliefVoxel *node, unsigned int childIdx);

@@ -25,7 +25,7 @@ void PointCloud::visualize() const
 
 void PointCloud::loadPly(std::string filename)
 {
-    ROS_INFO("Reading point cloud ...");
+    ROS_INFO_STREAM("Reading point cloud from " << filename << "...");
     std::ifstream fin(filename);
     std::string linestr;
     for (unsigned int skipHeaderLines = 0; skipHeaderLines < 11; ++skipHeaderLines)
@@ -52,7 +52,14 @@ void PointCloud::loadPly(std::string filename)
         for (int skip = 0; std::getline(fin, line) && skip < 2; ++skip);
     }
 
-    ROS_INFO("Read %d points.", count);
-    ROS_INFO("Point cloud range: (%.3f, %.3f, %.3f) - (%.3f, %.3f, %.3f)",
-             minx, miny, minz, maxx, maxy, maxz);
+    if (count == 0)
+    {
+        ROS_WARN("Could not read any points!");
+    }
+    else
+    {
+        ROS_INFO("Read %d points.", count);
+        ROS_INFO("Point cloud range: (%.3f, %.3f, %.3f) - (%.3f, %.3f, %.3f)",
+                 minx, miny, minz, maxx, maxy, maxz);
+    }
 }

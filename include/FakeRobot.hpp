@@ -6,15 +6,12 @@
 
 #include <ecl/time/stopwatch.hpp>
 
-#include "tinysplinecpp.h"
-
 #include "Parameters.hpp"
 #include "StereoCameraSensor.h"
 #include "Observation.hpp"
 #include "TrueMap.h"
 #include "Robot.hpp"
 #include "LogOddsMap.h"
-#include "Trajectory.h"
 
 enum ObservationMode
 {
@@ -32,9 +29,6 @@ class FakeRobot : public Robot, public Observable
 {
     friend class TrajectoryPlanner;
 public:
-    // start, end, currentVelocity
-    typedef std::function<Trajectory(Point, Point, double)> PlanningSubscriber;
-
     FakeRobot(Parameters::Vec3Type position,
           Parameters::Vec3Type orientation,
           TrueMap &trueMap, BeliefMap &beliefMap)
@@ -294,21 +288,6 @@ public:
         return _lastVelocity;
     }
 
-    Trajectory &trajectory()
-    {
-        return _trajectory;
-    }
-
-    void setTrajectory(const Trajectory &trajectory)
-    {
-        _trajectory = trajectory;
-    }
-
-    void setReplanningHandler(PlanningSubscriber handler)
-    {
-        _replanningHandler = handler;
-    }
-
     ObservationMode observationMode() const
     {
         return _observationMode;
@@ -340,11 +319,8 @@ private:
     unsigned int _step;
     Parameters::KeySet _splineFutureVoxels;
 
-    Trajectory _trajectory;
     double _lastTime;
     double _lastVelocity;
-
-    PlanningSubscriber _replanningHandler;
 
     ObservationMode _observationMode;
 };

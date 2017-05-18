@@ -11,11 +11,10 @@
 #include "../include/Drone.h"
 #include "../include/LogOddsMap.h"
 #include "../include/Statistics.hpp"
-#include "../include/TrajectoryPlanner.h"
 #include "../include/PointCloud.h"
 
 #ifdef REAL_3D
-    TrueMap trueMap = TrueMap::generateFromPointCloud("/home/eric/catkin_ws/src/smap/dataset/V1_01_easy/data.ply");
+    TrueMap trueMap = TrueMap::generateFromPointCloud("~/catkin_ws/src/smap/dataset/V1_01_easy/data.ply");
 #else
     TrueMap trueMap = TrueMap::generate(123); // use a fixed seed value
 #endif
@@ -73,7 +72,7 @@ void handleObservation(const Observation &observation)
 #endif
 
         // save stats continually
-        stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/stats_real3d_"
+        stats->saveToFile("~/catkin_ws/src/smap/stats/stats_real3d_"
                           + std::to_string(updated) + ".bag");
 #ifdef SLIM_STATS
         stats->reset();
@@ -93,7 +92,7 @@ void handleObservation(const Observation &observation)
 int main(int argc, char **argv)
 {
 //    PointCloud cloud;
-//    cloud.loadPly("/home/eric/catkin_ws/src/smap/dataset/V1_01_easy/groundtruth_pcl.ply");
+//    cloud.loadPly("~/catkin_ws/src/smap/dataset/V1_01_easy/groundtruth_pcl.ply");
 //    cloud.visualize();
 
     ros::init(argc, argv, "SMAP");
@@ -221,14 +220,14 @@ int main(int argc, char **argv)
     Drone drone;
     drone.registerObserver(&handleObservation);
 //    drone.run();
-    drone.runOffline("/home/eric/catkin_ws/src/smap/dataset/V1_01_easy/droneflight.bag");
+    drone.runOffline("~/catkin_ws/src/smap/dataset/V1_01_easy/droneflight.bag");
 #endif
 
 #ifndef PLANNER_2D_TEST
 //    visualizer->publishBeliefMapFull(&beliefMap);
 //    visualizer->publishLogOddsMapFull(&logOddsMap);
 //    visualizer->publishTrueMap(&trueMap);
-    stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/stats.bag");
+    stats->saveToFile("~/catkin_ws/src/smap/stats/stats.bag");
 #endif
 
     delete stats;
