@@ -20,6 +20,19 @@
 // Disable flag to transform and downsample incoming point clouds.
 //#define PREPROCESSED_INPUT
 
+#if INPUT_TYPE == INPUT_EUROC
+    #ifdef PREPROCESSED_INPUT
+        #define ROSTOPIC_POINTS "tf_downsampled_points"
+        #define ROSTOPIC_TRANSFORMATION "tf_drone"
+    #else
+        #define ROSTOPIC_POINTS "points2"
+        #define ROSTOPIC_TRANSFORMATION "vicon/firefly_sbx/firefly_sbx"
+    #endif
+#elif INPUT_TYPE == INPUT_SNAPDRAGON
+    #define ROSTOPIC_POINTS "depth/image/raw"
+    #define ROSTOPIC_TRANSFORMATION "vislam/pose"
+#endif
+
 class Drone : public Robot
 {
 public:

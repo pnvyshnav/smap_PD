@@ -220,7 +220,7 @@ int main(int argc, char **argv)
     Drone drone;
     drone.registerObserver(&handleObservation);
 //    drone.run();
-    drone.runOffline("~/catkin_ws/src/smap/dataset/V1_01_easy/droneflight.bag");
+    drone.runOffline("~/catkin_ws/src/smap/dataset/V1_01_easy/V1_01_easy.bag");
 #endif
 
 #ifndef PLANNER_2D_TEST

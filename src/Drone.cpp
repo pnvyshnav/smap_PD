@@ -352,20 +352,12 @@ void Drone::run()
     ros::NodeHandle nodeHandle;
     message_filters::Subscriber<PointsMessage> pointsSub(
             nodeHandle,
-#ifdef PREPROCESSED_INPUT
-            "tf_downsampled_points",
-#else
-            "points2",
-#endif
+            ROSTOPIC_POINTS,
             1);
 
     message_filters::Subscriber<TransformationMessage> transformationSub(
             nodeHandle,
-#ifdef PREPROCESSED_INPUT
-            "tf_drone",
-#else
-            "vicon/firefly_sbx/firefly_sbx",
-#endif
+            ROSTOPIC_TRANSFORMATION,
             1);
 
     message_filters::Synchronizer<SyncPolicy> sync(SyncPolicy(100), pointsSub, transformationSub);
