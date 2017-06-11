@@ -36,6 +36,9 @@ public:
         return 0;
     }
 
+    static octomap::OcTreeKey coordToKey(const octomap::point3d &position);
+    static octomap::point3d keyToCoord(octomap::OcTreeKey key);
+
 private:
     TrueMap();
 

@@ -5,9 +5,9 @@
 #include "../include/Parameters.hpp"
 
 
-Belief::Particles generateParticles()
+BeliefDistribution::Particles generateParticles()
 {
-    Belief::Particles particles(Parameters::numParticles);
+    BeliefDistribution::Particles particles(Parameters::numParticles);
 
     // initialize particles ranging uniformly from 0 to 1 (including 1)
     Parameters::NumType delta = (Parameters::NumType) (1. / (Parameters::numParticles - 1));
@@ -17,9 +17,9 @@ Belief::Particles generateParticles()
     return particles;
 }
 
-Belief::Particles particles = generateParticles();
+BeliefDistribution::Particles particles = generateParticles();
 
-Belief::Belief(bool empty) : _recomputeMean(true), _recomputeVariance(true),
+BeliefDistribution::BeliefDistribution(bool empty) : _recomputeMean(true), _recomputeVariance(true),
                              _useStored(false), _meanLocked(false), _empty(empty)
 {
     if (particles.size() == 0)
@@ -103,12 +103,12 @@ Belief::Belief(bool empty) : _recomputeMean(true), _recomputeVariance(true),
     }*/
 }
 
-bool Belief::empty()
+bool BeliefDistribution::empty()
 {
     return _empty;
 }
 
-Parameters::NumType Belief::mean()
+Parameters::NumType BeliefDistribution::mean()
 {
     if (_useStored || _meanLocked)
         return _mean;
@@ -120,7 +120,7 @@ Parameters::NumType Belief::mean()
     return _mean;
 }
 
-Parameters::NumType Belief::variance()
+Parameters::NumType BeliefDistribution::variance()
 {
     if (_useStored)
         return _variance;
@@ -137,19 +137,19 @@ Parameters::NumType Belief::variance()
     return _variance;
 }
 
-void Belief::storeMeanVariance(double mean, double variance)
+void BeliefDistribution::storeMeanVariance(double mean, double variance)
 {
     _mean = mean;
     _variance = variance;
     _useStored = true;
 }
 
-void Belief::lockMean()
+void BeliefDistribution::lockMean()
 {
     _meanLocked = true;
 }
 
-bool Belief::isBeliefValid() const
+bool BeliefDistribution::isBeliefValid() const
 {
     for (Parameters::NumType p : pdf)
     {
@@ -159,7 +159,7 @@ bool Belief::isBeliefValid() const
     return std::abs(pdf.sum() - 1.) < 1e-10;
 }
 
-void Belief::updateBelief(Parameters::NumType a, Parameters::NumType b)
+void BeliefDistribution::updateBelief(Parameters::NumType a, Parameters::NumType b)
 {
     const std::valarray<Parameters::NumType> new_pdf = (a * particles + b) * pdf;
 
@@ -175,13 +175,13 @@ void Belief::updateBelief(Parameters::NumType a, Parameters::NumType b)
     _recomputeVariance = true;
 }
 
-bool Belief::operator==(const Belief &rhs) const
+bool BeliefDistribution::operator==(const BeliefDistribution &rhs) const
 {
     return std::abs(_constMean() - rhs._constMean()) < Parameters::equalityThreshold
            && std::abs(_constVariance() - rhs._constVariance()) < Parameters::equalityThreshold;
 }
 
-const std::string Belief::str() const
+const std::string BeliefDistribution::str() const
 {
     std::stringstream ss;
     ss << std::fixed << std::setprecision(2);
@@ -190,7 +190,7 @@ const std::string Belief::str() const
     return ss.str();
 }
 
-void Belief::reset()
+void BeliefDistribution::reset()
 {
     double n = Parameters::numParticles;
     double a = 6. * (1. - n - 2*Parameters::priorMean + 2*n*Parameters::priorMean)/(n * (1 + n));
@@ -200,14 +200,14 @@ void Belief::reset()
     _recomputeVariance = true;
 }
 
-Parameters::NumType Belief::_constMean() const
+Parameters::NumType BeliefDistribution::_constMean() const
 {
     if (_useStored || _meanLocked)
         return _mean;
     return (particles * pdf).sum();
 }
 
-Parameters::NumType Belief::_constVariance() const
+Parameters::NumType BeliefDistribution::_constVariance() const
 {
     if (_useStored)
         return _variance;

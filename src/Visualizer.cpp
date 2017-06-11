@@ -6,9 +6,13 @@
 #include "../include/Parameters.hpp"
 #include "../include/StereoCameraSensor.h"
 #include "../include/FakeRobot.hpp"
+#include "../include/GaussianProcessMap.h"
 
 #include <visualization_msgs/Marker.h>
 #include <nav_msgs/GridCells.h>
+#include <ecl/time.hpp>
+
+ecl::StopWatch stopWatchVisualizer;
 
 void Visualizer::render()
 {
@@ -33,6 +37,7 @@ Visualizer::Visualizer() : _counter(0)
     trueMap2dPublisher = nodeHandle->advertise<nav_msgs::GridCells>("true_map_2d", 10);
     logOddsMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("logodds_map", 10);
     beliefMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("belief_map", 10);
+    gaussianProcessMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("gp_map", 10);
     sensorPublisher = nodeHandle->advertise<visualization_msgs::Marker>("sensor", 10);
     stereoCameraSensorPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("stereo_cam", 10);
     rayVoxelPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("ray_voxels", 10);
@@ -57,7 +62,7 @@ void Visualizer::publishTrueMap(const Observable *visualizable)
     auto trueMap = (TrueMap *) visualizable;
     ros::Rate loop_rate(PaintRate);
     loop_rate.sleep();
-    ROS_INFO("Visualizing true map");
+//    ROS_INFO("Visualizing true map");
 
     visualization_msgs::MarkerArray cells;
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x) {
@@ -306,7 +311,7 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
     {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
         {
-            for (unsigned int z = 15; z < 16 /*Parameters::voxelsPerDimensionZ*/; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
             {
                 auto _x = Parameters::xMin + x * Parameters::voxelSize;
                 auto _y = Parameters::yMin + y * Parameters::voxelSize;
@@ -316,10 +321,10 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
 
                 visualization_msgs::Marker cell;
                 cell.id = (int) voxel.hash;
-                if (beliefMap->getVoxelMean(voxel) < 0.49 && pos.norm() < 1.5 || pos.norm() < 0.6)
-                    // remove voxel
-                    cell.action = 2;
-                else
+//                if (beliefMap->getVoxelMean(voxel) < 0.49 && pos.norm() < 1.5 || pos.norm() < 0.6)
+//                    // remove voxel
+//                    cell.action = 2;
+//                else
                     cell.action = 0;
                 cell.type = visualization_msgs::Marker::CUBE;
                 cell.header.frame_id = "map";
@@ -327,7 +332,10 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
                 cell.scale.y = Parameters::voxelSize;
                 cell.scale.z = Parameters::voxelSize;
                 cell.color.a = 1.0;
-                float intensity = (float) (1.0 - voxel.node()->getValue().mean());
+
+                float intensity = 1. - Parameters::priorMean;
+                if (voxel.type == GEOMETRY_VOXEL)
+                    intensity = (float) (1.0 - voxel.node()->getValue().mean());
                 cell.color.r = intensity;
                 cell.color.g = intensity;
                 cell.color.b = intensity;
@@ -703,6 +711,65 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
     robotPosition.color.b = 0.0;
     finalTrajectoryPublisher.publish(robotPosition);
 #endif
+
+    ros::spinOnce();
+}
+
+void Visualizer::publishGaussianProcessMapFull(const Observable *visualizable)
+{
+    if (!visualizable)
+        return;
+
+    auto gaussianProcessMap = (GaussianProcessMap*) visualizable;
+    ros::Rate loop_rate(PaintRate);
+    loop_rate.sleep();
+
+    stopWatchVisualizer.restart();
+
+    visualization_msgs::MarkerArray cells;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                auto _x = Parameters::xMin + x * Parameters::voxelSize;
+                auto _y = Parameters::yMin + y * Parameters::voxelSize;
+                auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                Parameters::Vec3Type pos(_x, _y, _z);
+                Belief belief = gaussianProcessMap->belief(pos);
+
+                visualization_msgs::Marker cell;
+                cell.id = (int) QVoxel::computeHash(TrueMap::coordToKey(pos));
+                double mean = belief.mean();
+//                std::cout << mean << std::endl;
+                mean = std::min(1., std::max(0., mean));
+//                if (mean < 0.49 && pos.norm() < 1.5 || pos.norm() < 0.6)
+//                    // remove belief
+//                    cell.action = 2;
+//                else
+                    cell.action = 0;
+                cell.type = visualization_msgs::Marker::CUBE;
+                cell.header.frame_id = "map";
+                cell.scale.x = Parameters::voxelSize;
+                cell.scale.y = Parameters::voxelSize;
+                cell.scale.z = Parameters::voxelSize;
+                cell.color.a = 1.0;
+                float intensity = (float) (1.0 - mean);
+                cell.color.r = intensity;
+                cell.color.g = intensity;
+                cell.color.b = intensity;
+                cell.pose.position.x = _x;
+                cell.pose.position.y = _y;
+                cell.pose.position.z = _z;
+                cells.markers.push_back(cell);
+            }
+        }
+    }
+
+    std::cout << "Time to query GP map: " << stopWatchVisualizer.elapsed() << std::endl;
+
+    gaussianProcessMapPublisher.publish(cells);
 
     ros::spinOnce();
 }

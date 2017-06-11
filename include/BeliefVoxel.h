@@ -12,14 +12,37 @@
 class Belief
 {
 public:
+    Belief() : _mean(Parameters::priorMean), _variance(std::pow(Parameters::priorStd, 2.))
+    {}
+    Belief(Parameters::NumType mean, Parameters::NumType variance) :
+            _mean(mean), _variance(variance)
+    {}
+
+    Parameters::NumType mean()
+    {
+        return _mean;
+    }
+
+    Parameters::NumType variance()
+    {
+        return _variance;
+    }
+
+protected:
+    Parameters::NumType _mean, _variance;
+};
+
+class BeliefDistribution : public Belief
+{
+public:
     typedef std::valarray<Parameters::NumType> Particles;
 
-    Belief(bool empty = false);
-
-    bool empty();
+    BeliefDistribution(bool empty = false);
 
     Parameters::NumType mean();
     Parameters::NumType variance();
+
+    bool empty();
 
     void storeMeanVariance(double mean, double variance);
 
@@ -30,7 +53,7 @@ public:
 
     void updateBelief(Parameters::NumType a, Parameters::NumType b);
 
-    bool operator==(const Belief& rhs) const;
+    bool operator==(const BeliefDistribution& rhs) const;
 
     /**
      * Stringifies PDF particles for debugging.
@@ -42,7 +65,6 @@ public:
 private:
     Particles pdf;
     bool _recomputeMean, _recomputeVariance;
-    Parameters::NumType _mean, _variance;
     bool _useStored;
     bool _meanLocked;
     bool _empty;
@@ -52,4 +74,4 @@ private:
 
 // The problem: OcTreeDataNode does not provide a virtual destructor.
 // To avoid memory leaks, we use a smart pointer here.
-typedef octomap::OcTreeDataNode<Belief> BeliefVoxel;
+typedef octomap::OcTreeDataNode<BeliefDistribution> BeliefVoxel;

@@ -32,10 +32,10 @@ public:
 
     BeliefMap &operator=(const BeliefMap &map);
 
-    Belief belief(const octomap::OcTreeKey &key) const;
+    BeliefDistribution belief(const octomap::OcTreeKey &key) const;
 
-    BeliefVoxel *updateNode(const octomap::point3d& position, const Belief &belief);
-    BeliefVoxel *updateNode(const octomap::OcTreeKey& key, const Belief &belief);
+    BeliefVoxel *updateNode(const octomap::point3d& position, const BeliefDistribution &belief);
+    BeliefVoxel *updateNode(const octomap::OcTreeKey& key, const BeliefDistribution &belief);
 
     std::valarray<Parameters::NumType> bouncingProbabilitiesOnRay(
             const octomap::KeyRay &ray) const;
@@ -81,7 +81,7 @@ public:
 protected:
     BeliefVoxel *updateNodeRecurs(BeliefVoxel *node, bool node_just_created,
                                   const octomap::OcTreeKey &key,
-                                  unsigned int depth, const Belief &belief);
+                                  unsigned int depth, const BeliefDistribution &belief);
 
 private:
     std::vector<QBeliefVoxel> _lastUpdatedVoxels;

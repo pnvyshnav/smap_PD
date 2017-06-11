@@ -31,12 +31,19 @@ protected:
 
     const void *_node;
 
+public:
+    static size_t computeHash(octomap::OcTreeKey key)
+    {
+        return _hasher(key);
+    }
+
 private:
     __attribute__((weak))
     static const octomap::OcTreeKey::KeyHash _hasher;
 };
 
 const octomap::OcTreeKey::KeyHash QVoxel::_hasher = octomap::OcTreeKey::KeyHash();
+
 
 template<class NODE>
 class QTypedVoxel : public QVoxel

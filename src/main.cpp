@@ -6,10 +6,11 @@
 
 #include "../include/BeliefVoxel.h"
 #include "../include/BeliefMap.h"
+#include "../include/LogOddsMap.h"
+#include "../include/GaussianProcessMap.h"
 #include "../include/FakeRobot.hpp"
 #include "../include/Visualizer.h"
 #include "../include/Drone.h"
-#include "../include/LogOddsMap.h"
 #include "../include/Statistics.hpp"
 #include "../include/PointCloud.h"
 
@@ -21,6 +22,7 @@
 
 BeliefMap beliefMap;
 LogOddsMap logOddsMap;
+GaussianProcessMap gaussianProcessMap;
 FakeRobot<> robot(
         Parameters::Vec3Type(Parameters::xCenter,
                              Parameters::yCenter,
@@ -62,6 +64,7 @@ void handleObservation(const Observation &observation)
 #else
     beliefMap.update(observation, trueMap);
     logOddsMap.update(observation, trueMap);
+    gaussianProcessMap.update(observation);
 #endif
 
 #ifdef REAL_3D
@@ -81,9 +84,12 @@ void handleObservation(const Observation &observation)
 #endif
     ++updated;
 
+    std::cout << gaussianProcessMap.belief(octomap::point3d(-0.3, 0.2, 0)).mean() << std::endl;
+
 #if defined(FAKE_2D) || defined(FAKE_3D)
     trueMap.publish();
     robot.publish();
+    gaussianProcessMap.publish();
     if (!ros::ok())
         robot.stop();
 #endif
@@ -128,6 +134,7 @@ int main(int argc, char **argv)
 #endif
 #ifdef FAKE_2D
     beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
+    gaussianProcessMap.subscribe(std::bind(&Visualizer::publishGaussianProcessMapFull, visualizer, std::placeholders::_1));
 #else
     // todo reactivate
     beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
@@ -219,8 +226,8 @@ int main(int argc, char **argv)
 #else
     Drone drone;
     drone.registerObserver(&handleObservation);
-//    drone.run();
-    drone.runOffline("~/catkin_ws/src/smap/dataset/V1_01_easy/V1_01_easy.bag");
+    drone.run();
+//    drone.runOffline("~/catkin_ws/src/smap/dataset/V1_01_easy/V1_01_easy.bag");
 #endif
 
 #ifndef PLANNER_2D_TEST

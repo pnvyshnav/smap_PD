@@ -248,7 +248,7 @@ public:
 #endif
 
 #if defined(FAKE_3D) || defined(FAKE_2D)
-            if (_step % 20 == 0)
+//            if (_step % 20 == 0)
                 ROS_INFO("Robot step %i / %i", (int)_step+1, (int)Parameters::FakeRobotNumSteps);
 #endif
         }

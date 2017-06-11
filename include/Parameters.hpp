@@ -8,7 +8,8 @@
 
 #include <octomap/OcTree.h>
 
-//#define FAKE_2D
+#define DIMENSIONS 2
+#define FAKE_2D
 //#define PLANNER_2D_TEST
 //#define SIMULATE_TIME
 //#define ONLY_HANDCRAFTED_TRAJECTORIES
@@ -19,7 +20,7 @@
 #define MANY_STEPS
 //#define COMPUTE_UPDATED_EVOLUTION
 
-#define REAL_3D
+//#define REAL_3D
 
 #define ENABLE_VISUALIZATION
 
@@ -88,6 +89,9 @@ public:
     static const bool sensorTruncatedGaussianNoise = false;
     static constexpr NumType sensorRange = (const NumType) 1.5;
     static constexpr NumType sensorNoiseStd = (const NumType) (sensorRange / 20.);
+
+    static const unsigned int StereoCameraHorizontalPixels = 8;
+    static constexpr double StereoCameraHorizontalFOV = 40. * M_PI / 180.;
 
     static constexpr double FakeRobotAngularVelocity = 15. * M_PI / 180.;
 //    static const unsigned int StereoCameraHorizontalPixels = 8;

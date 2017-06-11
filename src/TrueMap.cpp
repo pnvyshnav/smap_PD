@@ -8,6 +8,9 @@
 #include "../include/TrueMap.h"
 #include "../include/PointCloud.h"
 
+
+octomap::OcTree _helpMap(Parameters::voxelSize);
+
 TrueMap::TrueMap() : octomap::OcTree(Parameters::voxelSize), QVoxelMap(this)
 {
 }
@@ -172,4 +175,14 @@ TrueMap TrueMap::generateFromPointCloud(std::string filename)
              (int)Parameters::voxelsTotal);
 
     return map;
+}
+
+octomap::OcTreeKey TrueMap::coordToKey(const octomap::point3d &position)
+{
+    return _helpMap.coordToKey(position);
+}
+
+octomap::point3d TrueMap::keyToCoord(octomap::OcTreeKey key)
+{
+    return _helpMap.keyToCoord(key);
 }
