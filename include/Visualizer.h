@@ -27,8 +27,10 @@ public:
     void publishRay(TrueMap &trueMap, Sensor &sensor);
     void publishFakeRobot(const Observable *visualizable, const TrueMap *trueMap);
     void publishGaussianProcessMapFull(const Observable *visualizable);
+    void publishTrajectory(const Observable *visualizable);
 
     static const int PaintRate = 200;
+
 
 private:
     int _counter;
@@ -40,9 +42,8 @@ private:
     ros::Publisher rayVoxelPublisher;
     ros::Publisher sensorPublisher;
     ros::Publisher stereoCameraSensorPublisher;
-    ros::Publisher splinePublisher;
-    ros::Publisher evaluationPublisher;
     ros::Publisher trajectoryVoxelsPublisher;
     ros::Publisher finalTrajectoryPublisher;
     ros::Publisher gaussianProcessMapPublisher;
+    ros::Publisher trajectoryPublisher;
 };

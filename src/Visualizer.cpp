@@ -41,10 +41,9 @@ Visualizer::Visualizer() : _counter(0)
     sensorPublisher = nodeHandle->advertise<visualization_msgs::Marker>("sensor", 10);
     stereoCameraSensorPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("stereo_cam", 10);
     rayVoxelPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("ray_voxels", 10);
-    splinePublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("trajectories", 10);
-    evaluationPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("eval_trajectories", 10);
     trajectoryVoxelsPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("trajectoryVoxels", 10);
     finalTrajectoryPublisher = nodeHandle->advertise<visualization_msgs::Marker>("hist_positions", 10);
+    trajectoryPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("trajectory", 10);
 }
 
 Visualizer::~Visualizer()
@@ -770,6 +769,51 @@ void Visualizer::publishGaussianProcessMapFull(const Observable *visualizable)
     std::cout << "Time to query GP map: " << stopWatchVisualizer.elapsed() << std::endl;
 
     gaussianProcessMapPublisher.publish(cells);
+
+    ros::spinOnce();
+}
+
+void Visualizer::publishTrajectory(const Observable *visualizable)
+{
+    if (!visualizable)
+        return;
+
+    auto trajectory = (Trajectory*) visualizable;
+    ros::Rate loop_rate(PaintRate);
+    loop_rate.sleep();
+
+    stopWatchVisualizer.restart();
+
+    visualization_msgs::MarkerArray arrows;
+    for (auto &point : *trajectory)
+    {
+        auto _x = point.position[0];
+        auto _y = point.position[1];
+        auto _z = point.position[2];
+        Parameters::Vec3Type pos(_x, _y, _z);
+
+        visualization_msgs::Marker arrow;
+        arrow.id = (int) QVoxel::computeHash(TrueMap::coordToKey(pos));
+        arrow.action = 0;
+        arrow.type = visualization_msgs::Marker::ARROW;
+        arrow.header.frame_id = "map";
+        arrow.scale.x = 10 * Parameters::voxelSize;
+        arrow.scale.y = Parameters::voxelSize;
+        arrow.scale.z = Parameters::voxelSize;
+        arrow.color.a = 1;
+        arrow.color.r = 1;
+        arrow.color.g = 0;
+        arrow.color.b = 0;
+        arrow.pose.position.x = _x;
+        arrow.pose.position.y = _y;
+        arrow.pose.position.z = _z;
+        arrow.pose.orientation.x = point.orientation.x();
+        arrow.pose.orientation.y = point.orientation.y();
+        arrow.pose.orientation.z = point.orientation.z();
+        arrows.markers.push_back(arrow);
+    }
+
+    trajectoryPublisher.publish(arrows);
 
     ros::spinOnce();
 }

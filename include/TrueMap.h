@@ -13,6 +13,7 @@ class TrueMap
 public:
     static TrueMap generate(unsigned int seed = (unsigned int) time(NULL));
     static TrueMap generateFromPointCloud(std::string filename);
+    static TrueMap generateCorridor();
 
     /**
      * Alters the map with a new random map.
@@ -42,5 +43,26 @@ public:
 private:
     TrueMap();
 
+    struct Rectangle
+    {
+        double x1, x2;
+        double y1, y2;
+
+        Rectangle(double _x1, double _y1, double _x2, double _y2)
+                : x1(_x1), x2(_x2), y1(_y1), y2(_y2)
+        {}
+
+        static Rectangle fromXYWH(double x, double y, double width, double height)
+        {
+            return Rectangle(x, y, x + width, y + height);
+        }
+
+        bool contains(double x, double y) const
+        {
+            return x >= x1 && x <= x2 && y >= y1 && y <= y2;
+        }
+    };
+
+    static TrueMap _generateFromObstacles(const std::vector<TrueMap::Rectangle> &obstacles);
 };
 

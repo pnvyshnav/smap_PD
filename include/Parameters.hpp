@@ -76,7 +76,7 @@ public:
     static constexpr double SimulationFinalTime = 5.0;
 
 #if defined(FAKE_2D)
-    static constexpr float voxelSize = 0.08; // was 0.05
+    static constexpr float voxelSize = 0.06; //0.015; //0.08; // was 0.05
     static constexpr float xMin = -1; //-1.1 + voxelSize * 0.5;
     static constexpr float xMax = 1; //1.1 + voxelSize * 0.5;
     static constexpr float yMin = -1; //-1.1 + voxelSize * 0.5;
@@ -87,11 +87,11 @@ public:
     static constexpr NumType freeRadiusAroundCenter = 4 * voxelSize;
 
     static const bool sensorTruncatedGaussianNoise = false;
-    static constexpr NumType sensorRange = (const NumType) 1.5;
-    static constexpr NumType sensorNoiseStd = (const NumType) (sensorRange / 20.);
+    static constexpr NumType sensorRange = (const NumType) 1.; //1.5;
+    static constexpr NumType sensorNoiseStd = (const NumType) (2. * voxelSize); //(sensorRange / 20.);
 
-    static const unsigned int StereoCameraHorizontalPixels = 8;
-    static constexpr double StereoCameraHorizontalFOV = 40. * M_PI / 180.;
+    static const unsigned int StereoCameraHorizontalPixels = 60; //600;
+    static constexpr double StereoCameraHorizontalFOV = 360. * M_PI / 180.;
 
     static constexpr double FakeRobotAngularVelocity = 15. * M_PI / 180.;
 //    static const unsigned int StereoCameraHorizontalPixels = 8;

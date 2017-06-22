@@ -186,3 +186,75 @@ octomap::point3d TrueMap::keyToCoord(octomap::OcTreeKey key)
 {
     return _helpMap.keyToCoord(key);
 }
+
+TrueMap TrueMap::generateCorridor()
+{
+    std::vector<Rectangle> obstacles;
+    obstacles.push_back(Rectangle::fromXYWH(0.00, 0.00, 0.00, 0.00));
+    obstacles.push_back(Rectangle::fromXYWH(-1.00, -0.05, 0.74, 1.00));
+    obstacles.push_back(Rectangle::fromXYWH(-0.26, 0.73, 1.26, 0.22));
+    obstacles.push_back(Rectangle::fromXYWH(-0.26, -1.05, 0.36, 0.12));
+    obstacles.push_back(Rectangle::fromXYWH(-1.00, -1.05, 0.74, 0.60));
+    obstacles.push_back(Rectangle::fromXYWH(0.10, -1.05, 0.90, 0.60));
+    obstacles.push_back(Rectangle::fromXYWH(0.10, -0.05, 0.28, 0.48));
+    obstacles.push_back(Rectangle::fromXYWH(0.38, -0.05, 0.28, 0.18));
+    obstacles.push_back(Rectangle::fromXYWH(0.50, 0.25, 0.16, 0.18));
+    obstacles.push_back(Rectangle::fromXYWH(0.90, -0.45, 0.10, 1.18));
+    obstacles.push_back(Rectangle::fromXYWH(-0.92, -0.19, 0.16, 0.06));
+    obstacles.push_back(Rectangle::fromXYWH(-0.70, -0.19, 0.16, 0.06));
+    obstacles.push_back(Rectangle::fromXYWH(-0.48, -0.19, 0.16, 0.06));
+    obstacles.push_back(Rectangle::fromXYWH(0.22, -0.39, 0.16, 0.06));
+    obstacles.push_back(Rectangle::fromXYWH(0.44, -0.39, 0.16, 0.06));
+    obstacles.push_back(Rectangle::fromXYWH(0.66, -0.39, 0.16, 0.06));
+    obstacles.push_back(Rectangle::fromXYWH(0.50, 0.63, 0.16, 0.06));
+    obstacles.push_back(Rectangle::fromXYWH(0.14, 0.45, 0.12, 0.04));
+    obstacles.push_back(Rectangle::fromXYWH(0.26, 0.63, 0.12, 0.04));
+    obstacles.push_back(Rectangle::fromXYWH(-0.22, 0.47, 0.08, 0.16));
+    obstacles.push_back(Rectangle::fromXYWH(0.86, 0.37, 0.02, 0.06));
+    obstacles.push_back(Rectangle::fromXYWH(0.86, -0.05, 0.02, 0.06));
+    return _generateFromObstacles(obstacles);
+}
+
+TrueMap TrueMap::_generateFromObstacles(const std::vector<TrueMap::Rectangle> &obstacles)
+{
+    TrueMap map;
+    int occupied = 0;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                octomap::point3d point(
+                        (float) (Parameters::xMin + x * Parameters::voxelSize),
+                        (float) (Parameters::yMin + y * Parameters::voxelSize),
+                        (float) (Parameters::zMin + z * Parameters::voxelSize));
+
+                map.updateNode(point, false);
+                for (auto &obstacle: obstacles)
+                {
+                    if (obstacle.contains(point.x(), point.y()))
+                    {
+                        map.updateNode(point, true);
+                        ++occupied;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    map.updateSubscribers();
+
+    ROS_INFO("True map has %d nodes in total.", (int)map.calcNumNodes());
+    ROS_INFO("Voxels per dimension: %d x %d x %d (%d in total)",
+             (int)Parameters::voxelsPerDimensionX,
+             (int)Parameters::voxelsPerDimensionY,
+             (int)Parameters::voxelsPerDimensionZ,
+             (int)Parameters::voxelsTotal);
+    ROS_INFO("%d voxels are occupied.", occupied);
+    map.calcMinMax();
+    ROS_INFO("True map range: (%.2f %.2f %.2f) to (%.2f %.2f %.2f)",
+             map.min_value[0], map.min_value[1], map.min_value[2],
+             map.max_value[0], map.max_value[1], map.max_value[2]);
+    return map;
+}

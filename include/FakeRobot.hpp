@@ -12,6 +12,7 @@
 #include "TrueMap.h"
 #include "Robot.hpp"
 #include "LogOddsMap.h"
+#include "Trajectory.hpp"
 
 enum ObservationMode
 {
@@ -265,6 +266,18 @@ public:
 
         ROS_INFO_STREAM("Elapsed time: " << stopWatch.elapsed() << " seconds");
 #endif
+    }
+
+    void run(Trajectory &trajectory)
+    {
+        ecl::StopWatch stopWatch;
+        for (auto &point : trajectory)
+        {
+            setPosition(point.robotPosition());
+            setOrientation(point.robotOrientation());
+            Robot::publishObservation(observe());
+        }
+        ROS_INFO_STREAM("Elapsed time: " << stopWatch.elapsed() << " seconds");
     }
 
     void stop()

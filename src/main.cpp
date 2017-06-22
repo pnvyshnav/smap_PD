@@ -13,11 +13,12 @@
 #include "../include/Drone.h"
 #include "../include/Statistics.hpp"
 #include "../include/PointCloud.h"
+#include "../include/Trajectory.hpp"
 
 #ifdef REAL_3D
     TrueMap trueMap = TrueMap::generateFromPointCloud("~/catkin_ws/src/smap/dataset/V1_01_easy/data.ply");
 #else
-    TrueMap trueMap = TrueMap::generate(123); // use a fixed seed value
+    TrueMap trueMap = TrueMap::generateCorridor(); //TrueMap::generate(123); // use a fixed seed value
 #endif
 
 BeliefMap beliefMap;
@@ -112,7 +113,7 @@ int main(int argc, char **argv)
 
 #ifdef ENABLE_VISUALIZATION
     Visualizer *visualizer = new Visualizer;
-    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
+    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
     for (int i = 0; i < 20; ++i)
         trueMap.publish();
 #ifndef REAL_3D
@@ -145,6 +146,36 @@ int main(int argc, char **argv)
 
     robot.registerObserver(&handleObservation);
 
+    Trajectory trajectory = {
+            TrajectoryPoint(Eigen::Vector3f(-0.92f, -0.25f, 0.f), 0.f),
+            TrajectoryPoint(Eigen::Vector3f(-0.77f, -0.25f, 0.f), 0.f),
+            TrajectoryPoint(Eigen::Vector3f(-0.61f, -0.25f, 0.f), 0.f),
+            TrajectoryPoint(Eigen::Vector3f(-0.46f, -0.25f, 0.f), 0.f),
+            TrajectoryPoint(Eigen::Vector3f(-0.30f, -0.25f, 0.f), 15.f),
+            TrajectoryPoint(Eigen::Vector3f(-0.16f, -0.21f, 0.f), 60.f),
+            TrajectoryPoint(Eigen::Vector3f(-0.08f, -0.07f, 0.f), 80.f),
+            TrajectoryPoint(Eigen::Vector3f(-0.05f, 0.09f, 0.f), 90.f),
+            TrajectoryPoint(Eigen::Vector3f(-0.05f, 0.24f, 0.f), 80.f),
+            TrajectoryPoint(Eigen::Vector3f(-0.03f, 0.39f, 0.f), 85.f),
+            TrajectoryPoint(Eigen::Vector3f(-0.01f, 0.56f, 0.f), 30.f),
+            TrajectoryPoint(Eigen::Vector3f(0.13f, 0.63f, 0.f), -10.f),
+            TrajectoryPoint(Eigen::Vector3f(0.30f, 0.61f, 0.f), -10.f),
+
+            TrajectoryPoint(Eigen::Vector3f(0.45f, 0.58f, 0.f), 5.f),
+            TrajectoryPoint(Eigen::Vector3f(0.62f, 0.58f, 0.f), -25.f),
+            TrajectoryPoint(Eigen::Vector3f(0.74f, 0.51f, 0.f), -70.f),
+
+            TrajectoryPoint(Eigen::Vector3f(0.77f, 0.36f, 0.f), -85.f),
+            TrajectoryPoint(Eigen::Vector3f(0.77f, 0.20f, 0.f), -90.f),
+            TrajectoryPoint(Eigen::Vector3f(0.77f, 0.05f, 0.f), -100.f),
+            TrajectoryPoint(Eigen::Vector3f(0.74f, -0.11f, 0.f), -140.f),
+            TrajectoryPoint(Eigen::Vector3f(0.61f, -0.17f, 0.f), -170.f),
+            TrajectoryPoint(Eigen::Vector3f(0.46f, -0.17f, 0.f), -175.f),
+            TrajectoryPoint(Eigen::Vector3f(0.30f, -0.17f, 0.f), -180.f)
+    };
+
+    visualizer->publishTrajectory(&trajectory);
+
 #if defined(FAKE_2D)
     #if defined(PLANNER_2D_TEST)
         #if defined(REPLANNING)
@@ -176,7 +207,7 @@ int main(int argc, char **argv)
             }
         #endif
     #else
-        robot.run();
+        robot.run(trajectory);
     #endif
 #elif defined(FAKE_3D)
     #ifdef ENABLE_VISUALIZATION

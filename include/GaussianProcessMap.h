@@ -9,7 +9,7 @@
 class GaussianProcessMap : public Observable
 {
 public:
-    GaussianProcessMap(std::string kernel = "CovSum ( CovSEiso, CovNoise)");
+    GaussianProcessMap(std::string kernel = "CovSum ( CovMatern5iso, CovNoise)");
 
     bool update(const Observation &observation);
 
