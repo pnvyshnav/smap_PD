@@ -88,7 +88,7 @@ public:
 
     static const bool sensorTruncatedGaussianNoise = false;
     static constexpr NumType sensorRange = (const NumType) 1.; //1.5;
-    static constexpr NumType sensorNoiseStd = (const NumType) (2. * voxelSize); //(sensorRange / 20.);
+    static constexpr NumType sensorNoiseStd = (const NumType) (/*2. * */ voxelSize); //(sensorRange / 20.);
 
     static const unsigned int StereoCameraHorizontalPixels = 60; //600;
     static constexpr double StereoCameraHorizontalFOV = 360. * M_PI / 180.;
@@ -180,10 +180,10 @@ public:
     // Inverse Sensor Model
     //
     static constexpr NumType invSensor_prior = priorMean;
-    static constexpr NumType invSensor_increment = 0.05;
+    static constexpr NumType invSensor_increment = 0.25;
     static constexpr NumType invSensor_occupied = invSensor_increment;
     static constexpr NumType invSensor_free = -invSensor_increment;
-    static constexpr NumType invSensor_rampSize = 0.1;
-    static constexpr NumType invSensor_topSize = 0.1;
+    static constexpr NumType invSensor_rampSize = 0.05;
+    static constexpr NumType invSensor_topSize = 0.05;
     static constexpr NumType invSensor_rampSlope = (invSensor_occupied - invSensor_free)/invSensor_rampSize;
 };

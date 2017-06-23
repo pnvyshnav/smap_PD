@@ -28,23 +28,25 @@ struct SensorRay
             : position(position), orientation(orientation), range(range)
     {}
 
-    std::vector<SensorRayPoint> discretized() const
+    std::vector<SensorRayPoint> discretized(double measuredValue) const
     {
         std::vector<SensorRayPoint> points;
+        if (measuredValue > range)
+            measuredValue = range;
         // compute points on the ray using Bresenham
         double point[3];
         point[0] = position.x();
         point[1] = position.y();
         point[2] = position.z();
-        double dx = orientation.x() * range;
-        double dy = orientation.y() * range;
-        double dz = orientation.z() * range;
+        double dx = orientation.x() * measuredValue;
+        double dy = orientation.y() * measuredValue;
+        double dz = orientation.z() * measuredValue;
         double x_inc = (dx < 0) ? -Parameters::voxelSize : Parameters::voxelSize;
-        double l = std::abs(dx);
+        int l = (int) std::abs(dx / Parameters::voxelSize);
         double y_inc = (dy < 0) ? -Parameters::voxelSize : Parameters::voxelSize;
-        double m = std::abs(dy);
+        int m = (int) std::abs(dy / Parameters::voxelSize);
         double z_inc = (dz < 0) ? -Parameters::voxelSize : Parameters::voxelSize;
-        double n = std::abs(dz);
+        int n = (int) std::abs(dz / Parameters::voxelSize);
         double dx2 = l * 2.;
         double dy2 = m * 2.;
         double dz2 = n * 2.;
@@ -118,8 +120,11 @@ struct SensorRay
                 point[2] += z_inc;
             }
         }
-        // end point is occupied
-        points.push_back(SensorRayPoint(point, true));
+        if (measuredValue < range)
+        {
+            // end point is occupied
+            points.push_back(SensorRayPoint(point, true));
+        }
         return points;
     }
 };

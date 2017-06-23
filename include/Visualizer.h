@@ -15,19 +15,21 @@ public:
     virtual ~Visualizer();
 
     void render();
+    void sleep(int milliseconds = PaintRate);
 
     void publishTrueMap(const Observable *visualizable);
     void publishTrueMap2dSlice(const Observable *visualizable, unsigned int z = 0);
     void publishLogOddsMap(const Observable *visualizable);
-    void publishLogOddsMapFull(const Observable *visualizable);
+    void publishLogOddsMapFull(const Observable *visualizable, bool visualizeStd = false);
     void publishBeliefMap(const Observable *visualizable);
-    void publishBeliefMapFull(const Observable *visualizable);
+    void publishBeliefMapFull(const Observable *visualizable, bool visualizeStd = false);
     void publishSensor(const Observable *visualizable);
     void publishStereoCameraSensor(const Observable *visualizable);
     void publishRay(TrueMap &trueMap, Sensor &sensor);
     void publishFakeRobot(const Observable *visualizable, const TrueMap *trueMap);
-    void publishGaussianProcessMapFull(const Observable *visualizable);
+    void publishGaussianProcessMapFull(const Observable *visualizable, bool visualizeStd = true);
     void publishTrajectory(const Observable *visualizable);
+    void publishObservation(const Observable *observation);
 
     static const int PaintRate = 200;
 
@@ -46,4 +48,8 @@ private:
     ros::Publisher finalTrajectoryPublisher;
     ros::Publisher gaussianProcessMapPublisher;
     ros::Publisher trajectoryPublisher;
+    ros::Publisher observationPublisher;
+
+    static double hue2rgb(double arg1, double arg2, double h);
+    static void hsl2rgb(double h, double s, double l, double &r, double &g, double &b);
 };

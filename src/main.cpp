@@ -41,9 +41,13 @@ Statistics<> *stats;
 
 ecl::StopWatch stopWatch;
 
+Observation allObservations;
+
 int updated = 0;
 void handleObservation(const Observation &observation)
 {
+    allObservations.append(observation);
+
 #ifndef SLIM_STATS
     stats->registerMeasurements((int)observation.measurements().size());
     std::valarray<Parameters::NumType> rayLengths(observation.measurements().size());
@@ -60,7 +64,7 @@ void handleObservation(const Observation &observation)
     stopWatch.restart();
     logOddsMap.update(observation, trueMap);
     stats->registerStepTimeLogOdds(stopWatch.elapsed());
-//
+
     stats->update(logOddsMap, beliefMap, robot);
 #else
     beliefMap.update(observation, trueMap);
@@ -84,8 +88,6 @@ void handleObservation(const Observation &observation)
     }
 #endif
     ++updated;
-
-    std::cout << gaussianProcessMap.belief(octomap::point3d(-0.3, 0.2, 0)).mean() << std::endl;
 
 #if defined(FAKE_2D) || defined(FAKE_3D)
     trueMap.publish();
@@ -134,8 +136,9 @@ int main(int argc, char **argv)
     planner.subscribe(std::bind(&Visualizer::publishTrajectoryPlanner, visualizer, std::placeholders::_1));
 #endif
 #ifdef FAKE_2D
-    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
-    gaussianProcessMap.subscribe(std::bind(&Visualizer::publishGaussianProcessMapFull, visualizer, std::placeholders::_1));
+    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1, true));
+    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMapFull, visualizer, std::placeholders::_1, true));
+    gaussianProcessMap.subscribe(std::bind(&Visualizer::publishGaussianProcessMapFull, visualizer, std::placeholders::_1, true));
 #else
     // todo reactivate
     beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
@@ -261,11 +264,25 @@ int main(int argc, char **argv)
 //    drone.runOffline("~/catkin_ws/src/smap/dataset/V1_01_easy/V1_01_easy.bag");
 #endif
 
+    // TODO compute Hilbert map using all measurements
+    std::cout << allObservations.measurements().size()
+              << " observations were made in total." << std::endl;
+    for (int i = 0; i < 1; i++)
+    {
+        visualizer->publishObservation(&allObservations);
+        visualizer->publishTrajectory(&trajectory);
+        visualizer->sleep(1);
+    }
+    std::cout << allObservations.measurements().size()
+              << " observations were made in total." << std::endl;
+
 #ifndef PLANNER_2D_TEST
 //    visualizer->publishBeliefMapFull(&beliefMap);
 //    visualizer->publishLogOddsMapFull(&logOddsMap);
 //    visualizer->publishTrueMap(&trueMap);
-    stats->saveToFile("~/catkin_ws/src/smap/stats/stats.bag");
+
+    //TODO reactivate
+//    stats->saveToFile("~/catkin_ws/src/smap/stats/stats.bag");
 #endif
 
     delete stats;

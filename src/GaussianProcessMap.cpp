@@ -20,7 +20,7 @@ bool GaussianProcessMap::update(const Observation &observation)
     {
         // Every voxel size length, sample from measurement ray.
         // The ray's end point is the occupied sample.
-        for (auto &rayPoint : measurement.sensor.discretized())
+        for (auto &rayPoint : measurement.sensor.discretized(measurement.value))
         {
             double point[DIMENSIONS] = {};
             point[0] = rayPoint.position.x();

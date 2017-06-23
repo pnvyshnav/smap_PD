@@ -5,6 +5,7 @@
 
 #include "Parameters.hpp"
 #include "SensorRay.hpp"
+#include "Observable.hpp"
 
 enum GeometryType
 {
@@ -18,17 +19,17 @@ struct Measurement
     /**
      * Measurement value, e.g. measured distance from a range sensor.
      */
-    const Parameters::NumType value;
+    Parameters::NumType value;
 
     /**
      * Ray of sensor that produced this measurement.
      */
-    const SensorRay sensor;
+    SensorRay sensor;
 
     /**
      * Determines which geometry was sensed.
      */
-    const GeometryType geometry;
+    GeometryType geometry;
 
     static Measurement hole(const SensorRay &sensor)
     {
@@ -51,10 +52,10 @@ private:
     {}
 };
 
-class Observation
+class Observation : public Observable
 {
 public:
-    Observation(const std::vector<Measurement> &measurements)
+    Observation(const std::vector<Measurement> &measurements = std::vector<Measurement>())
             : _measurements(measurements)
     {}
 
@@ -70,6 +71,17 @@ public:
     const std::vector<Measurement> &measurements() const
     {
         return _measurements;
+    }
+
+    /**
+     * Append observation measurements to these measurements.
+     * @param observation The observation measurements to add.
+     */
+    void append(const Observation &observation)
+    {
+        _measurements.insert(_measurements.end(),
+                             observation._measurements.begin(),
+                             observation._measurements.end());
     }
 
 private:

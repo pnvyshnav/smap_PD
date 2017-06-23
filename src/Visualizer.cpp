@@ -11,6 +11,7 @@
 #include <visualization_msgs/Marker.h>
 #include <nav_msgs/GridCells.h>
 #include <ecl/time.hpp>
+#include <cmath>
 
 ecl::StopWatch stopWatchVisualizer;
 
@@ -32,6 +33,8 @@ void Visualizer::render()
 
 Visualizer::Visualizer() : _counter(0)
 {
+    srand(0);
+
     nodeHandle = new ros::NodeHandle;
     trueMapPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("true_map", 1);
     trueMap2dPublisher = nodeHandle->advertise<nav_msgs::GridCells>("true_map_2d", 10);
@@ -44,6 +47,7 @@ Visualizer::Visualizer() : _counter(0)
     trajectoryVoxelsPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("trajectoryVoxels", 10);
     finalTrajectoryPublisher = nodeHandle->advertise<visualization_msgs::Marker>("hist_positions", 10);
     trajectoryPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("trajectory", 10);
+    observationPublisher = nodeHandle->advertise<visualization_msgs::MarkerArray>("observation", 10);
 }
 
 Visualizer::~Visualizer()
@@ -296,7 +300,7 @@ void Visualizer::publishBeliefMap(const Observable *visualizable)
     //ros::spinOnce();
 }
 
-void Visualizer::publishBeliefMapFull(const Observable *visualizable)
+void Visualizer::publishBeliefMapFull(const Observable *visualizable, bool visualizeStd)
 {
     if (!visualizable)
         return;
@@ -306,6 +310,35 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
     loop_rate.sleep();
 
     visualization_msgs::MarkerArray cells;
+
+//    int id = 23423;
+//    for (float y = -1; y <= 1.01; y += Parameters::voxelSize)
+//    {
+//        Parameters::Vec3Type pos(0, y, 0);
+//
+//        visualization_msgs::Marker cell;
+//        cell.id = id++;
+//        cell.action = 0;
+//        cell.type = visualization_msgs::Marker::CUBE;
+//        cell.header.frame_id = "map";
+//        cell.scale.x = Parameters::voxelSize;
+//        cell.scale.y = Parameters::voxelSize;
+//        cell.scale.z = Parameters::voxelSize;
+//        cell.color.a = 1.0;
+//
+//        double r, g, b;
+//        double hue = (y+1.)/4. * 1.3;
+//        std::cout << y << std::endl;
+//        hsl2rgb(hue, 1, .6, r, g, b);
+//        cell.color.r = (float) r;
+//        cell.color.g = (float) g;
+//        cell.color.b = (float) b;
+//        cell.pose.position.x = pos.x();
+//        cell.pose.position.y = pos.y();
+//        cell.pose.position.z = pos.z();
+//        cells.markers.push_back(cell);
+//    }
+
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
     {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
@@ -332,12 +365,23 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
                 cell.scale.z = Parameters::voxelSize;
                 cell.color.a = 1.0;
 
-                float intensity = 1. - Parameters::priorMean;
+                double r, g, b;
                 if (voxel.type == GEOMETRY_VOXEL)
-                    intensity = (float) (1.0 - voxel.node()->getValue().mean());
-                cell.color.r = intensity;
-                cell.color.g = intensity;
-                cell.color.b = intensity;
+                {
+                    if (visualizeStd)
+                    {
+                        //TODO scale std dev, since belief voxel have initial variance of 0.085
+                        double hue = 0.5/std::sqrt(0.085) * std::sqrt(voxel.node()->getValue().variance()) * 1.3;
+                        hsl2rgb(hue, 1, .6, r, g, b);
+                    }
+                    else
+                        r = g = b = (float) (1.0 - voxel.node()->getValue().mean());
+                }
+                else
+                    continue;
+                cell.color.r = (float) r;
+                cell.color.g = (float) g;
+                cell.color.b = (float) b;
                 cell.pose.position.x = voxel.position.x();
                 cell.pose.position.y = voxel.position.y();
                 cell.pose.position.z = voxel.position.z();
@@ -359,7 +403,7 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
     ros::spinOnce();
 }
 
-void Visualizer::publishLogOddsMapFull(const Observable *visualizable)
+void Visualizer::publishLogOddsMapFull(const Observable *visualizable, bool visualizeStd)
 {
     if (!visualizable)
         return;
@@ -374,7 +418,7 @@ void Visualizer::publishLogOddsMapFull(const Observable *visualizable)
     {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
         {
-            for (unsigned int z = 15; z < 16 /*Parameters::voxelsPerDimensionZ*/; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
             {
                 auto _x = Parameters::xMin + x * Parameters::voxelSize;
                 auto _y = Parameters::yMin + y * Parameters::voxelSize;
@@ -384,27 +428,24 @@ void Visualizer::publishLogOddsMapFull(const Observable *visualizable)
 
                 visualization_msgs::Marker cell;
                 cell.id = 1379 + (int) hasher(octomap::OcTreeKey(x, y, z));
-//                if (pos.norm() < 0.7)
-//                    // remove voxel
-//                    continue;
-//                else {
                 cell.action = 0;
 
-                if (voxel.node()) {
-                    float intensity = (float) (1.0 - logOddsMap->getVoxelMean(voxel));
-                    cell.color.r = intensity;
-                    cell.color.g = intensity;
-                    cell.color.b = intensity;
-                } else {
-                    if (pos.norm() > 1.4) {
-                        float intensity = (float) (1.0 - Parameters::priorMean);
-                        cell.color.r = intensity;
-                        cell.color.g = intensity;
-                        cell.color.b = intensity;
-                    } else
-                        continue;
+                double r, g, b;
+                if (voxel.type == GEOMETRY_VOXEL)
+                {
+                    if (visualizeStd)
+                    {
+                        double hue = logOddsMap->getVoxelStd(voxel) * 1.3;
+                        hsl2rgb(hue, 1, .6, r, g, b);
+                    }
+                    else
+                        r = g = b = (float) (1.0 - logOddsMap->getVoxelMean(voxel));
                 }
-//                }
+                else
+                    continue;
+                cell.color.r = (float) r;
+                cell.color.g = (float) g;
+                cell.color.b = (float) b;
                 cell.type = visualization_msgs::Marker::CUBE;
                 cell.header.frame_id = "map";
                 cell.scale.x = Parameters::voxelSize;
@@ -714,7 +755,7 @@ void Visualizer::publishFakeRobot(const Observable *visualizable, const TrueMap 
     ros::spinOnce();
 }
 
-void Visualizer::publishGaussianProcessMapFull(const Observable *visualizable)
+void Visualizer::publishGaussianProcessMapFull(const Observable *visualizable, bool visualizeStd)
 {
     if (!visualizable)
         return;
@@ -754,10 +795,18 @@ void Visualizer::publishGaussianProcessMapFull(const Observable *visualizable)
                 cell.scale.y = Parameters::voxelSize;
                 cell.scale.z = Parameters::voxelSize;
                 cell.color.a = 1.0;
-                float intensity = (float) (1.0 - mean);
-                cell.color.r = intensity;
-                cell.color.g = intensity;
-                cell.color.b = intensity;
+                double r, g, b;
+                if (visualizeStd)
+                {
+                    double hue = std::sqrt(belief.variance()) * 1.3;
+                    hsl2rgb(hue, 1, .6, r, g, b);
+                }
+                else
+                    r = g = b = (float) (1.0 - belief.mean());
+
+                cell.color.r = (float) r;
+                cell.color.g = (float) g;
+                cell.color.b = (float) b;
                 cell.pose.position.x = _x;
                 cell.pose.position.y = _y;
                 cell.pose.position.z = _z;
@@ -797,9 +846,9 @@ void Visualizer::publishTrajectory(const Observable *visualizable)
         arrow.action = 0;
         arrow.type = visualization_msgs::Marker::ARROW;
         arrow.header.frame_id = "map";
-        arrow.scale.x = 10 * Parameters::voxelSize;
-        arrow.scale.y = Parameters::voxelSize;
-        arrow.scale.z = Parameters::voxelSize;
+        arrow.scale.x = 0.1;
+        arrow.scale.y = 0.02;
+        arrow.scale.z = 0.02;
         arrow.color.a = 1;
         arrow.color.r = 1;
         arrow.color.g = 0;
@@ -816,4 +865,133 @@ void Visualizer::publishTrajectory(const Observable *visualizable)
     trajectoryPublisher.publish(arrows);
 
     ros::spinOnce();
+}
+
+void Visualizer::publishObservation(const Observable *visualizable)
+{
+    if (!visualizable)
+        return;
+
+    auto observation = (Observation*) visualizable;
+    ros::Rate loop_rate(PaintRate);
+    loop_rate.sleep();
+
+    stopWatchVisualizer.restart();
+
+    visualization_msgs::MarkerArray markers;
+    for (auto &measurement: observation->measurements())
+    {
+        auto _x = measurement.sensor.position.x();
+        auto _y = measurement.sensor.position.y();
+        auto _z = measurement.sensor.position.z();
+#if DIMENSIONS == 2
+        _z += Parameters::voxelSize;
+#endif
+        Parameters::Vec3Type pos(_x, _y, _z);
+
+//        visualization_msgs::Marker arrow;
+//        arrow.id = (int) QVoxel::computeHash(TrueMap::coordToKey(pos));
+//        arrow.action = 0;
+//        arrow.type = visualization_msgs::Marker::ARROW;
+//        arrow.header.frame_id = "map";
+//        arrow.scale.x = measurement.sensor.range;
+//        arrow.scale.y = Parameters::voxelSize * .1;
+//        arrow.scale.z = Parameters::voxelSize * .1;
+//        arrow.color.a = 1;
+//        arrow.color.r = 1;
+//        arrow.color.g = 1;
+//        arrow.color.b = 0;
+//        arrow.pose.position.x = _x;
+//        arrow.pose.position.y = _y;
+//        arrow.pose.position.z = _z;
+//        arrow.pose.orientation.x = measurement.sensor.orientation.x();
+//        arrow.pose.orientation.y = measurement.sensor.orientation.y();
+//        arrow.pose.orientation.z = measurement.sensor.orientation.z();
+//        markers.markers.push_back(arrow);
+
+        for (auto &point : measurement.sensor.discretized(measurement.value))
+        {
+            _x = point.position.x();
+            _y = point.position.y();
+            _z = point.position.z();
+#if DIMENSIONS == 2
+            _z += Parameters::voxelSize;
+#endif
+            _x += (rand() * 1. / RAND_MAX - .5) * Parameters::voxelSize;
+            _y += (rand() * 1. / RAND_MAX - .5) * Parameters::voxelSize;
+            _z += (rand() * 1. / RAND_MAX - .5) * Parameters::voxelSize;
+            pos = Parameters::Vec3Type(_x, _y, _z);
+
+            visualization_msgs::Marker dot;
+            dot.id = (int) QVoxel::computeHash(TrueMap::coordToKey(pos));
+            dot.action = 0;
+            dot.type = visualization_msgs::Marker::SPHERE;
+            dot.header.frame_id = "map";
+            dot.scale.x = Parameters::voxelSize * .3;
+            dot.scale.y = Parameters::voxelSize * .3;
+            dot.scale.z = Parameters::voxelSize * .3;
+            dot.color.a = 1;
+            if (point.occupied)
+            {
+                dot.color.r = 1;
+                dot.color.g = .2;
+                dot.color.b = 0;
+            }
+            else
+            {
+                dot.color.r = .2;
+                dot.color.g = .4;
+                dot.color.b = 1;
+            }
+            dot.pose.position.x = _x;
+            dot.pose.position.y = _y;
+            dot.pose.position.z = _z;
+            markers.markers.push_back(dot);
+        }
+    }
+
+    std::cout << "Publishing " << markers.markers.size() << " markers." << std::endl;
+    observationPublisher.publish(markers);
+
+    ros::spinOnce();
+}
+
+void Visualizer::sleep(int milliseconds)
+{
+    ros::Rate loop_rate(milliseconds);
+    loop_rate.sleep();
+}
+
+double Visualizer::hue2rgb(double arg1, double arg2, double h)
+{
+    if (h < 0)
+        h += 1;
+    if (h > 1)
+        h -= 1;
+    if ((6 * h) < 1)
+        return (arg1 + (arg2 - arg1) * 6 * h);
+    if ((2 * h) < 1)
+        return arg2;
+    if ((3 * h) < 2)
+        return (arg1 + (arg2 - arg1) * ((2.0 / 3.0) - h) * 6);
+    return arg1;
+}
+
+void Visualizer::hsl2rgb(double h, double s, double l, double &r, double &g, double &b)
+{
+    if (s <= 1e-3)
+        r = g = b = l;
+    else
+    {
+        double arg1, arg2;
+        if (l < 0.5)
+            arg2 = l * (1 + s);
+        else
+            arg2 = (l + s) - (s * l);
+        arg1 = 2 * l - arg2;
+
+        r = hue2rgb(arg1, arg2, (h + 1.0 / 3.0));
+        g = hue2rgb(arg1, arg2, h);
+        b = hue2rgb(arg1, arg2, (h - 1.0 / 3.0));
+    }
 }
