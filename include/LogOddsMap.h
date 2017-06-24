@@ -13,8 +13,8 @@ struct ISMParameters
     double increment = Parameters::invSensor_increment;
     double rampSize = Parameters::invSensor_rampSize;
     double topSize = Parameters::invSensor_topSize;
-    double free = -increment;
-    double occupied = increment;
+    double free = Parameters::invSensor_free;
+    double occupied = Parameters::invSensor_occupied;
     double rampSlope = Parameters::invSensor_rampSlope;
 
     void setIncrement(double inc)
@@ -35,7 +35,6 @@ struct ISMParameters
     {
         topSize = size;
     }
-
 };
 
 class LogOddsMap

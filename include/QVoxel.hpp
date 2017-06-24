@@ -80,6 +80,7 @@ public:
 
 typedef QTypedVoxel<octomap::OcTreeNode> QTrueVoxel;
 typedef QTypedVoxel<BeliefVoxel> QBeliefVoxel;
+typedef QTypedVoxel<Belief> QPlainBeliefVoxel;
 
 /**
  * Mixin to provide support for QVoxel querying.

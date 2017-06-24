@@ -35,6 +35,7 @@ public:
 
     void update(const LogOddsMap &logOddsMap,
                 const BeliefMap &beliefMap,
+                GaussianProcessMap &gpMap,
                 ROBOT &robot)
     {
 #ifdef REAL_3D
@@ -49,6 +50,7 @@ public:
 
         auto beliefCompleteStats = beliefMap.stats(_trueMap);
         auto logOddsCompleteStats = logOddsMap.stats(_trueMap);
+        auto gpCompleteStats = gpMap.stats(_trueMap);
 
         auto beliefUpdatedPositions = beliefMap.updatedPositions();
         auto logOddsUpdatedPositions = logOddsMap.updatedPositions();
@@ -76,9 +78,11 @@ public:
 
         _msg.errorLogOdds = VoxelStatistics::selectError(logOddsCompleteStats);
         _msg.errorBelief = VoxelStatistics::selectError(beliefCompleteStats);
+        _msg.errorGP = VoxelStatistics::selectError(gpCompleteStats);
 
         _msg.stdLogOdds = VoxelStatistics::selectStd(logOddsCompleteStats);
         _msg.stdBelief = VoxelStatistics::selectStd(beliefCompleteStats);
+        _msg.stdGP = VoxelStatistics::selectStd(gpCompleteStats);
 
         assert(_msg.errorLogOdds.size() == _msg.errorBelief.size());
 
@@ -105,6 +109,8 @@ public:
         }
         _msg.stdErrorCorrelationBelief.push_back(pcc(stdUpdatedBelief, absErrorUpdatedBelief));
         _msg.stdErrorCorrelationLogOdds.push_back(pcc(stdUpdatedLogOdds, absErrorUpdatedLogOdds));
+
+        _msg.stdErrorCorrelationGP.push_back(pcc(_msg.stdGP, _msg.errorGP));
 
 #if !defined(MANY_STEPS) || defined(COMPUTE_UPDATED_EVOLUTION)
         // append current errors to complete error vectors
@@ -154,6 +160,11 @@ public:
         _msg.ismTopSize = LogOddsMap::parameters.topSize;
         _msg.ismRampSlope = LogOddsMap::parameters.rampSlope;
 
+        _msg.gpParameter1 = GaussianProcessMap::parameters.parameter1;
+        _msg.gpParameter2 = GaussianProcessMap::parameters.parameter2;
+        _msg.gpParameter3 = GaussianProcessMap::parameters.parameter3;
+        _msg.kernel = GaussianProcessMap::parameters.kernel;
+
         // error evolution
         double evolutionLogOdds = 0;
         for (double error : _msg.errorLogOdds)
@@ -165,6 +176,11 @@ public:
             evolutionBelief += std::abs(error);
         evolutionBelief /= _msg.errorBelief.size();
         _msg.errorEvolutionBelief.push_back(evolutionBelief);
+        double evolutionGP = 0;
+        for (double error : _msg.errorGP)
+            evolutionGP += std::abs(error);
+        evolutionGP /= _msg.errorGP.size();
+        _msg.errorEvolutionGP.push_back(evolutionGP);
 
         _msg.stdLogOdds = VoxelStatistics::selectStd(logOddsCompleteStats);
         _msg.stdBelief = VoxelStatistics::selectStd(beliefCompleteStats);
@@ -373,6 +389,11 @@ public:
         _msg.timeLogOdds.push_back(time);
     }
 
+    void registerStepTimeGP(double time)
+    {
+        _msg.timeGP.push_back(time);
+    }
+
     void registerMeasurements(int measurements)
     {
         _msg.measurements.push_back(measurements);
@@ -394,6 +415,7 @@ public:
 
         _msg.timeBelief.clear();
         _msg.timeLogOdds.clear();
+        _msg.timeGP.clear();
         _msg.measurements.clear();
 
         _msg.minRayLength.clear();
@@ -402,12 +424,15 @@ public:
 
         _msg.errorBelief.clear();
         _msg.errorLogOdds.clear();
+        _msg.errorGP.clear();
         _msg.errorEvolutionBelief.clear();
         _msg.errorEvolutionLogOdds.clear();
+        _msg.errorEvolutionGP.clear();
         _msg.errorEvolutionUpdatedBelief.clear();
         _msg.errorEvolutionUpdatedLogOdds.clear();
         _msg.stdEvolutionBelief.clear();
         _msg.stdEvolutionLogOdds.clear();
+        _msg.stdEvolutionGP.clear();
 
         _msg.errorFinalUpdatedBelief.clear();
         _msg.errorFinalUpdatedLogOdds.clear();
@@ -427,6 +452,7 @@ public:
 
         _msg.stdBelief.clear();
         _msg.stdLogOdds.clear();
+        _msg.stdGP.clear();
 
         _msg.stdCompleteBelief.clear();
         _msg.stdCompleteLogOdds.clear();
@@ -436,6 +462,7 @@ public:
 
         _msg.stdErrorCorrelationBelief.clear();
         _msg.stdErrorCorrelationLogOdds.clear();
+        _msg.stdErrorCorrelationGP.clear();
 
         _msg.trajectoryVoxels = 0;
         _msg.trajectoryVoxelX.clear();

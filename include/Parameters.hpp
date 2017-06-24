@@ -25,7 +25,7 @@
 #define ENABLE_VISUALIZATION
 
 //#define PUBLISH_STATS // publish statistics via ROS topic
-#define SLIM_STATS
+//#define SLIM_STATS
 
 
 class Parameters
@@ -186,4 +186,11 @@ public:
     static constexpr NumType invSensor_rampSize = 0.05;
     static constexpr NumType invSensor_topSize = 0.05;
     static constexpr NumType invSensor_rampSlope = (invSensor_occupied - invSensor_free)/invSensor_rampSize;
+
+    //
+    // Gaussian Processes Mapping
+    //
+    static constexpr double gpParameter1 = -2.5;
+    static constexpr double gpParameter2 = -2.5;
+    static constexpr double gpParameter3 = -2.5;
 };

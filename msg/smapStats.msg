@@ -12,6 +12,7 @@ uint64 voxels
 # computation time of single step
 float64[] timeBelief
 float64[] timeLogOdds
+float64[] timeGP
 
 # number of measurents per step
 int32[] measurements
@@ -24,10 +25,12 @@ float64[] avgRayLength
 # error for each voxel at current step
 float64[] errorBelief
 float64[] errorLogOdds
+float64[] errorGP
 
 # L1-error evolution, i.e. sum of errors for all steps
 float64[] errorEvolutionBelief
 float64[] errorEvolutionLogOdds
+float64[] errorEvolutionGP
 
 # L1-error evolution of updated voxels at last step,
 # i.e. sum of errors for all steps
@@ -44,6 +47,7 @@ float64[] stdFinalUpdatedLogOdds
 # std evolution, i.e. sum of stds for all steps
 float64[] stdEvolutionBelief
 float64[] stdEvolutionLogOdds
+float64[] stdEvolutionGP
 
 # error for each voxel over all steps (size is step*voxels)
 float64[] errorCompleteBelief
@@ -64,6 +68,7 @@ float64[] errorCompleteUpdatedLogOdds
 # std deviation per voxel at current step
 float64[] stdBelief
 float64[] stdLogOdds
+float64[] stdGP
 
 # std deviation for each voxel over all steps (size is step*voxels)
 float64[] stdCompleteBelief
@@ -77,6 +82,9 @@ float64[] stdCompleteUpdatedLogOdds
 float64[] stdErrorCorrelationBelief
 float64[] stdErrorCorrelationLogOdds
 
+# evolution of the correlation between std dev and error of *all* voxels
+float64[] stdErrorCorrelationGP
+
 # noise std deviation for observation simulation,
 # and SMAP's likelihoodGivenCause computation
 float64 noiseStd
@@ -86,6 +94,12 @@ float64 ismIncrement
 float64 ismRampSize
 float64 ismTopSize
 float64 ismRampSlope
+
+# GP configuration
+float64 gpParameter1
+float64 gpParameter2
+float64 gpParameter3
+string kernel
 
 #################################################################
 #         Scenario of Trajectory Evaluation (Planning)          #

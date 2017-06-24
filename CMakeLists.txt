@@ -192,7 +192,15 @@ add_executable(smap src/main.cpp
         include/TruncatedGaussianDistribution.hpp
         include/TrueMap.h
         src/TrueMap.cpp
-        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h include/UniformDistribution.hpp include/QVoxel.hpp src/Visualizer.cpp include/Visualizer.h include/Observable.hpp src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp include/LogOddsMap.h include/Statistics.hpp include/StatisticsMap.hpp src/PointCloud.cpp include/PointCloud.h include/InverseCauseModel.h include/SensorRay.hpp src/InverseCauseModel.cpp src/GaussianProcessMap.cpp include/GaussianProcessMap.h src/HilbertMap.cpp include/HilbertMap.h include/Trajectory.hpp)
+        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h
+        include/UniformDistribution.hpp include/QVoxel.hpp
+        src/Visualizer.cpp include/Visualizer.h include/Observable.hpp
+        src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp
+        include/LogOddsMap.h include/Statistics.hpp include/StatisticsMap.hpp
+        src/PointCloud.cpp include/PointCloud.h include/InverseCauseModel.h
+        include/SensorRay.hpp src/InverseCauseModel.cpp src/GaussianProcessMap.cpp
+        include/GaussianProcessMap.h src/HilbertMap.cpp include/HilbertMap.h
+        include/Trajectory.hpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

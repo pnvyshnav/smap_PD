@@ -15,6 +15,7 @@ HilbertMap::HilbertMap(HilbertMapFeature feature, int components, double rbfGamm
 
 bool HilbertMap::update(const Observation &observation)
 {
+    // TODO implement
     using namespace mlpack::kmeans;
 
 // The dataset we are clustering.
@@ -36,5 +37,6 @@ bool HilbertMap::update(const Observation &observation)
 
 Belief HilbertMap::belief(const octomap::point3d &position)
 {
+    // TODO implement
     return Belief();
 }

@@ -64,8 +64,11 @@ void handleObservation(const Observation &observation)
     stopWatch.restart();
     logOddsMap.update(observation, trueMap);
     stats->registerStepTimeLogOdds(stopWatch.elapsed());
+    stopWatch.restart();
+    gaussianProcessMap.update(observation);
+    stats->registerStepTimeGP(stopWatch.elapsed());
 
-    stats->update(logOddsMap, beliefMap, robot);
+    stats->update(logOddsMap, beliefMap, gaussianProcessMap, robot);
 #else
     beliefMap.update(observation, trueMap);
     logOddsMap.update(observation, trueMap);
@@ -136,9 +139,15 @@ int main(int argc, char **argv)
     planner.subscribe(std::bind(&Visualizer::publishTrajectoryPlanner, visualizer, std::placeholders::_1));
 #endif
 #ifdef FAKE_2D
-    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1, true));
-    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMapFull, visualizer, std::placeholders::_1, true));
-    gaussianProcessMap.subscribe(std::bind(&Visualizer::publishGaussianProcessMapFull, visualizer, std::placeholders::_1, true));
+    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull,
+                                  visualizer, std::placeholders::_1,
+                                  false));
+    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMapFull,
+                                   visualizer, std::placeholders::_1,
+                                   false));
+    gaussianProcessMap.subscribe(std::bind(&Visualizer::publishGaussianProcessMapFull,
+                                           visualizer, std::placeholders::_1,
+                                           false));
 #else
     // todo reactivate
     beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
@@ -264,7 +273,11 @@ int main(int argc, char **argv)
 //    drone.runOffline("~/catkin_ws/src/smap/dataset/V1_01_easy/V1_01_easy.bag");
 #endif
 
+    stats->saveToFile("~/catkin_ws/src/smap/stats/stats.bag");
+
     // TODO compute Hilbert map using all measurements
+//    gaussianProcessMap.update(allObservations);
+//    gaussianProcessMap.publish();
     std::cout << allObservations.measurements().size()
               << " observations were made in total." << std::endl;
     for (int i = 0; i < 1; i++)
