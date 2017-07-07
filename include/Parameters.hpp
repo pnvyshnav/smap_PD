@@ -17,12 +17,18 @@
 //#define FAKE_3D
 //#define REPEATED_RUNS
 //#define ISM_RUNS
+//#define GP_RUNS
 #define MANY_STEPS
 //#define COMPUTE_UPDATED_EVOLUTION
 
 //#define REAL_3D
 
-#define ENABLE_VISUALIZATION
+#define INPUT_EUROC 1       // EuRoC MAV dataset
+#define INPUT_SNAPDRAGON 2  // Snapdragon Flight
+
+#define INPUT_TYPE INPUT_EUROC
+
+//#define ENABLE_VISUALIZATION
 
 //#define PUBLISH_STATS // publish statistics via ROS topic
 //#define SLIM_STATS
@@ -88,7 +94,7 @@ public:
 
     static const bool sensorTruncatedGaussianNoise = false;
     static constexpr NumType sensorRange = (const NumType) 1.; //1.5;
-    static constexpr NumType sensorNoiseStd = (const NumType) (/*2. * */ voxelSize); //(sensorRange / 20.);
+    static constexpr NumType sensorNoiseStd = (const NumType) (0.25 * voxelSize); //(sensorRange / 20.);
 
     static const unsigned int StereoCameraHorizontalPixels = 60; //600;
     static constexpr double StereoCameraHorizontalFOV = 360. * M_PI / 180.;
@@ -130,7 +136,7 @@ public:
 
     static const bool sensorTruncatedGaussianNoise = false;
     static constexpr NumType sensorRange = (const NumType) 10;
-    static constexpr NumType sensorNoiseStd = (const NumType) 0.1;
+    static constexpr NumType sensorNoiseStd = (const NumType) 0.8 * voxelSize; //0.1;
 
     static constexpr NumType freeRadiusAroundCenter = 0; // irrelevant
     // IRRELEVANT:
@@ -180,7 +186,7 @@ public:
     // Inverse Sensor Model
     //
     static constexpr NumType invSensor_prior = priorMean;
-    static constexpr NumType invSensor_increment = 0.25;
+    static constexpr NumType invSensor_increment = 0.15; // 0.05; //0.25; //0.01; // 0.25
     static constexpr NumType invSensor_occupied = invSensor_increment;
     static constexpr NumType invSensor_free = -invSensor_increment;
     static constexpr NumType invSensor_rampSize = 0.05;
@@ -190,7 +196,7 @@ public:
     //
     // Gaussian Processes Mapping
     //
-    static constexpr double gpParameter1 = -2.5;
-    static constexpr double gpParameter2 = -2.5;
-    static constexpr double gpParameter3 = -2.5;
+    static constexpr double gpParameter1 = -2.5; //-2.5; //-2.5;
+    static constexpr double gpParameter2 = -2.5; //-3.5; //-2.5;
+    static constexpr double gpParameter3 = -2.5; //-0.5; //-2.5;
 };

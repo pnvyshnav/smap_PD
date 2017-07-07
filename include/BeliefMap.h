@@ -65,7 +65,7 @@ public:
     {
         if (voxel.type != GEOMETRY_VOXEL)
             return Parameters::priorStd;
-        return std::sqrt(voxel.node()->getValue().variance());
+        return std::sqrt(voxel.node()->getValue().variance()) * StdDevScalingFactor;
     }
 
     std::string mapType() const
@@ -77,6 +77,9 @@ public:
     {
         return _icm;
     }
+
+    // TODO std scaling such that initial std equals defined prior std (0.5)
+    static constexpr double StdDevScalingFactor = Parameters::priorStd / std::sqrt(0.085);
 
 protected:
     BeliefVoxel *updateNodeRecurs(BeliefVoxel *node, bool node_just_created,

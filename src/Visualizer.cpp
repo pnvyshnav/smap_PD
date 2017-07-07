@@ -403,6 +403,83 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable, bool visua
     ros::spinOnce();
 }
 
+void Visualizer::publishBeliefInconsistencyMapFull(const Observable *visualizable, TrueMap &trueMap, double k)
+{
+    if (!visualizable)
+        return;
+
+    auto beliefMap = (BeliefMap*) visualizable;
+    ros::Rate loop_rate(PaintRate);
+    loop_rate.sleep();
+
+    visualization_msgs::MarkerArray cells;
+
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                auto _x = Parameters::xMin + x * Parameters::voxelSize;
+                auto _y = Parameters::yMin + y * Parameters::voxelSize;
+                auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                Parameters::Vec3Type pos(_x, _y, _z);
+                QBeliefVoxel voxel = beliefMap->query(_x, _y, _z);
+
+                visualization_msgs::Marker cell;
+                cell.id = (int) voxel.hash;
+                cell.action = 0;
+                cell.type = visualization_msgs::Marker::CUBE;
+                cell.header.frame_id = "map";
+                cell.scale.x = Parameters::voxelSize;
+                cell.scale.y = Parameters::voxelSize;
+                cell.scale.z = Parameters::voxelSize;
+                cell.color.a = 1.0;
+
+                double r, g, b = 0;
+                if (voxel.type == GEOMETRY_VOXEL)
+                {
+                    QTrueVoxel truth = trueMap.query(_x, _y, _z);
+                    double error = std::abs(beliefMap->getVoxelMean(voxel)
+                                            - trueMap.getVoxelMean(truth));
+//                    std::cout << error << std::endl;
+                    double std = beliefMap->getVoxelStd(voxel);
+                    double inconsistency = error - k * std;
+                    if (inconsistency > 0)
+                    {
+                        r = std::min(1., inconsistency);
+                        g = std::min(1., inconsistency);
+                        b = std::min(1., inconsistency);
+                    }
+                    else
+                        r = g = b = 0;
+                }
+                else
+                    continue;
+                cell.color.r = (float) r;
+                cell.color.g = (float) g;
+                cell.color.b = (float) b;
+                cell.pose.position.x = voxel.position.x();
+                cell.pose.position.y = voxel.position.y();
+                cell.pose.position.z = voxel.position.z();
+                cells.markers.push_back(cell);
+            }
+        }
+    }
+
+    beliefMapPublisher.publish(cells);
+
+    // Clear ICM's ray voxels
+    visualization_msgs::MarkerArray rayVoxels;
+    visualization_msgs::Marker clearVoxel;
+    clearVoxel.action = 3; // clear all
+    clearVoxel.header.frame_id = "map";
+    rayVoxels.markers.push_back(clearVoxel);
+    rayVoxelPublisher.publish(rayVoxels);
+
+    ros::spinOnce();
+}
+
 void Visualizer::publishLogOddsMapFull(const Observable *visualizable, bool visualizeStd)
 {
     if (!visualizable)
@@ -440,6 +517,83 @@ void Visualizer::publishLogOddsMapFull(const Observable *visualizable, bool visu
                     }
                     else
                         r = g = b = (float) (1.0 - logOddsMap->getVoxelMean(voxel));
+                }
+                else
+                    continue;
+                cell.color.r = (float) r;
+                cell.color.g = (float) g;
+                cell.color.b = (float) b;
+                cell.type = visualization_msgs::Marker::CUBE;
+                cell.header.frame_id = "map";
+                cell.scale.x = Parameters::voxelSize;
+                cell.scale.y = Parameters::voxelSize;
+                cell.scale.z = Parameters::voxelSize;
+                cell.color.a = 1.0;
+                cell.pose.position.x = pos.x();
+                cell.pose.position.y = pos.y();
+                cell.pose.position.z = pos.z();
+                cells.markers.push_back(cell);
+            }
+        }
+    }
+
+    logOddsMapPublisher.publish(cells);
+
+    // Clear ICM's ray voxels
+    visualization_msgs::MarkerArray rayVoxels;
+    visualization_msgs::Marker clearVoxel;
+    clearVoxel.action = 3; // clear all
+    clearVoxel.header.frame_id = "map";
+    rayVoxels.markers.push_back(clearVoxel);
+    rayVoxelPublisher.publish(rayVoxels);
+
+    ros::spinOnce();
+}
+
+void Visualizer::publishLogOddsInconsistencyMapFull(const Observable *visualizable, TrueMap &trueMap, double k)
+{
+    if (!visualizable)
+        return;
+
+    auto logOddsMap = (LogOddsMap*) visualizable;
+    ros::Rate loop_rate(PaintRate);
+    loop_rate.sleep();
+
+    visualization_msgs::MarkerArray cells;
+    octomap::OcTreeKey::KeyHash hasher;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                auto _x = Parameters::xMin + x * Parameters::voxelSize;
+                auto _y = Parameters::yMin + y * Parameters::voxelSize;
+                auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                Parameters::Vec3Type pos(_x, _y, _z);
+                QTrueVoxel voxel = logOddsMap->query(_x, _y, _z);
+
+                visualization_msgs::Marker cell;
+                cell.id = 1379 + (int) hasher(octomap::OcTreeKey(x, y, z));
+                cell.action = 0;
+
+                double r, g, b;
+                if (voxel.type == GEOMETRY_VOXEL)
+                {
+                    QTrueVoxel truth = trueMap.query(_x, _y, _z);
+                    double error = std::abs(logOddsMap->getVoxelMean(voxel)
+                                            - trueMap.getVoxelMean(truth));
+//                    std::cout << error << std::endl;
+                    double std = logOddsMap->getVoxelStd(voxel);
+                    double inconsistency = error - k * std;
+                    if (inconsistency > 0)
+                    {
+                        r = std::min(1., inconsistency);
+                        g = std::min(1., inconsistency);
+                        b = std::min(1., inconsistency);
+                    }
+                    else
+                        r = g = b = 0;
                 }
                 else
                     continue;
@@ -783,7 +937,7 @@ void Visualizer::publishGaussianProcessMapFull(const Observable *visualizable, b
                 cell.id = (int) QVoxel::computeHash(TrueMap::coordToKey(pos));
                 double mean = belief.mean();
 //                std::cout << mean << std::endl;
-                mean = std::min(1., std::max(0., mean));
+//                mean = std::min(1., std::max(0., mean));
 //                if (mean < 0.49 && pos.norm() < 1.5 || pos.norm() < 0.6)
 //                    // remove belief
 //                    cell.action = 2;
@@ -798,11 +952,85 @@ void Visualizer::publishGaussianProcessMapFull(const Observable *visualizable, b
                 double r, g, b;
                 if (visualizeStd)
                 {
-                    double hue = std::sqrt(belief.variance()) * 1.3;
+                    double hue = std::sqrt(belief.variance()) * GaussianProcessMap::StdDevScalingFactor * 1.3;
                     hsl2rgb(hue, 1, .6, r, g, b);
                 }
                 else
                     r = g = b = (float) (1.0 - belief.mean());
+
+                cell.color.r = (float) r;
+                cell.color.g = (float) g;
+                cell.color.b = (float) b;
+                cell.pose.position.x = _x;
+                cell.pose.position.y = _y;
+                cell.pose.position.z = _z;
+                cells.markers.push_back(cell);
+            }
+        }
+    }
+
+    std::cout << "Time to query GP map: " << stopWatchVisualizer.elapsed() << std::endl;
+
+    gaussianProcessMapPublisher.publish(cells);
+
+    ros::spinOnce();
+}
+
+void Visualizer::publishGaussianProcessInconsistencyMapFull(const Observable *visualizable, TrueMap &trueMap, double k)
+{
+    if (!visualizable)
+        return;
+
+    auto gaussianProcessMap = (GaussianProcessMap *) visualizable;
+    ros::Rate loop_rate(PaintRate);
+    loop_rate.sleep();
+
+    stopWatchVisualizer.restart();
+
+    visualization_msgs::MarkerArray cells;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            {
+                auto _x = Parameters::xMin + x * Parameters::voxelSize;
+                auto _y = Parameters::yMin + y * Parameters::voxelSize;
+                auto _z = Parameters::zMin + z * Parameters::voxelSize;
+                Parameters::Vec3Type pos(_x, _y, _z);
+                Belief belief = gaussianProcessMap->belief(pos);
+
+                visualization_msgs::Marker cell;
+                cell.id = (int) QVoxel::computeHash(TrueMap::coordToKey(pos));
+                double mean = belief.mean();
+//                std::cout << mean << std::endl;
+//                mean = std::min(1., std::max(0., mean));
+//                if (mean < 0.49 && pos.norm() < 1.5 || pos.norm() < 0.6)
+//                    // remove belief
+//                    cell.action = 2;
+//                else
+                cell.action = 0;
+                cell.type = visualization_msgs::Marker::CUBE;
+                cell.header.frame_id = "map";
+                cell.scale.x = Parameters::voxelSize;
+                cell.scale.y = Parameters::voxelSize;
+                cell.scale.z = Parameters::voxelSize;
+                cell.color.a = 1.0;
+                double r, g, b;
+                QTrueVoxel truth = trueMap.query(_x, _y, _z);
+                double error = std::abs(belief.mean()
+                                        - trueMap.getVoxelMean(truth));
+//                    std::cout << error << std::endl;
+                double std = std::sqrt(belief.variance()) * GaussianProcessMap::StdDevScalingFactor;
+                double inconsistency = error - k * std;
+                if (inconsistency > 0)
+                {
+                    r = std::min(1., inconsistency);
+                    g = std::min(1., inconsistency);
+                    b = std::min(1., inconsistency);
+                }
+                else
+                    r = g = b = 0;
 
                 cell.color.r = (float) r;
                 cell.color.g = (float) g;

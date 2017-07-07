@@ -15,8 +15,10 @@
 #include "../include/PointCloud.h"
 #include "../include/Trajectory.hpp"
 
+std::string homedir = getenv("HOME");
+
 #ifdef REAL_3D
-    TrueMap trueMap = TrueMap::generateFromPointCloud("~/catkin_ws/src/smap/dataset/V1_01_easy/data.ply");
+    TrueMap trueMap = TrueMap::generateFromPointCloud(homedir + "/catkin_ws/src/smap/dataset/V1_01_easy/data.ply");
 #else
     TrueMap trueMap = TrueMap::generateCorridor(); //TrueMap::generate(123); // use a fixed seed value
 #endif
@@ -47,7 +49,9 @@ int updated = 0;
 void handleObservation(const Observation &observation)
 {
     allObservations.append(observation);
-
+#ifdef GP_RUNS
+    return;
+#endif
 #ifndef SLIM_STATS
     stats->registerMeasurements((int)observation.measurements().size());
     std::valarray<Parameters::NumType> rayLengths(observation.measurements().size());
@@ -64,9 +68,10 @@ void handleObservation(const Observation &observation)
     stopWatch.restart();
     logOddsMap.update(observation, trueMap);
     stats->registerStepTimeLogOdds(stopWatch.elapsed());
-    stopWatch.restart();
-    gaussianProcessMap.update(observation);
-    stats->registerStepTimeGP(stopWatch.elapsed());
+
+//    stopWatch.restart();
+//    gaussianProcessMap.update(observation);
+//    stats->registerStepTimeGP(stopWatch.elapsed());
 
     stats->update(logOddsMap, beliefMap, gaussianProcessMap, robot);
 #else
@@ -83,7 +88,7 @@ void handleObservation(const Observation &observation)
 #endif
 
         // save stats continually
-        stats->saveToFile("~/catkin_ws/src/smap/stats/stats_real3d_"
+        stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/stats_real3d_"
                           + std::to_string(updated) + ".bag");
 #ifdef SLIM_STATS
         stats->reset();
@@ -139,24 +144,38 @@ int main(int argc, char **argv)
     planner.subscribe(std::bind(&Visualizer::publishTrajectoryPlanner, visualizer, std::placeholders::_1));
 #endif
 #ifdef FAKE_2D
-    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull,
+    double k_inconsistency = 1;
+//    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull,
+//                                  visualizer, std::placeholders::_1,
+//                                  true));
+    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefInconsistencyMapFull,
                                   visualizer, std::placeholders::_1,
-                                  false));
-    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMapFull,
-                                   visualizer, std::placeholders::_1,
-                                   false));
-    gaussianProcessMap.subscribe(std::bind(&Visualizer::publishGaussianProcessMapFull,
+                                  trueMap,
+                                  k_inconsistency));
+//    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMapFull,
+//                                   visualizer, std::placeholders::_1,
+//                                   true));
+    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsInconsistencyMapFull,
+                                  visualizer, std::placeholders::_1,
+                                  trueMap,
+                                  k_inconsistency));
+//    gaussianProcessMap.subscribe(std::bind(&Visualizer::publishGaussianProcessMapFull,
+//                                           visualizer, std::placeholders::_1,
+//                                           true));
+    gaussianProcessMap.subscribe(std::bind(&Visualizer::publishGaussianProcessInconsistencyMapFull,
                                            visualizer, std::placeholders::_1,
-                                           false));
+                                           trueMap,
+                                           k_inconsistency));
 #else
     // todo reactivate
-    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
-    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMapFull, visualizer, std::placeholders::_1));
+//    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
+//    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMapFull, visualizer, std::placeholders::_1));
 #endif
     robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
 #endif
 
     robot.registerObserver(&handleObservation);
+
 
     Trajectory trajectory = {
             TrajectoryPoint(Eigen::Vector3f(-0.92f, -0.25f, 0.f), 0.f),
@@ -172,11 +191,9 @@ int main(int argc, char **argv)
             TrajectoryPoint(Eigen::Vector3f(-0.01f, 0.56f, 0.f), 30.f),
             TrajectoryPoint(Eigen::Vector3f(0.13f, 0.63f, 0.f), -10.f),
             TrajectoryPoint(Eigen::Vector3f(0.30f, 0.61f, 0.f), -10.f),
-
             TrajectoryPoint(Eigen::Vector3f(0.45f, 0.58f, 0.f), 5.f),
             TrajectoryPoint(Eigen::Vector3f(0.62f, 0.58f, 0.f), -25.f),
             TrajectoryPoint(Eigen::Vector3f(0.74f, 0.51f, 0.f), -70.f),
-
             TrajectoryPoint(Eigen::Vector3f(0.77f, 0.36f, 0.f), -85.f),
             TrajectoryPoint(Eigen::Vector3f(0.77f, 0.20f, 0.f), -90.f),
             TrajectoryPoint(Eigen::Vector3f(0.77f, 0.05f, 0.f), -100.f),
@@ -186,9 +203,64 @@ int main(int argc, char **argv)
             TrajectoryPoint(Eigen::Vector3f(0.30f, -0.17f, 0.f), -180.f)
     };
 
-    visualizer->publishTrajectory(&trajectory);
+#if defined(ISM_RUNS)
+    std::vector<double> increments = {0.05, 0.25, 0.4};
+    std::vector<double> rampSizes = {0.025, 0.05, 0.1, 0.3};
+    std::vector<double> topSizes = {0.025, 0.05, 0.1, 0.3};
+    unsigned int round = 0;
+    for (auto increment : increments)
+    {
+        for (auto rampSize : rampSizes)
+        {
+            for (auto topSize : topSizes)
+            {
+                ROS_INFO("Running with ISM parameters: increment=%f rampSize=%f topSize=%f",
+                         increment, rampSize, topSize);
+                LogOddsMap::parameters.increment = increment;
+                LogOddsMap::parameters.rampSize = rampSize;
+                LogOddsMap::parameters.topSize = topSize;
+                beliefMap.reset();
+                logOddsMap.reset();
+                robot.run(trajectory);
 
-#if defined(FAKE_2D)
+                stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/ism_runs/stats_" + std::to_string(round++) + ".bag");
+                stats->reset();
+            }
+        }
+    }
+#elif defined(GP_RUNS)
+    // obtain observations
+    robot.run(trajectory);
+
+    std::vector<double> p1s = {-2, -2.5, -3};
+    std::vector<double> p2s = {-2.5, -3.5, -4.5};
+    std::vector<double> p3s = {-0.5, -1, -1.5};
+    unsigned int round = 0;
+    for (auto p1 : p1s)
+    {
+        for (auto p2 : p2s)
+        {
+            for (auto p3 : p3s)
+            {
+                gaussianProcessMap.reset();
+                ROS_INFO("Running with GP parameters: p1=%f p2=%f p3=%f",
+                         p1, p2, p3);
+                GaussianProcessMap::parameters.parameter1 = p1;
+                GaussianProcessMap::parameters.parameter2 = p2;
+                GaussianProcessMap::parameters.parameter3 = p3;
+                gaussianProcessMap.updateParameters();
+                gaussianProcessMap.update(allObservations);
+
+                stats->update(logOddsMap, beliefMap, gaussianProcessMap, robot);
+
+                stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/gp_runs/stats_" + std::to_string(round++) + ".bag");
+                stats->reset();
+            }
+        }
+    }
+    return EXIT_SUCCESS;
+
+#elif defined(FAKE_2D)
     #if defined(PLANNER_2D_TEST)
         #if defined(REPLANNING)
             robot.setReplanningHandler(std::bind(&TrajectoryPlanner::replan, planner,
@@ -219,6 +291,11 @@ int main(int argc, char **argv)
             }
         #endif
     #else
+
+        #ifdef ENABLE_VISUALIZATION
+            visualizer->publishTrajectory(&trajectory);
+        #endif
+
         robot.run(trajectory);
     #endif
 #elif defined(FAKE_3D)
@@ -239,63 +316,39 @@ int main(int argc, char **argv)
             ROS_INFO("Completed round %d", (int)round);
             trueMap.shuffle();
         }
-    #elif defined(ISM_RUNS)
-        std::vector<double> increments = {0.05, 0.2, 0.4};
-        std::vector<double> rampSizes = {0.05, 0.1, 0.3};
-        std::vector<double> topSizes = {0.05, 0.1, 0.3};
-        unsigned int round = 0;
-        for (auto increment : increments)
-        {
-            for (auto rampSize : rampSizes)
-            {
-                for (auto topSize : topSizes)
-                {
-                    ROS_INFO("Running with ISM parameters: increment=%f rampSize=%f topSize=%f",
-                             increment, rampSize, topSize);
-                    LogOddsMap::parameters.increment = increment;
-                    LogOddsMap::parameters.rampSize = rampSize;
-                    LogOddsMap::parameters.topSize = topSize;
-                    beliefMap.reset();
-                    logOddsMap.reset();
-                    robot.run();
-                    stats->saveToFile("ism_runs_fewsteps_noise0.05/stats_" + std::to_string(round++) + ".bag");
-                    stats->reset();
-                }
-            }
-        }
     #else
         robot.run();
     #endif
 #else
     Drone drone;
     drone.registerObserver(&handleObservation);
-    drone.run();
-//    drone.runOffline("~/catkin_ws/src/smap/dataset/V1_01_easy/V1_01_easy.bag");
+//    drone.run();
+    drone.runOffline(homedir + "/catkin_ws/src/smap/dataset/V1_01_easy/droneflight.bag");
 #endif
 
-    stats->saveToFile("~/catkin_ws/src/smap/stats/stats.bag");
-
     // TODO compute Hilbert map using all measurements
-//    gaussianProcessMap.update(allObservations);
-//    gaussianProcessMap.publish();
-    std::cout << allObservations.measurements().size()
-              << " observations were made in total." << std::endl;
+    gaussianProcessMap.update(allObservations);
+    gaussianProcessMap.publish();
+    stats->update(logOddsMap, beliefMap, gaussianProcessMap, robot);
+
+    std::stringstream ss;
+    ss << Parameters::sensorNoiseStd;
+    stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/sensor_noise_std/stats_std_" + ss.str() + ".bag");
+#ifdef ENABLE_VISUALIZATION
     for (int i = 0; i < 1; i++)
     {
         visualizer->publishObservation(&allObservations);
         visualizer->publishTrajectory(&trajectory);
         visualizer->sleep(1);
     }
+#endif
     std::cout << allObservations.measurements().size()
-              << " observations were made in total." << std::endl;
+              << " measurements were taken in total." << std::endl;
 
 #ifndef PLANNER_2D_TEST
 //    visualizer->publishBeliefMapFull(&beliefMap);
 //    visualizer->publishLogOddsMapFull(&logOddsMap);
 //    visualizer->publishTrueMap(&trueMap);
-
-    //TODO reactivate
-//    stats->saveToFile("~/catkin_ws/src/smap/stats/stats.bag");
 #endif
 
     delete stats;

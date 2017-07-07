@@ -100,17 +100,18 @@ public:
         auto stdUpdatedBelief = VoxelStatistics::selectStd(beliefUpdatedStats);
         auto stdUpdatedLogOdds = VoxelStatistics::selectStd(logOddsUpdatedStats);
 
-        std::vector<double> absErrorUpdatedBelief = errorUpdatedBelief;
-        std::vector<double> absErrorUpdatedLogOdds = errorUpdatedLogOdds;
-        for (unsigned int i = 0; i < absErrorUpdatedBelief.size(); ++i)
+        std::vector<double> absErrorBelief = _msg.errorBelief;
+        std::vector<double> absErrorLogOdds = _msg.errorLogOdds;
+        std::vector<double> absErrorGP = _msg.errorGP;
+        for (unsigned int i = 0; i < absErrorBelief.size(); ++i)
         {
-            absErrorUpdatedBelief[i] = std::abs(absErrorUpdatedBelief[i]);
-            absErrorUpdatedLogOdds[i] = std::abs(absErrorUpdatedLogOdds[i]);
+            absErrorBelief[i] = std::abs(absErrorBelief[i]);
+            absErrorLogOdds[i] = std::abs(absErrorLogOdds[i]);
+            absErrorGP[i] = std::abs(absErrorGP[i]);
         }
-        _msg.stdErrorCorrelationBelief.push_back(pcc(stdUpdatedBelief, absErrorUpdatedBelief));
-        _msg.stdErrorCorrelationLogOdds.push_back(pcc(stdUpdatedLogOdds, absErrorUpdatedLogOdds));
-
-        _msg.stdErrorCorrelationGP.push_back(pcc(_msg.stdGP, _msg.errorGP));
+        _msg.stdErrorCorrelationBelief.push_back(pcc(_msg.stdBelief, absErrorBelief));
+        _msg.stdErrorCorrelationLogOdds.push_back(pcc(_msg.stdLogOdds, absErrorLogOdds));
+        _msg.stdErrorCorrelationGP.push_back(pcc(_msg.stdGP, absErrorGP));
 
 #if !defined(MANY_STEPS) || defined(COMPUTE_UPDATED_EVOLUTION)
         // append current errors to complete error vectors
@@ -168,19 +169,21 @@ public:
         // error evolution
         double evolutionLogOdds = 0;
         for (double error : _msg.errorLogOdds)
-            evolutionLogOdds += std::abs(error);
-        evolutionLogOdds /= _msg.errorLogOdds.size();
+            evolutionLogOdds += std::round(std::abs(error) + 0.01);
+//        evolutionLogOdds /= _msg.errorLogOdds.size();
         _msg.errorEvolutionLogOdds.push_back(evolutionLogOdds);
         double evolutionBelief = 0;
         for (double error : _msg.errorBelief)
-            evolutionBelief += std::abs(error);
-        evolutionBelief /= _msg.errorBelief.size();
+            evolutionBelief += std::round(std::abs(error) + 0.01);
+//        evolutionBelief /= _msg.errorBelief.size();
         _msg.errorEvolutionBelief.push_back(evolutionBelief);
         double evolutionGP = 0;
         for (double error : _msg.errorGP)
-            evolutionGP += std::abs(error);
-        evolutionGP /= _msg.errorGP.size();
+            evolutionGP += std::round(std::abs(error) + 0.01);
+//        evolutionGP /= _msg.errorGP.size();
         _msg.errorEvolutionGP.push_back(evolutionGP);
+
+        std::cout << "MAE Advantage over Log Odds: " << evolutionLogOdds-evolutionBelief << std::endl;
 
         _msg.stdLogOdds = VoxelStatistics::selectStd(logOddsCompleteStats);
         _msg.stdBelief = VoxelStatistics::selectStd(beliefCompleteStats);

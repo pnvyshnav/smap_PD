@@ -10,9 +10,9 @@
 
 struct GaussianProcessMapParameters
 {
-    double parameter1 = Parameters::gpParameter1;
-    double parameter2 = Parameters::gpParameter2;
-    double parameter3 = Parameters::gpParameter3;
+    double parameter1 = -2.0; //-2.5; //Parameters::gpParameter1; // higher values make it more blurry
+    double parameter2 = -4.5; //-3.5; //-7.5; //Parameters::gpParameter2; // lower values increase contrast
+    double parameter3 = -0.5; //-2.5; //Parameters::gpParameter3; // seems to be the noise or contrast parameter
 
     /**
      * Critical property that defines the covariance kernel
@@ -68,8 +68,18 @@ public:
     __attribute__((weak))
     static GaussianProcessMapParameters parameters;
 
+    // TODO verify scaling when altering GP parameters
+    // such that initial std equals defined prior std (0.5)
+    static double StdDevScalingFactor; // = Parameters::priorStd / 0.0301974;
+
+    void computeStdDevScalingFactor();
+    void updateParameters();
+
+    void reset();
+
 private:
     libgp::GaussianProcess _gp;
+    bool _stdScalingComputed;
 
     // for stats memory management
     std::vector<QPlainBeliefVoxel> _voxels;

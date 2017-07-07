@@ -5,9 +5,10 @@
 #include <message_filters/sync_policies/approximate_time.h>
 
 #include <pcl/io/pcd_io.h>
-#include <pcl/point_cloud.h>
+//#include <pcl/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.h>
+#include <pcl_ros/point_cloud.h>
 #include <pcl/filters/voxel_grid.h>
 
 #include <rosbag/bag.h>
@@ -103,26 +104,26 @@ void Drone::handleMeasurements(PointsMessageConstPtr pointsMsg, TransformationMe
 
     transformation *= vicon * camera;
 
-    //TODO broadcast tf and transformed PointCloud2 for debugging
-    static tf::TransformBroadcaster br;
-    auto time = ros::Time::now(); // uses simulation time from ros bag clock
-    tf::StampedTransform tr2(transformation, time, "map", "tf_drone");
-    br.sendTransform(tr2);
-    geometry_msgs::TransformStamped tfMsg;
-    tf::transformStampedTFToMsg(tr2, tfMsg);
-    _tfDronePub.publish(tfMsg);
-
-    sensor_msgs::PointCloud2 pointsTfMsg(*pointsMsg);
-    pointsTfMsg.header.frame_id = "tf_drone";
-    pointsTfMsg.header.stamp = time;
-    _tfPointCloudPub.publish(pointsTfMsg);
-
-    // publish downsampled point cloud
-    sensor_msgs::PointCloud2 downsampledPointsTfMsg;
-    pcl::toROSMsg(*pointCloudFiltered, downsampledPointsTfMsg);
-    downsampledPointsTfMsg.header.frame_id = "tf_drone";
-    downsampledPointsTfMsg.header.stamp = time;
-    _tfDownsampledPointCloudPub.publish(downsampledPointsTfMsg);
+//    //TODO broadcast tf and transformed PointCloud2 for debugging
+//    static tf::TransformBroadcaster br;
+//    auto time = ros::Time::now(); // uses simulation time from ros bag clock
+//    tf::StampedTransform tr2(transformation, time, "map", "tf_drone");
+//    br.sendTransform(tr2);
+//    geometry_msgs::TransformStamped tfMsg;
+//    tf::transformStampedTFToMsg(tr2, tfMsg);
+//    _tfDronePub.publish(tfMsg);
+//
+//    sensor_msgs::PointCloud2 pointsTfMsg(*pointsMsg);
+//    pointsTfMsg.header.frame_id = "tf_drone";
+//    pointsTfMsg.header.stamp = time;
+//    _tfPointCloudPub.publish(pointsTfMsg);
+//
+//    // publish downsampled point cloud
+//    sensor_msgs::PointCloud2 downsampledPointsTfMsg;
+//    pcl::toROSMsg(*pointCloudFiltered, downsampledPointsTfMsg);
+//    downsampledPointsTfMsg.header.frame_id = "tf_drone";
+//    downsampledPointsTfMsg.header.stamp = time;
+//    _tfDownsampledPointCloudPub.publish(downsampledPointsTfMsg);
 #else
     tf::StampedTransform stampedTransform;
     tf::transformStampedMsgToTF(*transformationMsg, stampedTransform);
@@ -190,9 +191,8 @@ void Drone::handleMeasurements(PointsMessageConstPtr pointsMsg, TransformationMe
         Parameters::NumType measuredRange = point.length();
         point.normalize();
         Parameters::Vec3Type pixelDirection(point.x(), point.y(), point.z());
-        Sensor sensor(origin, pixelDirection); // TODO check Parameters::sensorRange
-        auto sensorPtr = std::make_shared<Sensor>(sensor);
-        measurements.push_back(Measurement::voxel(sensorPtr, measuredRange));
+        SensorRay sensor(origin, pixelDirection, measuredRange); // TODO check Parameters::sensorRange
+        measurements.push_back(Measurement::voxel(sensor, measuredRange));
     }
 #ifdef LOG_DETAILS
     ROS_INFO("PointCloud");

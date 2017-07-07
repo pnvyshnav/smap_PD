@@ -31,6 +31,10 @@ public:
     void publishTrajectory(const Observable *visualizable);
     void publishObservation(const Observable *observation);
 
+    void publishBeliefInconsistencyMapFull(const Observable *visualizable, TrueMap &trueMap, double k);
+    void publishLogOddsInconsistencyMapFull(const Observable *visualizable, TrueMap &trueMap, double k);
+    void publishGaussianProcessInconsistencyMapFull(const Observable *visualizable, TrueMap &trueMap, double k);
+
     static const int PaintRate = 200;
 
 

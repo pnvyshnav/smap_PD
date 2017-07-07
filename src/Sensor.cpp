@@ -58,7 +58,7 @@ Sensor::likelihoodGivenCause(const Measurement &measurement, const QVoxel &cause
 #else
         //  return std::abs(measurement.value - causeVoxel.position.distance(measurement.sensor.position)) < Parameters::voxelSize;
         auto tg = TruncatedGaussianDistribution(causeVoxel.position.distance(measurement.sensor.position), Parameters::sensorNoiseStd,//TODO sensorNoiseStd range-dependent
-                                                0, measurement.sensor.range); // TODO truncated?
+                                                0, measurement.sensor.range * 2.); // TODO truncated too early?
         return tg.pdfValue(measurement.value);
 #endif
     }

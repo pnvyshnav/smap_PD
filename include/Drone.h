@@ -11,11 +11,6 @@
 
 #include "Robot.hpp"
 
-#define INPUT_EUROC 1       // EuRoC MAV dataset
-#define INPUT_SNAPDRAGON 2  // Snapdragon Flight
-
-#define INPUT_TYPE INPUT_SNAPDRAGON
-
 
 // Disable flag to transform and downsample incoming point clouds.
 //#define PREPROCESSED_INPUT
@@ -37,8 +32,8 @@ class Drone : public Robot
 {
 public:
 #if INPUT_TYPE == INPUT_EUROC
-    typedef const sensor_msgs::PointCloud2 PointsMessage;
-    typedef const geometry_msgs::TransformStamped TransformationMessage;
+    typedef sensor_msgs::PointCloud2 PointsMessage;
+    typedef geometry_msgs::TransformStamped TransformationMessage;
 #elif INPUT_TYPE == INPUT_SNAPDRAGON
     typedef sensor_msgs::Image PointsMessage;
     typedef geometry_msgs::PoseStamped TransformationMessage;

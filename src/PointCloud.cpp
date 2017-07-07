@@ -27,6 +27,7 @@ void PointCloud::loadPly(std::string filename)
 {
     ROS_INFO_STREAM("Reading point cloud from " << filename << "...");
     std::ifstream fin(filename);
+    std::cout << fin.bad() << fin.fail() << fin.good() << std::endl;
     std::string linestr;
     for (unsigned int skipHeaderLines = 0; skipHeaderLines < 11; ++skipHeaderLines)
         std::getline(fin, linestr); // header row - throw away
@@ -34,6 +35,7 @@ void PointCloud::loadPly(std::string filename)
     float minx = 0, miny = 0, minz = 0, maxx = 0, maxy = 0, maxz = 0;
     for (std::string line; std::getline(fin, line); ++count)
     {
+//        std::cout << "read line" << std::endl;
         Parameters::PointType point;
         std::istringstream iss(line);
         iss >> point.x;
@@ -48,7 +50,7 @@ void PointCloud::loadPly(std::string filename)
         maxy = std::max(maxy, point.y);
         maxz = std::max(maxz, point.z);
 
-        // skip some points
+        // TODO skip some points
         for (int skip = 0; std::getline(fin, line) && skip < 2; ++skip);
     }
 

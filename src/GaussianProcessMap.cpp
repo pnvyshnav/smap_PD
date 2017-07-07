@@ -1,16 +1,17 @@
 #include "../include/GaussianProcessMap.h"
 
 #include <ecl/time.hpp>
+#include <unordered_map>
 
 ecl::StopWatch stopWatchGP;
 
+double GaussianProcessMap::StdDevScalingFactor = Parameters::priorStd / 0.0301974;
+
 GaussianProcessMap::GaussianProcessMap()
-    : _gp(DIMENSIONS, parameters.kernel)
+    : _gp(DIMENSIONS, parameters.kernel), _stdScalingComputed(false)
 {
     std::cout << "The " << parameters.kernel << " kernel expects " << _gp.covf().get_param_dim() << " parameters." << std::endl;
-    Eigen::VectorXd params(_gp.covf().get_param_dim());
-    params << parameters.parameter1, parameters.parameter2, parameters.parameter3; //1.0, 0.5; // characteristic length scale, signal variance
-    _gp.covf().set_loghyper(params);
+    updateParameters();
 }
 
 GaussianProcessMap::~GaussianProcessMap()
@@ -40,6 +41,9 @@ bool GaussianProcessMap::update(const Observation &observation)
             point[2] = rayPoint.position.z();
 #endif
             _gp.add_pattern(point, rayPoint.occupied ? 1 : -2);
+
+            if (!_stdScalingComputed)
+                computeStdDevScalingFactor();
         }
     }
     std::cout << "Time to update GP map: " << stopWatchGP.elapsed() << std::endl;
@@ -79,7 +83,8 @@ std::vector<VoxelStatistics> GaussianProcessMap::stats(const TrueMap &trueMap)
 
                 QPlainBeliefVoxel beliefVoxel = QPlainBeliefVoxel::voxel(gpBelief, pos, TrueMap::coordToKey(pos));
                 _voxels.push_back(beliefVoxel);
-                stats.push_back(VoxelStatistics(error, std::sqrt(gpBelief->variance()), &_voxels.back()));
+//                std::cout << "GP Raw Std: " << std::sqrt(gpBelief->variance()) << std::endl;
+                stats.push_back(VoxelStatistics(error, std::sqrt(gpBelief->variance()) * StdDevScalingFactor, &_voxels.back()));
             }
         }
     }
@@ -91,4 +96,61 @@ void GaussianProcessMap::_clearVoxels()
     for (auto &voxel : _voxels)
         delete voxel.node();
     _voxels.clear();
+}
+
+void GaussianProcessMap::computeStdDevScalingFactor()
+{
+    // compute the mode of predicted std devs, then
+    // the reciprocal of the mode is the normalizer
+    std::unordered_map<unsigned int, unsigned int> stds;
+    const unsigned int voxelIncrement = 2;
+    constexpr double precision = 1e6;
+
+    std::cout << "Computing GP std scaling factor..." << std::endl;
+
+    double point[DIMENSIONS] = {};
+    unsigned int stdkey = 0;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; x += voxelIncrement)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; y += voxelIncrement)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; z += voxelIncrement)
+            {
+                point[0] = Parameters::xMin + x * Parameters::voxelSize;
+                point[1] = Parameters::yMin + y * Parameters::voxelSize;
+#if DIMENSIONS > 2
+                point[2] = Parameters::zMin + z * Parameters::voxelSize;
+#endif
+                double std = std::sqrt(_gp.var(point));
+                stdkey = (unsigned int) std::round(std * precision);
+//                std::cout << "stdkey: " << stdkey << std::endl;
+                if (stds.find(stdkey) == stds.end())
+                    stds[stdkey] = 0;
+                stds[stdkey]++;
+            }
+        }
+    }
+    auto mode = stdkey;
+    for (auto &entry : stds)
+    {
+        if (entry.second > stds[mode])
+            mode = entry.first;
+    }
+    StdDevScalingFactor = (mode / precision);
+    std::cout << "GP StdDevScalingFactor: " << Parameters::priorStd << "/" << StdDevScalingFactor << std::endl;
+    StdDevScalingFactor = Parameters::priorStd / StdDevScalingFactor;
+    _stdScalingComputed = true;
+}
+
+void GaussianProcessMap::reset()
+{
+    _gp.clear_sampleset();
+}
+
+void GaussianProcessMap::updateParameters()
+{
+    Eigen::VectorXd params(_gp.covf().get_param_dim());
+    params << parameters.parameter1, parameters.parameter2, parameters.parameter3; //1.0, 0.5; // characteristic length scale, signal variance
+    _gp.covf().set_loghyper(params);
+    _stdScalingComputed = false;
 }

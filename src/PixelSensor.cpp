@@ -143,7 +143,7 @@ Parameters::NumType PixelSensor::likelihoodGivenCause(Measurement measurement, Q
 
         auto z_mostLikely = _observationGivenCause(causeVoxel, true);
         // TODO try scenario where std dev is different from sensor model
-        auto tg = TruncatedGaussianDistribution(z_mostLikely.value, Parameters::sensorNoiseStd, 0, Parameters::sensorRange);
+        auto tg = TruncatedGaussianDistribution(z_mostLikely.value, Parameters::sensorNoiseStd, 0, measurement.sensor.range);
         return tg.pdfValue(measurement.value);
     }
     else if (causeVoxel.type == GEOMETRY_HOLE)

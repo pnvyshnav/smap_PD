@@ -114,7 +114,8 @@ LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Mea
                 ism->causeProbabilitiesOnRay[i] = 0;
             }
 
-            assert(ism->causeProbabilitiesOnRay[i] < 1.);
+            //TODO reactivate
+//            assert(ism->causeProbabilitiesOnRay[i] < 1.);
             ++i;
         }
 

@@ -212,7 +212,7 @@ bool BeliefMap::update(const Observation &observation, const TrueMap &trueMap)
             if (!beliefVoxel->getValue().isBeliefValid())
             {
                 // already asserted in BeliefDistribution::updateBelief
-                ROS_ERROR("BeliefDistribution voxel has invalid PDF after updating with measurement.");
+                ROS_ERROR("BeliefDistribution voxel has invalid pdf after updating with measurement.");
                 return false;
             }
 
@@ -238,7 +238,7 @@ bool BeliefMap::update(const Observation &observation, const TrueMap &trueMap)
     }
     if (fails > 0)
     {
-        ROS_WARN("ICM Computation failed for %i of %i measurements.", fails, (int)observation.measurements().size());
+        ROS_WARN("ICM Computation failed for %i out of %i measurements.", fails, (int)observation.measurements().size());
     }
     else
     {
