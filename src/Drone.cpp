@@ -386,7 +386,7 @@ bool queryBag(rosbag::ConnectionInfo const *connectionInfo)
     return (connectionInfo->topic == "tf_points" || connectionInfo->topic == "tf_drone");
 }
 
-void Drone::runOffline(std::string filename)
+void Drone::runBagFile(std::string filename)
 {
     rosbag::Bag bag;
     bag.open(filename, rosbag::bagmode::Read);
@@ -425,4 +425,60 @@ void Drone::runOffline(std::string filename)
     }
 
     bag.close();
+}
+
+void Drone::runCarmenFile(std::string filename)
+{
+    std::fstream file(filename);
+    if (!file)
+    {
+        ROS_ERROR("Error while reading CARMEN log file.");
+        return;
+    }
+
+    std::string line;
+    while (std::getline(file, line))
+    {
+        std::istringstream ss(line);
+        std::string type;
+        ss >> type;
+//        std::cout << type << std::endl;
+        if (type == "FLASER")
+        {
+            unsigned int numReadings;
+            ss >> numReadings;
+            std::vector<float> ranges(numReadings);
+            for (unsigned int i = 0; i < numReadings; ++i)
+                ss >> ranges[i];
+            float x, y, theta;
+            ss >> x >> y >> theta;
+
+            Parameters::Vec3Type origin(x, y, 0);
+            Eigen::Vector3f xAxis(1, 0, 0);
+            Eigen::Vector3f zAxis(0, 0, 1);
+
+            unsigned int nans = 0;
+            std::vector<Measurement> measurements;
+            for (unsigned int i = 0; i < numReadings; ++i)
+            {
+                float angle = (float) (theta + ((float)i) / (2.f * M_PI));
+                auto rotHorizontal = Eigen::AngleAxis<float>(angle, zAxis);
+                Eigen::Vector3f orientation = rotHorizontal * xAxis;
+                orientation.normalize();
+                Parameters::Vec3Type direction(orientation.x(), orientation.y(), orientation.z());
+                SensorRay sensor(origin, direction, ranges[i]);
+                measurements.push_back(Measurement::voxel(sensor, ranges[i]));
+            }
+
+//            ROS_INFO("Recorded %d measurements from CARMEN log line.", (int) measurements.size());
+
+            Observation observation(measurements);
+            publishObservation(observation);
+            return; // TODO remove
+
+#if LOG_DETAILS
+            ROS_INFO("Published %i measurements from CARMEN logfile.", (int)numReadings);
+#endif
+        }
+    }
 }

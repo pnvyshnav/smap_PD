@@ -19,6 +19,9 @@ std::string homedir = getenv("HOME");
 
 #ifdef REAL_3D
     TrueMap trueMap = TrueMap::generateFromPointCloud(homedir + "/catkin_ws/src/smap/dataset/V1_01_easy/data.ply");
+#elif defined(REAL_2D)
+    std::string carmenFile = homedir + "/catkin_ws/src/smap/dataset/fr_campus/fr-campus.carmen.log";
+    TrueMap trueMap = TrueMap::generateFromCarmen(carmenFile);
 #else
     TrueMap trueMap = TrueMap::generateCorridor(); //TrueMap::generate(123); // use a fixed seed value
 #endif
@@ -319,6 +322,12 @@ int main(int argc, char **argv)
     #else
         robot.run();
     #endif
+#elif defined(REAL_2D)
+    Drone drone;
+    drone.registerObserver(&handleObservation);
+    visualizer->publishTrueMap(&trueMap);
+    std::cout << "Running CARMEN file: " << carmenFile << std::endl;
+    drone.runCarmenFile(carmenFile);
 #else
     Drone drone;
     drone.registerObserver(&handleObservation);
@@ -327,13 +336,13 @@ int main(int argc, char **argv)
 #endif
 
     // TODO compute Hilbert map using all measurements
-    gaussianProcessMap.update(allObservations);
-    gaussianProcessMap.publish();
-    stats->update(logOddsMap, beliefMap, gaussianProcessMap, robot);
+//    gaussianProcessMap.update(allObservations);
+//    gaussianProcessMap.publish();
+//    stats->update(logOddsMap, beliefMap, gaussianProcessMap, robot);
 
     std::stringstream ss;
     ss << Parameters::sensorNoiseStd;
-    stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/sensor_noise_std/stats_std_" + ss.str() + ".bag");
+    stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/stats_carmen_std_" + ss.str() + ".bag");
 #ifdef ENABLE_VISUALIZATION
     for (int i = 0; i < 1; i++)
     {

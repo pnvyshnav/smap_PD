@@ -7,6 +7,7 @@
 
 #include "../include/TrueMap.h"
 #include "../include/PointCloud.h"
+#include "../include/Drone.h"
 
 
 octomap::OcTree _helpMap(Parameters::voxelSize);
@@ -264,5 +265,42 @@ TrueMap TrueMap::_generateFromObstacles(const std::vector<TrueMap::Rectangle> &o
     ROS_INFO("True map range: (%.2f %.2f %.2f) to (%.2f %.2f %.2f)",
              map.min_value[0], map.min_value[1], map.min_value[2],
              map.max_value[0], map.max_value[1], map.max_value[2]);
+    return map;
+}
+
+std::vector<size_t> pointCounts;
+
+void handleObservation(TrueMap *trueMap, const Observation &observation)
+{
+    const octomap::Pointcloud cloud = observation.pointcloud();
+    const octomap::point3d origin;
+    trueMap->insertPointCloud(cloud, origin);
+    pointCounts.push_back(cloud.size());
+}
+
+TrueMap TrueMap::generateFromCarmen(std::string filename)
+{
+    pointCounts.clear();
+    TrueMap map;
+    Drone drone;
+    drone.registerObserver(std::bind(handleObservation, &map, std::placeholders::_1));
+    drone.runCarmenFile(filename);
+
+    ROS_INFO("True map has %d nodes in total.", (int)map.calcNumNodes());
+    ROS_INFO("Voxels per dimension: %d x %d x %d (%d in total)",
+             (int)Parameters::voxelsPerDimensionX,
+             (int)Parameters::voxelsPerDimensionY,
+             (int)Parameters::voxelsPerDimensionZ,
+             (int)Parameters::voxelsTotal);
+    size_t totalPointCounts = 0;
+    for (auto c : pointCounts)
+        totalPointCounts += c;
+    ROS_INFO("%d points in total, %.2f points per cloud on average were registered.",
+             (int)totalPointCounts, (float)(totalPointCounts*1.f/pointCounts.size()));
+    map.calcMinMax();
+    ROS_INFO("True map range: (%.2f %.2f %.2f) to (%.2f %.2f %.2f)",
+             map.min_value[0], map.min_value[1], map.min_value[2],
+             map.max_value[0], map.max_value[1], map.max_value[2]);
+
     return map;
 }

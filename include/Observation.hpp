@@ -84,6 +84,39 @@ public:
                              observation._measurements.end());
     }
 
+    /**
+     * Randomly extracts measurements from the observation up to the
+     * given ratio.
+     * @param ratio Amount of samples in [0,1] to be selected.
+     * @param seed Seed value for the random number generator.
+     * @return New observation instance.
+     */
+    Observation take(float ratio, unsigned int seed = 123) const
+    {
+        std::vector<int> indices(_measurements.size());
+        std::iota(indices.begin(), indices.end(), 0);
+        std::srand(seed);
+        auto limit = (unsigned int) (ratio * _measurements.size());
+        for (unsigned int i = 0; i < limit; ++i)
+            std::swap(indices[i], indices[std::rand() % _measurements.size()]);
+        std::vector<Measurement> measurements;
+        for (unsigned int i = 0; i < limit; ++i)
+            measurements.push_back(_measurements[indices[i]]);
+        return Observation(measurements);
+    }
+
+    octomap::Pointcloud pointcloud() const
+    {
+        octomap::Pointcloud cloud;
+        for (auto & measurement : _measurements)
+        {
+            auto &s = measurement.sensor;
+            auto endpoint = s.position + s.orientation * s.range;
+            cloud.push_back(endpoint);
+        }
+        return cloud;
+    }
+
 private:
     std::vector<Measurement> _measurements;
 };

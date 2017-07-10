@@ -13,6 +13,7 @@ class TrueMap
 public:
     static TrueMap generate(unsigned int seed = (unsigned int) time(NULL));
     static TrueMap generateFromPointCloud(std::string filename);
+    static TrueMap generateFromCarmen(std::string filename);
     static TrueMap generateCorridor();
 
     /**

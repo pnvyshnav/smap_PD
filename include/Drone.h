@@ -52,7 +52,15 @@ public:
      * Drone plays back bag file with given file name.
      * @param filename ROS bag file name.
      */
-    void runOffline(std::string filename);
+    void runBagFile(std::string filename);
+
+    /**
+     * Plays back a CARMEN log file with range sensor readings
+     * in the form of:
+     *      FLASER num_readings [range_readings] x y ...
+     * @param filename CARMEN log file name.
+     */
+    void runCarmenFile(std::string filename);
 
 private:
 #if INPUT_TYPE == INPUT_EUROC

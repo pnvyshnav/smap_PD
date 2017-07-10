@@ -9,7 +9,7 @@
 #include <octomap/OcTree.h>
 
 #define DIMENSIONS 2
-#define FAKE_2D
+//#define FAKE_2D
 //#define PLANNER_2D_TEST
 //#define SIMULATE_TIME
 //#define ONLY_HANDCRAFTED_TRAJECTORIES
@@ -22,13 +22,14 @@
 //#define COMPUTE_UPDATED_EVOLUTION
 
 //#define REAL_3D
+#define REAL_2D
 
 #define INPUT_EUROC 1       // EuRoC MAV dataset
 #define INPUT_SNAPDRAGON 2  // Snapdragon Flight
 
 #define INPUT_TYPE INPUT_EUROC
 
-//#define ENABLE_VISUALIZATION
+#define ENABLE_VISUALIZATION
 
 //#define PUBLISH_STATS // publish statistics via ROS topic
 //#define SLIM_STATS
@@ -133,6 +134,27 @@ public:
     static constexpr NumType yMax =  7.8;
     static constexpr NumType zMin = -0.1;
     static constexpr NumType zMax =  4.5;
+
+    static const bool sensorTruncatedGaussianNoise = false;
+    static constexpr NumType sensorRange = (const NumType) 10;
+    static constexpr NumType sensorNoiseStd = (const NumType) 0.8 * voxelSize; //0.1;
+
+    static constexpr NumType freeRadiusAroundCenter = 0; // irrelevant
+    // IRRELEVANT:
+    static constexpr double FakeRobotAngularVelocity = 5. * M_PI / 180.;
+    static const unsigned int StereoCameraHorizontalPixels = 8;
+    static const unsigned int StereoCameraVerticalPixels = 6;
+    static constexpr double StereoCameraHorizontalFOV = 40. * M_PI / 180.;    // quadratic pixels
+    static constexpr double StereoCameraVerticalFOV = StereoCameraHorizontalFOV * StereoCameraVerticalPixels *1. / StereoCameraHorizontalPixels *1.;
+#elif defined(REAL_2D)
+    static constexpr NumType voxelSize = 5; //0.125;
+
+    static constexpr NumType xMin = -100;
+    static constexpr NumType xMax =  60;
+    static constexpr NumType yMin = -100;
+    static constexpr NumType yMax =  60;
+    static constexpr NumType zMin = -0.1;
+    static constexpr NumType zMax =  0.1;
 
     static const bool sensorTruncatedGaussianNoise = false;
     static constexpr NumType sensorRange = (const NumType) 10;
