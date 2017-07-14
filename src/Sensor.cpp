@@ -82,7 +82,7 @@ Sensor::inverseCauseModel(const Measurement &measurement, const BeliefMap &belie
     InverseCauseModel icm;
 //    ROS_INFO("computeInverseCauseModel: position %f %f %f", _position.x(), _position.y(), _position.z());
     if (!beliefMap.computeRayKeys(measurement.sensor.position,
-                                  measurement.sensor.orientation * measurement.sensor.range + measurement.sensor.position,
+                                  measurement.sensor.orientation * Parameters::sensorRange + measurement.sensor.position,
                                   _keyRay))
     {
         ROS_WARN("Sensor::inverseCauseModel: Computing ray keys failed.");

@@ -134,6 +134,13 @@ void Drone::handleMeasurements(PointsMessageConstPtr pointsMsg, TransformationMe
                                 (float) transformation.getOrigin().y(),
                                 (float) transformation.getOrigin().z());
 
+    tf::Vector3 orientation(1, 0, 0);
+    orientation = transformation * orientation;
+
+    _history.add(TrajectoryPoint(
+            Eigen::Vector3f(origin.x(), origin.y(), origin.z()),
+            Eigen::Vector3f(orientation.x(), orientation.y(), orientation.z())));
+
 #ifdef LOG_DETAILS
     ROS_INFO("Sensor Position:  %.3f %.3f %.3f", transformation.getOrigin().x(), transformation.getOrigin().y(),
     transformation.getOrigin().z());
@@ -349,6 +356,7 @@ void Drone::handleMeasurements(PointsMessageConstPtr depthImage, TransformationM
 
 void Drone::run()
 {
+    _history.clear();
     ros::NodeHandle nodeHandle;
     message_filters::Subscriber<PointsMessage> pointsSub(
             nodeHandle,
@@ -427,7 +435,8 @@ void Drone::runBagFile(std::string filename)
     bag.close();
 }
 
-void Drone::runCarmenFile(std::string filename)
+void Drone::runCarmenFile(std::string filename, std::string messageName,
+                          bool oldFormat, const unsigned int everyNth)
 {
     std::fstream file(filename);
     if (!file)
@@ -436,49 +445,117 @@ void Drone::runCarmenFile(std::string filename)
         return;
     }
 
+    _history.clear();
     std::string line;
+    unsigned int flaserIdx = 0;
+    unsigned int numReadings;
+    float x, y, theta;
+    const Eigen::Vector3f xAxis(1, 0, 0);
+    const Eigen::Vector3f zAxis(0, 0, 1);
     while (std::getline(file, line))
     {
         std::istringstream ss(line);
         std::string type;
         ss >> type;
 //        std::cout << type << std::endl;
-        if (type == "FLASER")
+//        if (type == "ODOM" && (everyNth == 0 || flaserIdx++ % everyNth == 0))
+//        {
+//            ss >> x >> y >> theta;
+//            _history.add(TrajectoryPoint(Eigen::Vector3f(x, y, 0), theta));
+//            std::cout << x << std::endl;
+//        }
+//        if (type == "TRUEPOS" && (everyNth == 0 || flaserIdx++ % everyNth == 0))
+//        {
+//            ss >> x >> y >> theta;
+//            _history.add(TrajectoryPoint(Eigen::Vector3f(x, y, 0), theta));
+//            std::cout << x << " " << y << " " << theta << std::endl;
+//        }
+        if (type == messageName)
         {
-            unsigned int numReadings;
-            ss >> numReadings;
-            std::vector<float> ranges(numReadings);
-            for (unsigned int i = 0; i < numReadings; ++i)
-                ss >> ranges[i];
-            float x, y, theta;
-            ss >> x >> y >> theta;
-
-            Parameters::Vec3Type origin(x, y, 0);
-            Eigen::Vector3f xAxis(1, 0, 0);
-            Eigen::Vector3f zAxis(0, 0, 1);
-
-            unsigned int nans = 0;
             std::vector<Measurement> measurements;
-            for (unsigned int i = 0; i < numReadings; ++i)
+            if (oldFormat)
             {
-                float angle = (float) (theta + ((float)i) / (2.f * M_PI));
-                auto rotHorizontal = Eigen::AngleAxis<float>(angle, zAxis);
-                Eigen::Vector3f orientation = rotHorizontal * xAxis;
-                orientation.normalize();
-                Parameters::Vec3Type direction(orientation.x(), orientation.y(), orientation.z());
-                SensorRay sensor(origin, direction, ranges[i]);
-                measurements.push_back(Measurement::voxel(sensor, ranges[i]));
+                ss >> numReadings;
+                std::vector<float> ranges(numReadings);
+                for (unsigned int i = 0; i < numReadings; ++i)
+                    ss >> ranges[i];
+                ss >> x >> y >> theta;
+//                std::cout << x << " " << y << " " << theta << std::endl;
+
+                x = -x;
+                y = -y;
+                Parameters::Vec3Type origin(x, y, 0);
+
+                theta += 0.5 * M_PI;
+                _history.add(TrajectoryPoint(Eigen::Vector3f(x, y, 0), theta));
+
+                if (everyNth == 0 || flaserIdx++ % everyNth == 0)
+                {
+                    for (unsigned int i = 0; i < numReadings; ++i)
+                    {
+                        if (ranges[i] > 20) // TODO read proper max range from CARMEN PARAMS
+                            continue;
+                        float angle = (float) (theta + M_PI * ((float) i) / ((float) numReadings));
+//                    auto rotHorizontal = Eigen::AngleAxis<float>(angle, zAxis);
+//                    Eigen::Vector3f orientation = rotHorizontal * xAxis;
+//                    orientation.normalize();
+                        Parameters::Vec3Type direction(std::cos(angle), std::sin(angle),
+                                                       0.f); //orientation.x(), orientation.y(), orientation.z());
+                        SensorRay sensor(origin, direction, ranges[i]);
+                        measurements.push_back(Measurement::voxel(sensor, ranges[i]));
+                    }
+                }
             }
+            else
+            {
+//                std::cout << "Found " << messageName << " message." << std::endl;
+                int laserType, remissionMode;
+                float startAngle, fov, angularResolution, maxRange, accuracy;
+                ss >> laserType >> startAngle >> fov >> angularResolution
+                   >> maxRange >> accuracy >> remissionMode >> numReadings;
+
+                std::vector<float> ranges(numReadings);
+                for (unsigned int i = 0; i < numReadings; ++i)
+                    ss >> ranges[i];
+                ss >> x >> x >> y >> theta; // TODO note how we skip one parameter
+//                x -= 597;
+                std::cout << x << " " << y << " " << theta << std::endl;
+
+                Parameters::Vec3Type origin(x, y, 0);
+                theta += 0.5*M_PI;
+                Eigen::Vector3f orientation(std::cos(theta), std::sin(theta), 0.f);
+                _history.add(TrajectoryPoint(Eigen::Vector3f(x, y, 0), orientation));
+//                std::cout << "TP: " << (_history.end()-1)->position.x() << " " << (_history.end()-1)->position.y() << " " << theta << std::endl;
+                if (everyNth == 0 || flaserIdx++ % everyNth == 0)
+                {
+                    for (unsigned int i = 0; i < numReadings; ++i)
+                    {
+                        float angle = startAngle + ((float) i) / (fov * numReadings);
+                        auto rotHorizontal = Eigen::AngleAxis<float>(angle, zAxis);
+                        Eigen::Vector3f orientation = rotHorizontal * xAxis;
+                        orientation.normalize();
+                        Parameters::Vec3Type direction(orientation.x(), orientation.y(), orientation.z());
+                        SensorRay sensor(origin, direction, ranges[i]);
+                        if (std::round(ranges[i]) >= std::round(maxRange))
+                            measurements.push_back(Measurement::hole(sensor));
+                        else
+                            measurements.push_back(Measurement::voxel(sensor, ranges[i]));
+                    }
+                }
+            }
+
 
 //            ROS_INFO("Recorded %d measurements from CARMEN log line.", (int) measurements.size());
 
+            //TODO reactivate
             Observation observation(measurements);
             publishObservation(observation);
-            return; // TODO remove
 
 #if LOG_DETAILS
             ROS_INFO("Published %i measurements from CARMEN logfile.", (int)numReadings);
 #endif
         }
     }
+
+    ROS_INFO("Recorded %i robot poses.", (int)_history.size());
 }

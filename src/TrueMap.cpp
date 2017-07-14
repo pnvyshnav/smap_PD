@@ -190,41 +190,41 @@ octomap::point3d TrueMap::keyToCoord(octomap::OcTreeKey key)
 
 TrueMap TrueMap::generateCorridor()
 {
-    std::vector<Rectangle> obstacles;
-    obstacles.push_back(Rectangle::fromXYWH(0.00, 0.00, 0.00, 0.00));
-    obstacles.push_back(Rectangle::fromXYWH(-1.00, -0.05, 0.74, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(-0.26, 0.73, 1.22, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(-0.26, -0.99, 0.36, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(-1.00, -0.51, 0.74, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(0.10, -0.51, 0.86, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(0.32, 0.07, 0.06, 0.36));
-    obstacles.push_back(Rectangle::fromXYWH(0.38, 0.07, 0.28, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(0.50, 0.25, 0.16, 0.18));
-    obstacles.push_back(Rectangle::fromXYWH(0.90, -0.45, 0.06, 1.18));
-    obstacles.push_back(Rectangle::fromXYWH(-0.92, -0.19, 0.16, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(-0.70, -0.19, 0.16, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(-0.48, -0.19, 0.16, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(0.22, -0.39, 0.16, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(0.44, -0.39, 0.16, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(0.66, -0.39, 0.16, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(0.50, 0.63, 0.16, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(0.14, 0.45, 0.12, 0.04));
-    obstacles.push_back(Rectangle::fromXYWH(0.26, 0.63, 0.12, 0.04));
-    obstacles.push_back(Rectangle::fromXYWH(-0.22, 0.47, 0.08, 0.16));
-    obstacles.push_back(Rectangle::fromXYWH(0.86, 0.37, 0.02, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(0.86, -0.05, 0.02, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(-0.22, 0.27, 0.08, 0.16));
-    obstacles.push_back(Rectangle::fromXYWH(-0.32, 0.01, 0.06, 0.78));
-    obstacles.push_back(Rectangle::fromXYWH(-0.32, -0.99, 0.06, 0.48));
-    obstacles.push_back(Rectangle::fromXYWH(0.10, -0.99, 0.06, 0.48));
-    obstacles.push_back(Rectangle::fromXYWH(0.10, -0.05, 0.56, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(0.60, 0.01, 0.06, 0.06));
-    obstacles.push_back(Rectangle::fromXYWH(0.10, -0.05, 0.06, 0.48));
-    obstacles.push_back(Rectangle::fromXYWH(0.16, 0.37, 0.16, 0.06));
+    std::vector<Box> obstacles;
+    obstacles.push_back(Box(0.00, 0.00, 0.00, 0.00));
+    obstacles.push_back(Box(-1.00, -0.05, 0.74, 0.06));
+    obstacles.push_back(Box(-0.26, 0.73, 1.22, 0.06));
+    obstacles.push_back(Box(-0.26, -0.99, 0.36, 0.06));
+    obstacles.push_back(Box(-1.00, -0.51, 0.74, 0.06));
+    obstacles.push_back(Box(0.10, -0.51, 0.86, 0.06));
+    obstacles.push_back(Box(0.32, 0.07, 0.06, 0.36));
+    obstacles.push_back(Box(0.38, 0.07, 0.28, 0.06));
+    obstacles.push_back(Box(0.50, 0.25, 0.16, 0.18));
+    obstacles.push_back(Box(0.90, -0.45, 0.06, 1.18));
+    obstacles.push_back(Box(-0.92, -0.19, 0.16, 0.06));
+    obstacles.push_back(Box(-0.70, -0.19, 0.16, 0.06));
+    obstacles.push_back(Box(-0.48, -0.19, 0.16, 0.06));
+    obstacles.push_back(Box(0.22, -0.39, 0.16, 0.06));
+    obstacles.push_back(Box(0.44, -0.39, 0.16, 0.06));
+    obstacles.push_back(Box(0.66, -0.39, 0.16, 0.06));
+    obstacles.push_back(Box(0.50, 0.63, 0.16, 0.06));
+    obstacles.push_back(Box(0.14, 0.45, 0.12, 0.04));
+    obstacles.push_back(Box(0.26, 0.63, 0.12, 0.04));
+    obstacles.push_back(Box(-0.22, 0.47, 0.08, 0.16));
+    obstacles.push_back(Box(0.86, 0.37, 0.02, 0.06));
+    obstacles.push_back(Box(0.86, -0.05, 0.02, 0.06));
+    obstacles.push_back(Box(-0.22, 0.27, 0.08, 0.16));
+    obstacles.push_back(Box(-0.32, 0.01, 0.06, 0.78));
+    obstacles.push_back(Box(-0.32, -0.99, 0.06, 0.48));
+    obstacles.push_back(Box(0.10, -0.99, 0.06, 0.48));
+    obstacles.push_back(Box(0.10, -0.05, 0.56, 0.06));
+    obstacles.push_back(Box(0.60, 0.01, 0.06, 0.06));
+    obstacles.push_back(Box(0.10, -0.05, 0.06, 0.48));
+    obstacles.push_back(Box(0.16, 0.37, 0.16, 0.06));
     return _generateFromObstacles(obstacles);
 }
 
-TrueMap TrueMap::_generateFromObstacles(const std::vector<TrueMap::Rectangle> &obstacles)
+TrueMap TrueMap::_generateFromObstacles(const std::vector<Box> &obstacles)
 {
     TrueMap map;
     int occupied = 0;
@@ -273,18 +273,31 @@ std::vector<size_t> pointCounts;
 void handleObservation(TrueMap *trueMap, const Observation &observation)
 {
     const octomap::Pointcloud cloud = observation.pointcloud();
-    const octomap::point3d origin;
-    trueMap->insertPointCloud(cloud, origin);
+    octomap::point3d lowerBound, upperBound;
+    cloud.calcBBX(lowerBound, upperBound);
+//    ROS_INFO("Bounding box of %i measurements: (%.2f, %.2f, %.2f) -- (%.2f, %.2f, %.2f)",
+//             (int) cloud.size(),
+//             lowerBound.x(), lowerBound.y(), lowerBound.z(),
+//             upperBound.x(), upperBound.y(), upperBound.z()
+//    );
+//    const octomap::point3d origin;
+//    bool lazyEval = false;
+//    trueMap->insertPointCloud(cloud, origin, Parameters::sensorRange, lazyEval);
     pointCounts.push_back(cloud.size());
+    for (auto sensorPoint : observation.discretized())
+    {
+        trueMap->updateNode(sensorPoint.position, sensorPoint.occupied);
+    }
 }
 
-TrueMap TrueMap::generateFromCarmen(std::string filename)
+TrueMap TrueMap::generateFromCarmen(std::string filename, std::string messageName,
+                                    bool oldFormat, const unsigned int everyNth)
 {
     pointCounts.clear();
     TrueMap map;
     Drone drone;
     drone.registerObserver(std::bind(handleObservation, &map, std::placeholders::_1));
-    drone.runCarmenFile(filename);
+    drone.runCarmenFile(filename, messageName, oldFormat, everyNth);
 
     ROS_INFO("True map has %d nodes in total.", (int)map.calcNumNodes());
     ROS_INFO("Voxels per dimension: %d x %d x %d (%d in total)",

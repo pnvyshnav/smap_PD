@@ -20,8 +20,10 @@ std::string homedir = getenv("HOME");
 #ifdef REAL_3D
     TrueMap trueMap = TrueMap::generateFromPointCloud(homedir + "/catkin_ws/src/smap/dataset/V1_01_easy/data.ply");
 #elif defined(REAL_2D)
-    std::string carmenFile = homedir + "/catkin_ws/src/smap/dataset/fr_campus/fr-campus.carmen.log";
-    TrueMap trueMap = TrueMap::generateFromCarmen(carmenFile);
+//    std::string carmenFile = homedir + "/catkin_ws/src/smap/dataset/fr_campus/fr-campus.carmen.log";
+//    std::string carmenFile = homedir + "/catkin_ws/src/smap/dataset/mit-csail-3rd-floor-2005-12-17-run4.flaser.log";
+    std::string carmenFile = homedir + "/catkin_ws/src/smap/dataset/albertB.img.sm.log";
+    TrueMap trueMap = TrueMap::generateFromCarmen(carmenFile, "FLASER", true, 1);//, "ROBOTLASER1", false);
 #else
     TrueMap trueMap = TrueMap::generateCorridor(); //TrueMap::generate(123); // use a fixed seed value
 #endif
@@ -181,29 +183,29 @@ int main(int argc, char **argv)
 
 
     Trajectory trajectory = {
-            TrajectoryPoint(Eigen::Vector3f(-0.92f, -0.25f, 0.f), 0.f),
-            TrajectoryPoint(Eigen::Vector3f(-0.77f, -0.25f, 0.f), 0.f),
-            TrajectoryPoint(Eigen::Vector3f(-0.61f, -0.25f, 0.f), 0.f),
-            TrajectoryPoint(Eigen::Vector3f(-0.46f, -0.25f, 0.f), 0.f),
-            TrajectoryPoint(Eigen::Vector3f(-0.30f, -0.25f, 0.f), 15.f),
-            TrajectoryPoint(Eigen::Vector3f(-0.16f, -0.21f, 0.f), 60.f),
-            TrajectoryPoint(Eigen::Vector3f(-0.08f, -0.07f, 0.f), 80.f),
-            TrajectoryPoint(Eigen::Vector3f(-0.05f, 0.09f, 0.f), 90.f),
-            TrajectoryPoint(Eigen::Vector3f(-0.05f, 0.24f, 0.f), 80.f),
-            TrajectoryPoint(Eigen::Vector3f(-0.03f, 0.39f, 0.f), 85.f),
-            TrajectoryPoint(Eigen::Vector3f(-0.01f, 0.56f, 0.f), 30.f),
-            TrajectoryPoint(Eigen::Vector3f(0.13f, 0.63f, 0.f), -10.f),
-            TrajectoryPoint(Eigen::Vector3f(0.30f, 0.61f, 0.f), -10.f),
-            TrajectoryPoint(Eigen::Vector3f(0.45f, 0.58f, 0.f), 5.f),
-            TrajectoryPoint(Eigen::Vector3f(0.62f, 0.58f, 0.f), -25.f),
-            TrajectoryPoint(Eigen::Vector3f(0.74f, 0.51f, 0.f), -70.f),
-            TrajectoryPoint(Eigen::Vector3f(0.77f, 0.36f, 0.f), -85.f),
-            TrajectoryPoint(Eigen::Vector3f(0.77f, 0.20f, 0.f), -90.f),
-            TrajectoryPoint(Eigen::Vector3f(0.77f, 0.05f, 0.f), -100.f),
-            TrajectoryPoint(Eigen::Vector3f(0.74f, -0.11f, 0.f), -140.f),
-            TrajectoryPoint(Eigen::Vector3f(0.61f, -0.17f, 0.f), -170.f),
-            TrajectoryPoint(Eigen::Vector3f(0.46f, -0.17f, 0.f), -175.f),
-            TrajectoryPoint(Eigen::Vector3f(0.30f, -0.17f, 0.f), -180.f)
+            TrajectoryPoint(Eigen::Vector3f(-0.92f, -0.25f, 0.f), (float)(   0.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(-0.77f, -0.25f, 0.f), (float)(   0.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(-0.61f, -0.25f, 0.f), (float)(   0.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(-0.46f, -0.25f, 0.f), (float)(   0.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(-0.30f, -0.25f, 0.f), (float)(  15.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(-0.16f, -0.21f, 0.f), (float)(  60.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(-0.08f, -0.07f, 0.f), (float)(  80.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(-0.05f, 0.09f, 0.f),  (float)(  90.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(-0.05f, 0.24f, 0.f),  (float)(  80.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(-0.03f, 0.39f, 0.f),  (float)(  85.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(-0.01f, 0.56f, 0.f),  (float)(  30.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(0.13f, 0.63f, 0.f),   (float)( -10.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(0.30f, 0.61f, 0.f),   (float)( -10.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(0.45f, 0.58f, 0.f),   (float)(   5.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(0.62f, 0.58f, 0.f),   (float)( -25.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(0.74f, 0.51f, 0.f),   (float)( -70.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(0.77f, 0.36f, 0.f),   (float)( -85.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(0.77f, 0.20f, 0.f),   (float)( -90.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(0.77f, 0.05f, 0.f),   (float)(-100.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(0.74f, -0.11f, 0.f),  (float)(-140.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(0.61f, -0.17f, 0.f),  (float)(-170.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(0.46f, -0.17f, 0.f),  (float)(-175.f * M_PI / 180.f)),
+            TrajectoryPoint(Eigen::Vector3f(0.30f, -0.17f, 0.f),  (float)(-180.f * M_PI / 180.f))
     };
 
 #if defined(ISM_RUNS)
@@ -323,11 +325,12 @@ int main(int argc, char **argv)
         robot.run();
     #endif
 #elif defined(REAL_2D)
+    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
     Drone drone;
     drone.registerObserver(&handleObservation);
-    visualizer->publishTrueMap(&trueMap);
+    visualizer->publishTrueMap2dSlice(&trueMap, 0);
     std::cout << "Running CARMEN file: " << carmenFile << std::endl;
-    drone.runCarmenFile(carmenFile);
+    drone.runCarmenFile(carmenFile, "FLASER", true, 10);//, "ROBOTLASER1", false);
 #else
     Drone drone;
     drone.registerObserver(&handleObservation);
@@ -344,11 +347,16 @@ int main(int argc, char **argv)
     ss << Parameters::sensorNoiseStd;
     stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/stats_carmen_std_" + ss.str() + ".bag");
 #ifdef ENABLE_VISUALIZATION
+    trajectory = drone.poseHistory();
+    std::cout << "Trajectory bounding box: " << trajectory.boundingBox().str() << std::endl;
     for (int i = 0; i < 1; i++)
     {
         visualizer->publishObservation(&allObservations);
         visualizer->publishTrajectory(&trajectory);
+        visualizer->publishTrueMap2dSlice(&trueMap, 0);
         visualizer->sleep(1);
+        visualizer->publishBeliefMapFull(&beliefMap);
+        visualizer->publishLogOddsMapFull(&logOddsMap);
     }
 #endif
     std::cout << allObservations.measurements().size()

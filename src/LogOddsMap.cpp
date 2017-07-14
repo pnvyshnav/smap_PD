@@ -60,7 +60,7 @@ LogOddsMap::InverseSensorModel *LogOddsMap::_computeInverseSensorModel(const Mea
 {
     octomap::KeyRay ray;
     if (!computeRayKeys(measurement.sensor.position,
-                        measurement.sensor.orientation * measurement.sensor.range + measurement.sensor.position,
+                        measurement.sensor.orientation * Parameters::sensorRange + measurement.sensor.position,
                         ray))
     {
         ROS_WARN("Compute _ray keys failed.");

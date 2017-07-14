@@ -10,6 +10,7 @@
 #include <message_filters/sync_policies/approximate_time.h>
 
 #include "Robot.hpp"
+#include "Trajectory.hpp"
 
 
 // Disable flag to transform and downsample incoming point clouds.
@@ -60,7 +61,13 @@ public:
      *      FLASER num_readings [range_readings] x y ...
      * @param filename CARMEN log file name.
      */
-    void runCarmenFile(std::string filename);
+    void runCarmenFile(std::string filename, std::string messageName = "FLASER",
+                       bool oldFormat = true, const unsigned int everyNth = 1);
+
+    const Trajectory& poseHistory() const
+    {
+        return _history;
+    }
 
 private:
 #if INPUT_TYPE == INPUT_EUROC
@@ -71,6 +78,8 @@ private:
 #endif
 
     bool _stopRequested;
+
+    Trajectory _history;
 
     ros::Publisher _tfPointCloudPub;
     ros::Publisher _tfDownsampledPointCloudPub;

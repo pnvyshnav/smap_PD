@@ -6,18 +6,21 @@
 #include <initializer_list>
 
 #include "Observable.hpp"
+#include "TrueMap.h"
 
 struct TrajectoryPoint
 {
     Eigen::Vector3f position;
     Eigen::Vector3f orientation;
 
-    TrajectoryPoint(Eigen::Vector3f position, float zAngleDegrees)
-            : position(position)
-    {
-        auto rotHorizontal = Eigen::AngleAxis<float>(zAngleDegrees * M_PI / 360.f, Eigen::Vector3f(0, 0, 1));
-        orientation = rotHorizontal * Eigen::Vector3f(1, 0, 0);
-    }
+    // theta is the 2d orientation angle in radians
+    TrajectoryPoint(Eigen::Vector3f position, float theta)
+            : position(position), orientation(std::cos(theta), std::sin(theta), 0.f)
+    {}
+
+    TrajectoryPoint(Eigen::Vector3f position, Eigen::Vector3f orientation)
+            : position(position), orientation(orientation)
+    {}
 
     Parameters::Vec3Type robotPosition() const
     {
@@ -34,7 +37,6 @@ class Trajectory : public Observable
 {
 public:
     typedef std::vector<TrajectoryPoint>::iterator iterator;
-    typedef std::vector<TrajectoryPoint>::const_iterator const_iterator;
 
     Trajectory(std::vector<TrajectoryPoint> points = std::vector<TrajectoryPoint>())
             : _points(points)
@@ -49,19 +51,40 @@ public:
         return _points.begin();
     }
 
-    const_iterator cbegin()
-    {
-        return _points.cbegin();
-    }
-
     iterator end()
     {
         return _points.end();
     }
 
-    const_iterator cend()
+    void clear()
     {
-        return _points.cend();
+        _points.clear();
+    }
+
+    void add(const TrajectoryPoint &point)
+    {
+        _points.push_back(point);
+    }
+
+    Trajectory& operator=(const Trajectory &rhs)
+    {
+        _points = rhs._points;
+        return *this;
+    }
+
+    size_t size() const
+    {
+        return _points.size();
+    }
+
+    Box boundingBox() const
+    {
+        Box bounds;
+        bounds.x1 = bounds.y1 = std::numeric_limits<double>::max();
+        bounds.x2 = bounds.y2 = std::numeric_limits<double>::min();
+        for (auto &p : _points)
+            bounds.update(p.position[0], p.position[1]);
+        return bounds;
     }
 
 private:

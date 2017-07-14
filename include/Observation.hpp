@@ -108,13 +108,23 @@ public:
     octomap::Pointcloud pointcloud() const
     {
         octomap::Pointcloud cloud;
-        for (auto & measurement : _measurements)
-        {
-            auto &s = measurement.sensor;
-            auto endpoint = s.position + s.orientation * s.range;
-            cloud.push_back(endpoint);
-        }
+        for (auto &measurement : _measurements)
+            cloud.push_back(measurement.sensor.endPoint());
         return cloud;
+    }
+
+    std::vector<SensorRayPoint> discretized() const
+    {
+        std::vector<SensorRayPoint> points;
+        for (auto &measurement : _measurements)
+        {
+            if (measurement.geometry == GEOMETRY_VOXEL)
+            {
+                auto discrete = measurement.sensor.discretized(measurement.value);
+                points.insert(points.end(), discrete.begin(), discrete.end());
+            }
+        }
+        return points;
     }
 
 private:

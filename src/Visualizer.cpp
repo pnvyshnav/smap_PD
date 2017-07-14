@@ -127,7 +127,8 @@ void Visualizer::publishTrueMap2dSlice(const Observable *visualizable, unsigned 
     grid.cell_height = (float) Parameters::voxelSize;
     grid.cell_width = (float) Parameters::voxelSize;
 
-    auto _z = /*Parameters::zMin +*/ (z + Parameters::voxelsPerDimensionZ/2) * Parameters::voxelSize;
+    // TODO fix this
+    auto _z = 0; ///*Parameters::zMin +*/ (z + Parameters::voxelsPerDimensionZ/2) * Parameters::voxelSize;
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
     {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
@@ -135,8 +136,15 @@ void Visualizer::publishTrueMap2dSlice(const Observable *visualizable, unsigned 
             auto _x = Parameters::xMin + x * Parameters::voxelSize;
             auto _y = Parameters::yMin + y * Parameters::voxelSize;
             QTrueVoxel voxel = trueMap->query(_x, _y, _z);
+
             if (!voxel.node() || trueMap->getVoxelMean(voxel) < 0.5)
+            {
+//                std::cout << "Voxel " << _x << " " << _y << " " << _z << " valid? " << !!voxel.node()
+//                                             << "   occupancy: "
+//                                             << trueMap->getVoxelMean(voxel)
+//                                             << std::endl;
                 continue;
+            }
 
             geometry_msgs::Point p;
             p.x = _x;
@@ -519,7 +527,10 @@ void Visualizer::publishLogOddsMapFull(const Observable *visualizable, bool visu
                         r = g = b = (float) (1.0 - logOddsMap->getVoxelMean(voxel));
                 }
                 else
-                    continue;
+                {
+                    r = g = b = (float) (1.0 - Parameters::priorMean);
+//                    continue;
+                }
                 cell.color.r = (float) r;
                 cell.color.g = (float) g;
                 cell.color.b = (float) b;
@@ -1061,7 +1072,13 @@ void Visualizer::publishTrajectory(const Observable *visualizable)
 
     stopWatchVisualizer.restart();
 
+    int id = 23984092;
+
     visualization_msgs::MarkerArray arrows;
+    visualization_msgs::Marker clearArrow;
+    clearArrow.action = 3; // clear all
+    clearArrow.header.frame_id = "map";
+    arrows.markers.push_back(clearArrow);
     for (auto &point : *trajectory)
     {
         auto _x = point.position[0];
@@ -1070,13 +1087,13 @@ void Visualizer::publishTrajectory(const Observable *visualizable)
         Parameters::Vec3Type pos(_x, _y, _z);
 
         visualization_msgs::Marker arrow;
-        arrow.id = (int) QVoxel::computeHash(TrueMap::coordToKey(pos));
+        arrow.id = id++; //(int) QVoxel::computeHash(TrueMap::coordToKey(pos));
         arrow.action = 0;
         arrow.type = visualization_msgs::Marker::ARROW;
         arrow.header.frame_id = "map";
-        arrow.scale.x = 0.1;
-        arrow.scale.y = 0.02;
-        arrow.scale.z = 0.02;
+        arrow.scale.x = .3;
+        arrow.scale.y = .02;
+        arrow.scale.z = .02;
         arrow.color.a = 1;
         arrow.color.r = 1;
         arrow.color.g = 0;
@@ -1084,6 +1101,7 @@ void Visualizer::publishTrajectory(const Observable *visualizable)
         arrow.pose.position.x = _x;
         arrow.pose.position.y = _y;
         arrow.pose.position.z = _z;
+//        ROS_INFO("Trajectory point %.2f, %.2f, %.2f", _x, _y, _z);
         arrow.pose.orientation.x = point.orientation.x();
         arrow.pose.orientation.y = point.orientation.y();
         arrow.pose.orientation.z = point.orientation.z();
@@ -1091,6 +1109,7 @@ void Visualizer::publishTrajectory(const Observable *visualizable)
     }
 
     trajectoryPublisher.publish(arrows);
+    ROS_INFO("Published %d trajectory arrows.", (int)arrows.markers.size());
 
     ros::spinOnce();
 }
@@ -1105,8 +1124,13 @@ void Visualizer::publishObservation(const Observable *visualizable)
     loop_rate.sleep();
 
     stopWatchVisualizer.restart();
+    int id = 1231;
 
     visualization_msgs::MarkerArray markers;
+    visualization_msgs::Marker clearMarker;
+    clearMarker.action = 3; // clear all
+    clearMarker.header.frame_id = "map";
+    markers.markers.push_back(clearMarker);
     for (auto &measurement: observation->measurements())
     {
         auto _x = measurement.sensor.position.x();
@@ -1137,11 +1161,16 @@ void Visualizer::publishObservation(const Observable *visualizable)
 //        arrow.pose.orientation.z = measurement.sensor.orientation.z();
 //        markers.markers.push_back(arrow);
 
-        for (auto &point : measurement.sensor.discretized(measurement.value))
+
+        auto point = measurement.sensor.endPoint();
+//        for (auto &point : measurement.sensor.discretized(measurement.value))
         {
-            _x = point.position.x();
-            _y = point.position.y();
-            _z = point.position.z();
+//            _x = point.position.x();
+//            _y = point.position.y();
+//            _z = point.position.z();
+            _x = point.x();
+            _y = point.y();
+            _z = point.z();
 #if DIMENSIONS == 2
             _z += Parameters::voxelSize;
 #endif
@@ -1151,26 +1180,28 @@ void Visualizer::publishObservation(const Observable *visualizable)
             pos = Parameters::Vec3Type(_x, _y, _z);
 
             visualization_msgs::Marker dot;
-            dot.id = (int) QVoxel::computeHash(TrueMap::coordToKey(pos));
+            dot.id = id++; // QVoxel::computeHash(TrueMap::coordToKey(pos));
             dot.action = 0;
             dot.type = visualization_msgs::Marker::SPHERE;
             dot.header.frame_id = "map";
-            dot.scale.x = Parameters::voxelSize * .3;
-            dot.scale.y = Parameters::voxelSize * .3;
-            dot.scale.z = Parameters::voxelSize * .3;
+            dot.scale.x = Parameters::voxelSize * .1;
+            dot.scale.y = Parameters::voxelSize * .1;
+            dot.scale.z = Parameters::voxelSize * .1;
             dot.color.a = 1;
-            if (point.occupied)
+//            if (point.occupied)
             {
-                dot.color.r = 1;
+                dot.color.r = .1;
                 dot.color.g = .2;
-                dot.color.b = 0;
+                dot.color.b = 0.2;
             }
-            else
-            {
-                dot.color.r = .2;
-                dot.color.g = .4;
-                dot.color.b = 1;
-            }
+//            else
+//            {
+//                continue;
+//
+//                dot.color.r = .2;
+//                dot.color.g = .4;
+//                dot.color.b = 1;
+//            }
             dot.pose.position.x = _x;
             dot.pose.position.y = _y;
             dot.pose.position.z = _z;

@@ -28,6 +28,11 @@ struct SensorRay
             : position(position), orientation(orientation), range(range)
     {}
 
+    Parameters::Vec3Type endPoint() const
+    {
+        return position + orientation * range;
+    }
+
     std::vector<SensorRayPoint> discretized(double measuredValue) const
     {
         std::vector<SensorRayPoint> points;
@@ -120,7 +125,7 @@ struct SensorRay
                 point[2] += z_inc;
             }
         }
-        if (measuredValue < range)
+        if (measuredValue <= range)
         {
             // end point is occupied
             points.push_back(SensorRayPoint(point, true));

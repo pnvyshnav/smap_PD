@@ -147,14 +147,14 @@ public:
     static constexpr double StereoCameraHorizontalFOV = 40. * M_PI / 180.;    // quadratic pixels
     static constexpr double StereoCameraVerticalFOV = StereoCameraHorizontalFOV * StereoCameraVerticalPixels *1. / StereoCameraHorizontalPixels *1.;
 #elif defined(REAL_2D)
-    static constexpr NumType voxelSize = 5; //0.125;
+    static constexpr NumType voxelSize = .125; //0.125;
 
-    static constexpr NumType xMin = -100;
-    static constexpr NumType xMax =  60;
-    static constexpr NumType yMin = -100;
-    static constexpr NumType yMax =  60;
-    static constexpr NumType zMin = -0.1;
-    static constexpr NumType zMax =  0.1;
+    static constexpr NumType xMin = -10;
+    static constexpr NumType xMax =  20;
+    static constexpr NumType yMin = -10;
+    static constexpr NumType yMax =  20;
+    static constexpr NumType zMin = 0;
+    static constexpr NumType zMax = voxelSize;
 
     static const bool sensorTruncatedGaussianNoise = false;
     static constexpr NumType sensorRange = (const NumType) 10;
@@ -208,11 +208,11 @@ public:
     // Inverse Sensor Model
     //
     static constexpr NumType invSensor_prior = priorMean;
-    static constexpr NumType invSensor_increment = 0.15; // 0.05; //0.25; //0.01; // 0.25
+    static constexpr NumType invSensor_increment = 0.15; //0.15; // 0.05; //0.25; //0.01; // 0.25
     static constexpr NumType invSensor_occupied = invSensor_increment;
     static constexpr NumType invSensor_free = -invSensor_increment;
-    static constexpr NumType invSensor_rampSize = 0.05;
-    static constexpr NumType invSensor_topSize = 0.05;
+    static constexpr NumType invSensor_rampSize = 0.05; //0.05;
+    static constexpr NumType invSensor_topSize = 0.05; //0.05;
     static constexpr NumType invSensor_rampSlope = (invSensor_occupied - invSensor_free)/invSensor_rampSize;
 
     //

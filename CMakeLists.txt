@@ -200,7 +200,7 @@ add_executable(smap src/main.cpp
         src/PointCloud.cpp include/PointCloud.h include/InverseCauseModel.h
         include/SensorRay.hpp src/InverseCauseModel.cpp src/GaussianProcessMap.cpp
         include/GaussianProcessMap.h src/HilbertMap.cpp include/HilbertMap.h
-        include/Trajectory.hpp)
+        include/Trajectory.hpp include/Box.hpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
