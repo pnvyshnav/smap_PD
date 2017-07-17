@@ -213,6 +213,12 @@ int main(int argc, char **argv)
     std::vector<double> rampSizes = {0.025, 0.05, 0.1, 0.3};
     std::vector<double> topSizes = {0.025, 0.05, 0.1, 0.3};
     unsigned int round = 0;
+#if defined(REAL_2D)
+    Drone drone;
+    drone.registerObserver(&handleObservation);
+    visualizer->publishTrueMap2dSlice(&trueMap, 0);
+    std::cout << "Running CARMEN file: " << carmenFile << std::endl;
+#endif
     for (auto increment : increments)
     {
         for (auto rampSize : rampSizes)
@@ -226,9 +232,13 @@ int main(int argc, char **argv)
                 LogOddsMap::parameters.topSize = topSize;
                 beliefMap.reset();
                 logOddsMap.reset();
+#if defined(REAL_2D)
+                drone.runCarmenFile(carmenFile, "FLASER", true, 10);//, "ROBOTLASER1", false);
+#else
                 robot.run(trajectory);
+#endif
 
-                stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/ism_runs/stats_" + std::to_string(round++) + ".bag");
+                stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/ism_albert_runs/stats_" + std::to_string(round++) + ".bag");
                 stats->reset();
             }
         }
@@ -347,7 +357,9 @@ int main(int argc, char **argv)
     ss << Parameters::sensorNoiseStd;
     stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/stats_carmen_std_" + ss.str() + ".bag");
 #ifdef ENABLE_VISUALIZATION
+#if defined(REAL_2D) || defined(REAL_3D)
     trajectory = drone.poseHistory();
+#endif
     std::cout << "Trajectory bounding box: " << trajectory.boundingBox().str() << std::endl;
     for (int i = 0; i < 1; i++)
     {

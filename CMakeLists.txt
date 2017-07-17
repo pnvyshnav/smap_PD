@@ -36,18 +36,6 @@ find_package(catkin REQUIRED COMPONENTS
   image_geometry
 )
 
-find_path(MLPACK_INCLUDE_DIR
-    NAMES core.hpp prereqs.hpp
-    PATHS "/usr/local/include/mlpack/" /usr/local/include/
-)
-
-find_library(MLPACK_LIBRARY
-    NAMES mlpack
-    PATHS /usr/lib64/ /usr/lib/ /usr/local/lib64/ /usr/local/
-)
-
-include_directories(${MLPACK_INCLUDE_DIR})
-
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 #FIND_PACKAGE(Eigen3 REQUIRED)
@@ -199,7 +187,7 @@ add_executable(smap src/main.cpp
         include/LogOddsMap.h include/Statistics.hpp include/StatisticsMap.hpp
         src/PointCloud.cpp include/PointCloud.h include/InverseCauseModel.h
         include/SensorRay.hpp src/InverseCauseModel.cpp src/GaussianProcessMap.cpp
-        include/GaussianProcessMap.h src/HilbertMap.cpp include/HilbertMap.h
+        include/GaussianProcessMap.h
         include/Trajectory.hpp include/Box.hpp)
 
 ## Add cmake target dependencies of the executable
@@ -212,7 +200,6 @@ target_link_libraries(smap
         ${PCL_LIBRARIES}
         ${OCTOMAP_LIBRARIES}
         ${OpenCV_LIBS}
-        ${MLPACK_LIBRARY}
         gp
 )
 

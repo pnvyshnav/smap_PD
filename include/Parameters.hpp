@@ -16,7 +16,7 @@
 //#define REPLANNING
 //#define FAKE_3D
 //#define REPEATED_RUNS
-//#define ISM_RUNS
+#define ISM_RUNS
 //#define GP_RUNS
 #define MANY_STEPS
 //#define COMPUTE_UPDATED_EVOLUTION
@@ -158,7 +158,7 @@ public:
 
     static const bool sensorTruncatedGaussianNoise = false;
     static constexpr NumType sensorRange = (const NumType) 10;
-    static constexpr NumType sensorNoiseStd = (const NumType) 0.8 * voxelSize; //0.1;
+    static constexpr NumType sensorNoiseStd = (const NumType) 1.8 * voxelSize; //0.1;
 
     static constexpr NumType freeRadiusAroundCenter = 0; // irrelevant
     // IRRELEVANT:
