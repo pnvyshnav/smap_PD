@@ -312,7 +312,7 @@ BeliefVoxel *BeliefMap::_updateNodeRecurs(BeliefVoxel *node, bool node_just_crea
             }
         }
 
-        BeliefVoxel *result = _updateNodeRecurs(node->getChild(pos), created_node, key, depth + 1, belief);
+        BeliefVoxel *result = _updateNodeRecurs(getNodeChild(node, pos), created_node, key, depth + 1, belief);
 
         return result;
     }
@@ -339,15 +339,15 @@ BeliefVoxel *BeliefMap::_createNodeChild(BeliefVoxel *node, unsigned int childId
 {
     assert(childIdx < 8);
 
-    if (node->childExists(childIdx))
-        return node->getChild(childIdx);
+    if (nodeChildExists(node, childIdx))
+        return getNodeChild(node, childIdx);
 
     tree_size++;
     size_changed = true;
 
-    node->createChild(childIdx);
+    createNodeChild(node, childIdx);
 
-    return node->getChild(childIdx);
+    return getNodeChild(node, childIdx);
 }
 
 void BeliefMap::reset()
