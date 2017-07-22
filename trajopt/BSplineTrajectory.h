@@ -3,7 +3,7 @@
 #include <initializer_list>
 #include <valarray>
 
-#include "tinysplinecpp.h"
+#include "../tinyspline/tinysplinecpp.h"
 #include "Trajectory.hpp"
 #include "../include/Parameters.hpp"
 #include "../include/BeliefMap.h"

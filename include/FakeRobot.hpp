@@ -6,7 +6,7 @@
 
 #include <ecl/time/stopwatch.hpp>
 
-#include "tinysplinecpp.h"
+#include "../tinyspline/tinysplinecpp.h"
 
 #include "Parameters.hpp"
 #include "StereoCameraSensor.h"
