@@ -141,6 +141,7 @@ public:
                 double u = _step * 1. / _totalSteps;
                 //ROS_INFO("Computing trajectory at u = %f", u);
                 current = _trajectory.evaluate(u, true);
+                _lastTime = current.time;
     #endif
 
                 _yaw = current.yaw;
@@ -201,6 +202,7 @@ public:
     #else
                     double p = futureStep * 1. / _totalSteps;
                     fresult = _trajectory.evaluate(p, true);
+                    _lastTime = fresult.time;
     #endif
                     futurePositions.push_back(fresult.point);
                     octomap::OcTreeKey key = _trueMap.coordToKey(fresult.point.x, fresult.point.y, 0.05);
@@ -254,9 +256,9 @@ public:
 //                    }
                 if (_observationMode == OBSERVE_ONLY_REAL)
                 {
-                    ROS_INFO("Future Reachability: %f  (%i voxels, %i positions)",
-                             _futureReachability, (int)_splineFutureVoxels.size(), (int)futurePositions.size());
-                    ROS_INFO("Travelled Distance: %f", _travelledDistance);
+//                    ROS_INFO("Future Reachability: %f  (%i voxels, %i positions)",
+//                             _futureReachability, (int)_splineFutureVoxels.size(), (int)futurePositions.size());
+//                    ROS_INFO("Travelled Distance: %f", _travelledDistance);
                     auto replanningNecessary = _futureReachability < 0.9;
                     if (_replanningHandler && (replanningNecessary)) // || _travelledDistance > 10 * Parameters::voxelSize))
                     {

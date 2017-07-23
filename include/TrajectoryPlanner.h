@@ -119,7 +119,7 @@ private:
 };
 
 template<class TRAJ>
-class UpperConfidenceBound : public TrajectoryCostFunction<TRAJ>
+class LowerConfidenceBound : public TrajectoryCostFunction<TRAJ>
 {
 public:
     /**
@@ -163,13 +163,23 @@ public:
 //        ROS_INFO("Reachability: %f", reach);
 
         std = std::sqrt(varLeft-varRight);
-        double ucb = reach - kappa * std; //-kappa*std::sqrt(varLeft-varRight); //reach - kappa * std::sqrt(varLeft-varRight);
-//        ROS_INFO("VAR: %f   MEAN: %f   UCB: %f", std::sqrt(varLeft-varRight), reach, ucb);
-        ROS_INFO("STD: %f   MEAN: %f   L: %f   UCB: %f", std, reach, arcLength, ucb);
-        return -ucb;
+        double lcb = reach - _kappa * std; //-kappa*std::sqrt(varLeft-varRight); //reach - kappa * std::sqrt(varLeft-varRight);
+//        ROS_INFO("VAR: %f   MEAN: %f   UCB: %f", std::sqrt(varLeft-varRight), reach, lcb);
+//        ROS_INFO("STD: %f   MEAN: %f   L: %f   LCB: %f", std, reach, arcLength, lcb);
+        return -lcb;
+    }
+
+    double kappa() const
+    {
+        return _kappa;
+    }
+
+    void setKappa(double kappa)
+    {
+        _kappa = kappa;
     }
 private:
-    const double kappa = 1.2;
+    double _kappa = 1.2;
 };
 
 template<class TRAJ>
@@ -223,8 +233,6 @@ public:
 //        std = std::sqrt(varLeft-varRight);
         return deltaReach;
     }
-private:
-    const double kappa = 0.35;
 };
 
 /**
@@ -277,7 +285,7 @@ public:
  * @tparam SENSOR Type of robot sensor.
  * @tparam COST Type of cost function.
  */
-template<class TRAJ = MinSnapTrajectory, class SENSOR = StereoCameraSensor, class COST = UpperConfidenceBound<TRAJ> >
+template<class TRAJ = MinSnapTrajectory, class SENSOR = StereoCameraSensor, class COST = LowerConfidenceBound<TRAJ> >
 class TrajOpt : public Observable
 {
     friend class TrajOptObjective<TRAJ, SENSOR, COST>;
@@ -303,7 +311,7 @@ public:
          * - LN_COBYLA
          * - LN_NELDERMEAD
          */
-        nlopt::opt opt(nlopt::LN_NELDERMEAD, _trajectory.dof());
+        nlopt::opt opt(nlopt::LN_COBYLA, _trajectory.dof());
         _optimizationStep = 0;
 
         std::vector<double> lb(_trajectory.dof(), -absLimit), ub(_trajectory.dof(), absLimit);
@@ -312,13 +320,17 @@ public:
 
         opt.set_min_objective(TrajOpt::_wrap, &_objective);
 
-        opt.set_xtol_rel(1e-5);
+        const double xtol_rel      = 1e-3; // 1e-5;
+        const double xtol_abs      = 1e-2; // 1e-3;
+        const unsigned int maxeval = 150; // 300;
+
+        opt.set_xtol_rel(xtol_rel);
         // deactivate relative tolerance stopping criterion
 //        opt.set_xtol_rel(-1.0);
         // stop when an optimization step changes all parameters by less than this value
-        opt.set_xtol_abs(0.0001);
+        opt.set_xtol_abs(xtol_abs);
         // stop after so many iterations
-        opt.set_maxeval(300);
+        opt.set_maxeval(maxeval);
 
         std::vector<double> x(_trajectory.dof(), 0.);
         double minf;

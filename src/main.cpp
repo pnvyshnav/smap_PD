@@ -19,8 +19,8 @@
 #ifdef REAL_3D
     TrueMap trueMap = TrueMap::generateFromPointCloud("/home/eric/catkin_ws/src/smap/dataset/V1_01_easy/data.ply");
 #else
-//    TrueMap trueMap = TrueMap::generate(123); // use a fixed seed value
-    TrueMap trueMap = TrueMap::generateCorridor(); // use a fixed seed value
+    TrueMap trueMap = TrueMap::generate(123); // use a fixed seed value
+//    TrueMap trueMap = TrueMap::generateCorridor(); // use a fixed seed value
 #endif
 
 BeliefMap beliefMap;
@@ -96,12 +96,12 @@ void handleObservation(const Observation &observation)
 
 int main(int argc, char **argv)
 {
-    Eigen::VectorXd cs(6);
-    cs  << 0, 1, 2, 3, 4, 5;
-    MinSnapTrajectory::Polynomial p(5, cs);
-    std::cout << p.str() << "  p(2) = " << p.evaluate(2) << std::endl;
-    std::cout << p.derivative().str() << "  p'(2) = " << p.derivative().evaluate(2) << std::endl;
-    std::cout << p.derivative().derivative().str() << "  p''(2) = " << p.derivative().derivative().evaluate(2) << std::endl;
+//    Eigen::VectorXd cs(6);
+//    cs  << 0, 1, 2, 3, 4, 5;
+//    MinSnapTrajectory::Polynomial p(5, cs);
+//    std::cout << p.str() << "  p(2) = " << p.evaluate(2) << std::endl;
+//    std::cout << p.derivative().str() << "  p'(2) = " << p.derivative().evaluate(2) << std::endl;
+//    std::cout << p.derivative().derivative().str() << "  p''(2) = " << p.derivative().derivative().evaluate(2) << std::endl;
 //
 //    return 0;
 //    PointCloud cloud;
@@ -115,61 +115,78 @@ int main(int argc, char **argv)
 
     Visualizer *visualizer = new Visualizer;
 
-#ifdef PLANNER_2D_TEST
-    double shift = Parameters::voxelSize / 2.;
-//    MinSnapTrajectory trajectory(Point(0.0 + shift, -0.9 + shift), Point(-0.9 + shift, 0.0 + shift));
-    MinSnapTrajectory trajectory(Point(0.35, -0.95), Point(0.35, 0.95));
-    Point velocity = trajectory.velocity(0);
-    ROS_INFO("Initial velocity: %f %f", velocity.x, velocity.y);
-//    return 0;
-//    trajectory.parameterize(Eigen::VectorXd::Random(trajectory.dof()));
-    ROS_INFO("Min Snap DOF: %d", (int)trajectory.dof());
-    TrajectoryPlanner *planner = new TrajectoryPlanner(trajectory, trueMap, beliefMap);
-#endif
 
-#ifdef ENABLE_VISUALIZATION
-    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
-    for (int i = 0; i < 40; ++i)
-    {
-        trueMap.publish();
-        beliefMap.publish();
-    }
-#ifndef REAL_3D
-    robot.subscribe(std::bind(&Visualizer::publishFakeRobot, visualizer, std::placeholders::_1, &trueMap));
-#endif
-    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
-    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMap, visualizer, std::placeholders::_1));
+//#ifdef ENABLE_VISUALIZATION
+//    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
+//    for (int i = 0; i < 40; ++i)
+//    {
+//        trueMap.publish();
+//        beliefMap.publish();
+//    }
+//#ifndef REAL_3D
+//    robot.subscribe(std::bind(&Visualizer::publishFakeRobot, visualizer, std::placeholders::_1, &trueMap));
+//#endif
+//    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
+//    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMap, visualizer, std::placeholders::_1));
 
-    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
+//    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap2dSlice, visualizer, std::placeholders::_1, 0));
 //    trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
 
-    for (int i = 0; i < 20; ++i)
-    {
-        trueMap.publish();
-        beliefMap.publish();
-    }
+
+//    for (int i = 0; i < 20; ++i)
+//    {
+//        trueMap.publish();
+//        beliefMap.publish();
+//    }
 //
 //    visualizer->render();
 //    return 0;
 
-#ifdef PLANNER_2D_TEST
-    planner->subscribe(std::bind(&Visualizer::publishTrajectoryPlanner, visualizer, std::placeholders::_1));
-#endif
-#ifdef FAKE_2D
-    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
-#else
-    // todo reactivate
-    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
-    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMapFull, visualizer, std::placeholders::_1));
-#endif
-    robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
-#endif
+//#ifdef PLANNER_2D_TEST
+//    planner->subscribe(std::bind(&Visualizer::publishTrajectoryPlanner, visualizer, std::placeholders::_1));
+//#endif
+//#ifdef FAKE_2D
+//    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
+//#else
+//    // todo reactivate
+//    beliefMap.subscribe(std::bind(&Visualizer::publishBeliefMapFull, visualizer, std::placeholders::_1));
+//    logOddsMap.subscribe(std::bind(&Visualizer::publishLogOddsMapFull, visualizer, std::placeholders::_1));
+//#endif
+//    robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
+//#endif
+
+    constexpr double shift = Parameters::voxelSize / 2.;
+    const MinSnapTrajectory trajectory(Point(0.0 + shift, -0.9 + shift), Point(-0.9 + shift, 0.0 + shift));
+//    MinSnapTrajectory trajectory(Point(0.35, -0.95), Point(0.35, 0.95), Point(), Point(), Point(), Point(), 4, 6);
+//    Point velocity = trajectory.velocity(0);
+//    ROS_INFO("Initial velocity: %f %f", velocity.x, velocity.y);
+//    return 0;
+//    trajectory.parameterize(Eigen::VectorXd::Random(trajectory.dof()));
+    ROS_INFO("Min Snap DOF: %d", (int)trajectory.dof());
+    TrajectoryPlanner *planner;
+
+    const std::vector<double> kappas({0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.});
 
     robot.registerObserver(&handleObservation);
 
+    // make initial observations
+    for (int i = 0; i < 3; ++i)
+        beliefMap.update(robot.observe(), trueMap);
+
 #if defined(FAKE_2D)
     #if defined(PLANNER_2D_TEST)
-        beliefMap.update(robot.observe(), trueMap);
+    for (double kappa : kappas)
+    {
+        for (int round = 1; round <= 5; ++round)
+        {
+            ROS_INFO("************* KAPPA = %.2f (ROUND %i) *************", kappa, round);
+            planner = new TrajectoryPlanner(trajectory, trueMap, beliefMap);
+            planner->costFunction().setKappa(kappa);
+            robot.setReplanningHandler(std::bind(&TrajectoryPlanner::replan, planner,
+                                                 std::placeholders::_1,
+                                                 std::placeholders::_2,
+                                                 std::placeholders::_3));
+            beliefMap.update(robot.observe(), trueMap);
 //        #if defined(REPLANNING)
 //            robot.setReplanningHandler(std::bind(&TrajectoryPlanner::replan, planner,
 //                                         std::placeholders::_1,
@@ -182,21 +199,24 @@ int main(int argc, char **argv)
 //        #else
             auto optimized = planner->optimize();
 //            planner->replan(Point(0.0 + shift, -0.9 + shift), Point(-0.9 + shift, 0.0 + shift), Point(1,4));
-            robot.setReplanningHandler(std::bind(&TrajectoryPlanner::replan, planner,
-                                                 std::placeholders::_1,
-                                                 std::placeholders::_2,
-                                                 std::placeholders::_3));
             robot.setTrajectory(optimized);
             robot.run();
 
-    stats->registerReplanningIterations(planner->replanningIterations());
-    stats->saveToFile("/home/eric/catkin_ws/src/smap/stats/replanning_corridor/ucb10_1.bag");
-
-    for (int i = 0; i < 20; ++i)
-    {
-        trueMap.publish();
-        beliefMap.publish();
+            stats->registerReplanningIterations(planner->replanningIterations());
+            stats->saveToFile(
+                    "/home/wal/catkin_ws/src/smap/stats/replanning_tunnel/lcb_"
+                    + std::to_string(kappa) + "_" + std::to_string(round) + ".bag");
+            stats->reset();
+            beliefMap.reset();
+            delete planner;
+        }
     }
+
+//    for (int i = 0; i < 20; ++i)
+//    {
+//        trueMap.publish();
+//        beliefMap.publish();
+//    }
 
 //            unsigned int splineId = 0;
 //            for (auto &trajectory : planner.generateTrajectories())
