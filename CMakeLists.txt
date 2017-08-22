@@ -190,6 +190,27 @@ add_executable(smap src/main.cpp
         include/GaussianProcessMap.h
         include/Trajectory.hpp include/Box.hpp)
 
+add_executable(smap_ICL-NUIM src/mainICL-NUIM.cpp
+        include/Parameters.hpp
+        src/BeliefVoxel.cpp
+        src/BeliefMap.cpp
+        include/FakeRobot.hpp
+        src/PixelSensor.cpp
+        include/PixelSensor.h
+        include/TruncatedGaussianDistribution.hpp
+        include/TrueMap.h
+        src/TrueMap.cpp
+        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h
+        include/UniformDistribution.hpp include/QVoxel.hpp
+        src/Visualizer.cpp include/Visualizer.h include/Observable.hpp
+        src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp
+        include/LogOddsMap.h include/Statistics.hpp include/StatisticsMap.hpp
+        src/PointCloud.cpp include/PointCloud.h include/InverseCauseModel.h
+        include/SensorRay.hpp src/InverseCauseModel.cpp src/GaussianProcessMap.cpp
+        include/GaussianProcessMap.h
+        include/Trajectory.hpp include/Box.hpp
+        lodepng/lodepng.cpp include/ICLNUIMTrajectory.hpp)
+
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(smap_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -200,8 +221,14 @@ target_link_libraries(smap
         ${PCL_LIBRARIES}
         ${OCTOMAP_LIBRARIES}
         ${OpenCV_LIBS}
-        gp
-)
+        gp)
+
+target_link_libraries(smap_ICL-NUIM
+        ${catkin_LIBRARIES}
+        ${PCL_LIBRARIES}
+        ${OCTOMAP_LIBRARIES}
+        ${OpenCV_LIBS}
+        gp)
 
 #############
 ## Install ##

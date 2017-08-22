@@ -9,7 +9,7 @@
 #include <octomap/OcTree.h>
 
 #define DIMENSIONS 2
-//#define FAKE_2D
+#define FAKE_2D
 //#define PLANNER_2D_TEST
 //#define SIMULATE_TIME
 //#define ONLY_HANDCRAFTED_TRAJECTORIES
@@ -22,7 +22,7 @@
 //#define COMPUTE_UPDATED_EVOLUTION
 
 //#define REAL_3D
-#define REAL_2D
+//#define REAL_2D
 
 #define INPUT_EUROC 1       // EuRoC MAV dataset
 #define INPUT_SNAPDRAGON 2  // Snapdragon Flight

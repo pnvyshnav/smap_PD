@@ -85,6 +85,14 @@ public:
     }
 
     /**
+     * Removes all measurements.
+     */
+    void clear()
+    {
+        _measurements.clear();
+    }
+
+    /**
      * Randomly extracts measurements from the observation up to the
      * given ratio.
      * @param ratio Amount of samples in [0,1] to be selected.
