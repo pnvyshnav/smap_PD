@@ -171,7 +171,7 @@ file(GLOB smap_SRC
 
 ## Declare a C++ executable
 add_executable(smap src/main.cpp
-        include/Parameters.hpp
+        include/Parameters.h
         src/BeliefVoxel.cpp
         src/BeliefMap.cpp
         include/FakeRobot.hpp
@@ -188,10 +188,10 @@ add_executable(smap src/main.cpp
         src/PointCloud.cpp include/PointCloud.h include/InverseCauseModel.h
         include/SensorRay.hpp src/InverseCauseModel.cpp src/GaussianProcessMap.cpp
         include/GaussianProcessMap.h
-        include/Trajectory.hpp include/Box.hpp)
+        include/Trajectory.hpp include/Box.hpp src/Parameters.cpp)
 
 add_executable(smap_ICL-NUIM src/mainICL-NUIM.cpp
-        include/Parameters.hpp
+        include/Parameters.h
         src/BeliefVoxel.cpp
         src/BeliefMap.cpp
         include/FakeRobot.hpp
@@ -209,7 +209,7 @@ add_executable(smap_ICL-NUIM src/mainICL-NUIM.cpp
         include/SensorRay.hpp src/InverseCauseModel.cpp src/GaussianProcessMap.cpp
         include/GaussianProcessMap.h
         include/Trajectory.hpp include/Box.hpp
-        lodepng/lodepng.cpp include/ICLNUIMTrajectory.hpp)
+        include/ICLNUIMLoader.hpp src/Parameters.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

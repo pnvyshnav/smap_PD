@@ -3,7 +3,7 @@
 #include "../include/BeliefMap.h"
 #include "../include/Sensor.h"
 #include "../include/LogOddsMap.h"
-#include "../include/Parameters.hpp"
+#include "../include/Parameters.h"
 #include "../include/StereoCameraSensor.h"
 #include "../include/FakeRobot.hpp"
 #include "../include/GaussianProcessMap.h"
@@ -68,14 +68,17 @@ void Visualizer::publishTrueMap(const Observable *visualizable)
 //    ROS_INFO("Visualizing true map");
 
     visualization_msgs::MarkerArray cells;
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x) {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y) {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z) {
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
+            {
                 auto _x = Parameters::xMin + x * Parameters::voxelSize;
                 auto _y = Parameters::yMin + y * Parameters::voxelSize;
                 auto _z = Parameters::zMin + (z + 0.5) * Parameters::voxelSize;
                 QTrueVoxel voxel = trueMap->query(_x, _y, _z);
-                if (!voxel.node())
+                if (!voxel.node()) // || _z < -2) // TODO visualize sliced map
                     continue;
 
                 visualization_msgs::Marker cell;
@@ -83,11 +86,13 @@ void Visualizer::publishTrueMap(const Observable *visualizable)
                 if (trueMap->getVoxelMean(voxel) < 0.3)
                     continue;
 #else
-                if (z > 12 && (trueMap->getVoxelMean(voxel) < 0.5 && voxel.position.norm() < 1.5 || voxel.position.norm() < 0.6))
-                    // remove voxel
+                if (trueMap->getVoxelMean(voxel) < 0.5)
                     continue;
-                else
-                    cell.action = 0;
+//                if (z > 12 &&
+//                    (trueMap->getVoxelMean(voxel) < 0.5 && voxel.position.norm() < 1.5 || voxel.position.norm() < 0.6))
+//                    // remove voxel
+//                    continue;
+                cell.action = 0;
 #endif
 
                 cell.id = (int) voxel.hash;
@@ -97,9 +102,10 @@ void Visualizer::publishTrueMap(const Observable *visualizable)
                 cell.scale.y = Parameters::voxelSize;
                 cell.scale.z = Parameters::voxelSize;
                 cell.color.a = 1.0f;
-                cell.color.r = (float)(1. - trueMap->getVoxelMean(voxel) * .5);
-                cell.color.g = (float)(1. - trueMap->getVoxelMean(voxel) * .5); //(int)std::round(voxel.node()->getOccupancy());
-                cell.color.b = (float)(1. - trueMap->getVoxelMean(voxel) * .5);
+                cell.color.r = (float) (1. - trueMap->getVoxelMean(voxel) * .5);
+                cell.color.g = (float) (1. - trueMap->getVoxelMean(voxel) *
+                                             .5); //(int)std::round(voxel.node()->getOccupancy());
+                cell.color.b = (float) (1. - trueMap->getVoxelMean(voxel) * .5);
                 cell.pose.position.x = _x;
                 cell.pose.position.y = _y;
                 cell.pose.position.z = _z;
@@ -108,7 +114,7 @@ void Visualizer::publishTrueMap(const Observable *visualizable)
         }
     }
 
-    ROS_INFO("Publishing %d cells", (int)cells.markers.size());
+    ROS_INFO("Publishing %d cells", (int) cells.markers.size());
     trueMapPublisher.publish(cells);
     ros::spinOnce();
 }
@@ -128,10 +134,10 @@ void Visualizer::publishTrueMap2dSlice(const Observable *visualizable, unsigned 
     grid.cell_width = (float) Parameters::voxelSize;
 
     // TODO fix this
-    auto _z = 0; ///*Parameters::zMin +*/ (z + Parameters::voxelsPerDimensionZ/2) * Parameters::voxelSize;
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    auto _z = 0; ///*Parameters::zMin +*/ (z + Parameters::voxelsPerDimensionZ()/2) * Parameters::voxelSize;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
             auto _x = Parameters::xMin + x * Parameters::voxelSize;
             auto _y = Parameters::yMin + y * Parameters::voxelSize;
@@ -347,11 +353,11 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable, bool visua
 //        cells.markers.push_back(cell);
 //    }
 
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
             {
                 auto _x = Parameters::xMin + x * Parameters::voxelSize;
                 auto _y = Parameters::yMin + y * Parameters::voxelSize;
@@ -422,11 +428,11 @@ void Visualizer::publishBeliefInconsistencyMapFull(const Observable *visualizabl
 
     visualization_msgs::MarkerArray cells;
 
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
             {
                 auto _x = Parameters::xMin + x * Parameters::voxelSize;
                 auto _y = Parameters::yMin + y * Parameters::voxelSize;
@@ -499,11 +505,11 @@ void Visualizer::publishLogOddsMapFull(const Observable *visualizable, bool visu
 
     visualization_msgs::MarkerArray cells;
     octomap::OcTreeKey::KeyHash hasher;
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
             {
                 auto _x = Parameters::xMin + x * Parameters::voxelSize;
                 auto _y = Parameters::yMin + y * Parameters::voxelSize;
@@ -572,11 +578,11 @@ void Visualizer::publishLogOddsInconsistencyMapFull(const Observable *visualizab
 
     visualization_msgs::MarkerArray cells;
     octomap::OcTreeKey::KeyHash hasher;
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
             {
                 auto _x = Parameters::xMin + x * Parameters::voxelSize;
                 auto _y = Parameters::yMin + y * Parameters::voxelSize;
@@ -932,11 +938,11 @@ void Visualizer::publishGaussianProcessMapFull(const Observable *visualizable, b
     stopWatchVisualizer.restart();
 
     visualization_msgs::MarkerArray cells;
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
             {
                 auto _x = Parameters::xMin + x * Parameters::voxelSize;
                 auto _y = Parameters::yMin + y * Parameters::voxelSize;
@@ -999,11 +1005,11 @@ void Visualizer::publishGaussianProcessInconsistencyMapFull(const Observable *vi
     stopWatchVisualizer.restart();
 
     visualization_msgs::MarkerArray cells;
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
             {
                 auto _x = Parameters::xMin + x * Parameters::voxelSize;
                 auto _y = Parameters::yMin + y * Parameters::voxelSize;
@@ -1141,25 +1147,25 @@ void Visualizer::publishObservation(const Observable *visualizable)
 #endif
         Parameters::Vec3Type pos(_x, _y, _z);
 
-        visualization_msgs::Marker arrow;
-        arrow.id = id ++; //(int) QVoxel::computeHash(TrueMap::coordToKey(pos));
-        arrow.action = 0;
-        arrow.type = visualization_msgs::Marker::ARROW;
-        arrow.header.frame_id = "map";
-        arrow.scale.x = measurement.sensor.range;
-        arrow.scale.y = Parameters::voxelSize * .1;
-        arrow.scale.z = Parameters::voxelSize * .1;
-        arrow.color.a = 1;
-        arrow.color.r = 1;
-        arrow.color.g = 1;
-        arrow.color.b = 0;
-        arrow.pose.position.x = _x;
-        arrow.pose.position.y = _y;
-        arrow.pose.position.z = _z;
-        arrow.pose.orientation.x = measurement.sensor.orientation.x();
-        arrow.pose.orientation.y = measurement.sensor.orientation.y();
-        arrow.pose.orientation.z = measurement.sensor.orientation.z();
-        markers.markers.push_back(arrow);
+//        visualization_msgs::Marker arrow;
+//        arrow.id = id ++; //(int) QVoxel::computeHash(TrueMap::coordToKey(pos));
+//        arrow.action = 0;
+//        arrow.type = visualization_msgs::Marker::ARROW;
+//        arrow.header.frame_id = "map";
+//        arrow.scale.x = measurement.sensor.range;
+//        arrow.scale.y = Parameters::voxelSize * .1;
+//        arrow.scale.z = Parameters::voxelSize * .1;
+//        arrow.color.a = 1;
+//        arrow.color.r = 1;
+//        arrow.color.g = 1;
+//        arrow.color.b = 0;
+//        arrow.pose.position.x = _x;
+//        arrow.pose.position.y = _y;
+//        arrow.pose.position.z = _z;
+//        arrow.pose.orientation.x = measurement.sensor.orientation.x();
+//        arrow.pose.orientation.y = measurement.sensor.orientation.y();
+//        arrow.pose.orientation.z = measurement.sensor.orientation.z();
+//        markers.markers.push_back(arrow);
 
 
         auto point = measurement.sensor.endPoint();

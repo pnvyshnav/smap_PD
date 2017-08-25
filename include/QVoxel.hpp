@@ -4,7 +4,7 @@
 #include <octomap/OcTreeBaseImpl.h>
 #include <ros/console.h>
 
-#include "Parameters.hpp"
+#include "Parameters.h"
 #include "BeliefVoxel.h"
 #include "Observation.hpp"
 
@@ -124,11 +124,11 @@ public:
     std::vector<QTypedVoxel<NODE> > voxels() const
     {
         std::vector<QTypedVoxel<NODE> > vs;
-        for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+        for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
         {
-            for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+            for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
             {
-                for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+                for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
                 {
                     octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
                                            Parameters::yMin + y * Parameters::voxelSize,

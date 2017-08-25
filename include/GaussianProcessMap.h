@@ -5,7 +5,7 @@
 #include "Observation.hpp"
 #include "BeliefVoxel.h"
 #include "Observable.hpp"
-#include "Parameters.hpp"
+#include "Parameters.h"
 #include "StatisticsMap.hpp"
 
 struct GaussianProcessMapParameters

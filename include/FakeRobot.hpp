@@ -6,7 +6,7 @@
 
 #include <ecl/time/stopwatch.hpp>
 
-#include "Parameters.hpp"
+#include "Parameters.h"
 #include "StereoCameraSensor.h"
 #include "Observation.hpp"
 #include "TrueMap.h"

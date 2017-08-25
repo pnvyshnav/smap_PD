@@ -4,7 +4,7 @@
 
 #include "Sensor.h"
 #include "PixelSensor.h"
-#include "Parameters.hpp"
+#include "Parameters.h"
 #include "Observation.hpp"
 #include "BeliefVoxel.h"
 #include "TrueMap.h"

@@ -3,7 +3,7 @@
 #include <vector>
 #include <memory>
 
-#include "Parameters.hpp"
+#include "Parameters.h"
 #include "SensorRay.hpp"
 #include "Observable.hpp"
 

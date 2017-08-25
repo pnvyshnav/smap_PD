@@ -534,7 +534,7 @@ void Drone::runCarmenFile(std::string filename, std::string messageName,
                         auto rotHorizontal = Eigen::AngleAxis<float>(angle, zAxis);
                         Eigen::Vector3f orientation = rotHorizontal * xAxis;
                         orientation.normalize();
-                        Parameters::Vec3Type direction(orientation.x(), orientation.y(), orientation.z());
+                        Parameters::Vec3Type direction(orientation[0], orientation[1], orientation[2]);
                         SensorRay sensor(origin, direction, ranges[i]);
                         if (std::round(ranges[i]) >= std::round(maxRange))
                             measurements.push_back(Measurement::hole(sensor));

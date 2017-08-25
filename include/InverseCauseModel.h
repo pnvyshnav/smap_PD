@@ -3,7 +3,7 @@
 #include <valarray>
 #include <octomap/OcTreeKey.h>
 
-#include "Parameters.hpp"
+#include "Parameters.h"
 
 /**
  * Class representing the results of computing the inverse sensor cause model.

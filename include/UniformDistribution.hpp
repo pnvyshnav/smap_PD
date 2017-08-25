@@ -2,7 +2,7 @@
 
 #include <random>
 
-#include "Parameters.hpp"
+#include "Parameters.h"
 
 /**
  * Uniform distribution from 0 to 1.

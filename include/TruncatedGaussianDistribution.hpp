@@ -7,7 +7,7 @@
 #include <boost/random.hpp>
 #include <boost/math/distributions/normal.hpp>
 
-#include "Parameters.hpp"
+#include "Parameters.h"
 #include "UniformDistribution.hpp"
 
 

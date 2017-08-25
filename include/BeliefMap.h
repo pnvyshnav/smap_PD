@@ -8,7 +8,7 @@
 #include <octomap/OcTreeDataNode.h>
 #include <octomap/OcTreeBase.h>
 
-#include "Parameters.hpp"
+#include "Parameters.h"
 #include "BeliefVoxel.h"
 #include "StatisticsMap.hpp"
 #include "Observation.hpp"

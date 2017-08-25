@@ -32,9 +32,7 @@ BeliefMap beliefMap;
 LogOddsMap logOddsMap;
 GaussianProcessMap gaussianProcessMap;
 FakeRobot<> robot(
-        Parameters::Vec3Type(Parameters::xCenter,
-                             Parameters::yCenter,
-                             Parameters::zCenter),
+        Parameters::center(),
 #if defined(FAKE_2D)
         Parameters::Vec3Type(1, 0, 0),
 #else
@@ -358,7 +356,7 @@ int main(int argc, char **argv)
     stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/stats_carmen_std_" + ss.str() + ".bag");
 #ifdef ENABLE_VISUALIZATION
 #if defined(REAL_2D) || defined(REAL_3D)
-    trajectory = drone.poseHistory();
+//    trajectory = drone.poseHistory();
 #endif
     std::cout << "Trajectory bounding box: " << trajectory.boundingBox().str() << std::endl;
     for (int i = 0; i < 1; i++)

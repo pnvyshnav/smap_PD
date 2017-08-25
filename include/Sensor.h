@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Parameters.hpp"
+#include "Parameters.h"
 #include "Observation.hpp"
 #include "TrueMap.h"
 #include "BeliefMap.h"

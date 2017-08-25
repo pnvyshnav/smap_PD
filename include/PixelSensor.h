@@ -2,7 +2,7 @@
 
 #include <valarray>
 
-#include "Parameters.hpp"
+#include "Parameters.h"
 #include "TrueMap.h"
 #include "Observation.hpp"
 #include "BeliefMap.h"

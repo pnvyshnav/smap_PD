@@ -66,11 +66,11 @@ std::vector<VoxelStatistics> GaussianProcessMap::stats(const TrueMap &trueMap)
 {
     _clearVoxels();
     std::vector<VoxelStatistics> stats;
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
             {
                 auto _x = Parameters::xMin + x * Parameters::voxelSize;
                 auto _y = Parameters::yMin + y * Parameters::voxelSize;
@@ -110,11 +110,11 @@ void GaussianProcessMap::computeStdDevScalingFactor()
 
     double point[DIMENSIONS] = {};
     unsigned int stdkey = 0;
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; x += voxelIncrement)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); x += voxelIncrement)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; y += voxelIncrement)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); y += voxelIncrement)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; z += voxelIncrement)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); z += voxelIncrement)
             {
                 point[0] = Parameters::xMin + x * Parameters::voxelSize;
                 point[1] = Parameters::yMin + y * Parameters::voxelSize;

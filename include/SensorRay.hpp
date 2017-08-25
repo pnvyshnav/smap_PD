@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Parameters.hpp"
+#include "Parameters.h"
 
 struct SensorRayPoint
 {

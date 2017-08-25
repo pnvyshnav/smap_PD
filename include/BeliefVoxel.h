@@ -7,7 +7,7 @@
 
 #include <octomap/OcTreeDataNode.h>
 
-#include "Parameters.hpp"
+#include "Parameters.h"
 
 class Belief
 {

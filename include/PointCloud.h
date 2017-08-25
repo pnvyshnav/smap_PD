@@ -1,5 +1,5 @@
 #include <string>
-#include "Parameters.hpp"
+#include "Parameters.h"
 
 class PointCloud
 {

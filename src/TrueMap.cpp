@@ -12,7 +12,7 @@
 
 octomap::OcTree _helpMap(Parameters::voxelSize);
 
-TrueMap::TrueMap() : octomap::OcTree(Parameters::voxelSize), QVoxelMap(this)
+TrueMap::TrueMap() : octomap::OcTree(Parameters::voxelSize), QVoxelMap(this), _empty(true)
 {
 }
 
@@ -20,6 +20,7 @@ TrueMap TrueMap::generate(unsigned int seed)
 {
     srand(seed);
     TrueMap map;
+    map._empty = false;
 
 #if defined(PLANNER_2D_TEST)
     struct Rectangle
@@ -42,11 +43,11 @@ TrueMap TrueMap::generate(unsigned int seed)
             Rectangle(-1.0,  0.2, -0.1,  1.0)
     };
 
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
             {
                 octomap::point3d point(
                         (float) (Parameters::xMin + x * Parameters::voxelSize),
@@ -61,13 +62,13 @@ TrueMap TrueMap::generate(unsigned int seed)
         }
     }
 #else
-    auto center = Parameters::Vec3Type(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter);
+    auto center = Parameters::center();
     // XXX note the <= instead of < here compared to LogOddsMap and BeliefMap
-    for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y <= Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y <= Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z <= Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z <= Parameters::voxelsPerDimensionZ(); ++z)
             {
                 octomap::point3d point(
                         Parameters::xMin + x * Parameters::voxelSize,
@@ -92,10 +93,10 @@ TrueMap TrueMap::generate(unsigned int seed)
 
     ROS_INFO("True map has %d nodes in total.", (int)map.calcNumNodes());
     ROS_INFO("Voxels per dimension: %d x %d x %d (%d in total)",
-             (int)Parameters::voxelsPerDimensionX,
-             (int)Parameters::voxelsPerDimensionY,
-             (int)Parameters::voxelsPerDimensionZ,
-             (int)Parameters::voxelsTotal);
+             (int)Parameters::voxelsPerDimensionX(),
+             (int)Parameters::voxelsPerDimensionY(),
+             (int)Parameters::voxelsPerDimensionZ(),
+             (int)Parameters::voxelsTotal());
     map.calcMinMax();
     ROS_INFO("True map range: (%.2f %.2f %.2f) to (%.2f %.2f %.2f)",
              map.min_value[0], map.min_value[1], map.min_value[2],
@@ -105,13 +106,14 @@ TrueMap TrueMap::generate(unsigned int seed)
 
 void TrueMap::shuffle()
 {
-    auto center = Parameters::Vec3Type(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter);
+    _empty = false;
+    auto center = Parameters::center();
     // XXX note the <= instead of < here compared to LogOddsMap and BeliefMap
-    for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y <= Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y <= Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z <= Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z <= Parameters::voxelsPerDimensionZ(); ++z)
             {
                 octomap::point3d point(
                         Parameters::xMin + x * Parameters::voxelSize,
@@ -136,16 +138,17 @@ void TrueMap::shuffle()
 TrueMap TrueMap::generateFromPointCloud(std::string filename)
 {
     TrueMap map;
+    map._empty = false;
 
     // initialize all cells to be free
     ROS_INFO("Setting all TrueMap cells to free.");
-    auto center = Parameters::Vec3Type(Parameters::xCenter, Parameters::yCenter, Parameters::zCenter);
+    auto center = Parameters::center();
     // XXX note the <= instead of < here compared to LogOddsMap and BeliefMap
-    for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y <= Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y <= Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z <= Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z <= Parameters::voxelsPerDimensionZ(); ++z)
             {
                 octomap::point3d point(
                         Parameters::xMin + x * Parameters::voxelSize,
@@ -170,10 +173,10 @@ TrueMap TrueMap::generateFromPointCloud(std::string filename)
     }
 
     ROS_INFO("Voxels per dimension: %d x %d x %d (%d in total)",
-             (int)Parameters::voxelsPerDimensionX,
-             (int)Parameters::voxelsPerDimensionY,
-             (int)Parameters::voxelsPerDimensionZ,
-             (int)Parameters::voxelsTotal);
+             (int)Parameters::voxelsPerDimensionX(),
+             (int)Parameters::voxelsPerDimensionY(),
+             (int)Parameters::voxelsPerDimensionZ(),
+             (int)Parameters::voxelsTotal());
 
     return map;
 }
@@ -227,12 +230,13 @@ TrueMap TrueMap::generateCorridor()
 TrueMap TrueMap::_generateFromObstacles(const std::vector<Box> &obstacles)
 {
     TrueMap map;
+    map._empty = false;
     int occupied = 0;
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
             {
                 octomap::point3d point(
                         (float) (Parameters::xMin + x * Parameters::voxelSize),
@@ -256,10 +260,10 @@ TrueMap TrueMap::_generateFromObstacles(const std::vector<Box> &obstacles)
 
     ROS_INFO("True map has %d nodes in total.", (int)map.calcNumNodes());
     ROS_INFO("Voxels per dimension: %d x %d x %d (%d in total)",
-             (int)Parameters::voxelsPerDimensionX,
-             (int)Parameters::voxelsPerDimensionY,
-             (int)Parameters::voxelsPerDimensionZ,
-             (int)Parameters::voxelsTotal);
+             (int)Parameters::voxelsPerDimensionX(),
+             (int)Parameters::voxelsPerDimensionY(),
+             (int)Parameters::voxelsPerDimensionZ(),
+             (int)Parameters::voxelsTotal());
     ROS_INFO("%d voxels are occupied.", occupied);
     map.calcMinMax();
     ROS_INFO("True map range: (%.2f %.2f %.2f) to (%.2f %.2f %.2f)",
@@ -295,16 +299,17 @@ TrueMap TrueMap::generateFromCarmen(std::string filename, std::string messageNam
 {
     pointCounts.clear();
     TrueMap map;
+    map._empty = false;
     Drone drone;
     drone.registerObserver(std::bind(handleObservation, &map, std::placeholders::_1));
     drone.runCarmenFile(filename, messageName, oldFormat, everyNth);
 
     ROS_INFO("True map has %d nodes in total.", (int)map.calcNumNodes());
     ROS_INFO("Voxels per dimension: %d x %d x %d (%d in total)",
-             (int)Parameters::voxelsPerDimensionX,
-             (int)Parameters::voxelsPerDimensionY,
-             (int)Parameters::voxelsPerDimensionZ,
-             (int)Parameters::voxelsTotal);
+             (int)Parameters::voxelsPerDimensionX(),
+             (int)Parameters::voxelsPerDimensionY(),
+             (int)Parameters::voxelsPerDimensionZ(),
+             (int)Parameters::voxelsTotal());
     size_t totalPointCounts = 0;
     for (auto c : pointCounts)
         totalPointCounts += c;
@@ -316,4 +321,25 @@ TrueMap TrueMap::generateFromCarmen(std::string filename, std::string messageNam
              map.max_value[0], map.max_value[1], map.max_value[2]);
 
     return map;
+}
+
+TrueMap &TrueMap::operator=(const TrueMap &map)
+{
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
+            {
+                octomap::point3d point(
+                        Parameters::xMin + x * Parameters::voxelSize,
+                        Parameters::yMin + y * Parameters::voxelSize,
+                        Parameters::zMin + z * Parameters::voxelSize);
+
+                float logOdds = map.search(point)->getLogOdds();
+                setNodeValue(point, logOdds);
+            }
+        }
+    }
+    return *this;
 }

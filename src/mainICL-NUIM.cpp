@@ -17,7 +17,7 @@
 #include "../include/Statistics.hpp"
 #include "../include/PointCloud.h"
 #include "../include/Trajectory.hpp"
-#include "../include/ICLNUIMTrajectory.hpp"
+#include "../include/ICLNUIMLoader.hpp"
 //#include "../lodepng/lodepng.h"
 
 #include <algorithm>
@@ -31,24 +31,14 @@ void endianSwap(T *objp)
 
 std::string homedir = getenv("HOME");
 
-#ifdef REAL_3D
-TrueMap trueMap = TrueMap::generateFromPointCloud(homedir + "/catkin_ws/src/smap/dataset/V1_01_easy/data.ply");
-#elif defined(REAL_2D)
-//    std::string carmenFile = homedir + "/catkin_ws/src/smap/dataset/fr_campus/fr-campus.carmen.log";
-//    std::string carmenFile = homedir + "/catkin_ws/src/smap/dataset/mit-csail-3rd-floor-2005-12-17-run4.flaser.log";
-    std::string carmenFile = homedir + "/catkin_ws/src/smap/dataset/albertB.img.sm.log";
-    TrueMap trueMap = TrueMap::generateFromCarmen(carmenFile, "FLASER", true, 1);//, "ROBOTLASER1", false);
-#else
-TrueMap trueMap = TrueMap::generateCorridor(); //TrueMap::generate(123); // use a fixed seed value
-#endif
-
+TrueMap trueMap;
 BeliefMap beliefMap;
 LogOddsMap logOddsMap;
 GaussianProcessMap gaussianProcessMap;
 FakeRobot<> robot(
-        Parameters::Vec3Type(Parameters::xCenter,
-                             Parameters::yCenter,
-                             Parameters::zCenter),
+        Parameters::Vec3Type(Parameters::xCenter(),
+                             Parameters::yCenter(),
+                             Parameters::zCenter()),
 #if defined(FAKE_2D)
         Parameters::Vec3Type(1, 0, 0),
 #else
@@ -65,65 +55,65 @@ ecl::StopWatch stopWatch;
 Observation allObservations;
 
 int updated = 0;
-void handleObservation(const Observation &observation)
-{
-    allObservations.append(observation);
-#ifdef GP_RUNS
-    return;
-#endif
-#ifndef SLIM_STATS
-    stats->registerMeasurements((int)observation.measurements().size());
-    std::valarray<Parameters::NumType> rayLengths(observation.measurements().size());
-    unsigned int i = 0;
-    for (auto &measurement : observation.measurements())
-    {
-        rayLengths[i++] = measurement.value;
-    }
-    stats->registerRayStatistics(rayLengths.min(), rayLengths.max(), rayLengths.sum() / i);
-
-    stopWatch.restart();
-    beliefMap.update(observation, trueMap);
-    stats->registerStepTimeBelief(stopWatch.elapsed());
-    stopWatch.restart();
-    logOddsMap.update(observation, trueMap);
-    stats->registerStepTimeLogOdds(stopWatch.elapsed());
-
+//void handleObservation(const Observation &observation)
+//{
+//    allObservations.append(observation);
+//#ifdef GP_RUNS
+//    return;
+//#endif
+//#ifndef SLIM_STATS
+//    stats->registerMeasurements((int)observation.measurements().size());
+//    std::valarray<Parameters::NumType> rayLengths(observation.measurements().size());
+//    unsigned int i = 0;
+//    for (auto &measurement : observation.measurements())
+//    {
+//        rayLengths[i++] = measurement.value;
+//    }
+//    stats->registerRayStatistics(rayLengths.min(), rayLengths.max(), rayLengths.sum() / i);
+//
 //    stopWatch.restart();
+//    beliefMap.update(observation, trueMap);
+//    stats->registerStepTimeBelief(stopWatch.elapsed());
+//    stopWatch.restart();
+//    logOddsMap.update(observation, trueMap);
+//    stats->registerStepTimeLogOdds(stopWatch.elapsed());
+//
+////    stopWatch.restart();
+////    gaussianProcessMap.update(observation);
+////    stats->registerStepTimeGP(stopWatch.elapsed());
+//
+//    stats->update(logOddsMap, beliefMap, gaussianProcessMap, robot);
+//#else
+//    beliefMap.update(observation, trueMap);
+//    logOddsMap.update(observation, trueMap);
 //    gaussianProcessMap.update(observation);
-//    stats->registerStepTimeGP(stopWatch.elapsed());
-
-    stats->update(logOddsMap, beliefMap, gaussianProcessMap, robot);
-#else
-    beliefMap.update(observation, trueMap);
-    logOddsMap.update(observation, trueMap);
-    gaussianProcessMap.update(observation);
-#endif
-
-#ifdef REAL_3D
-    if (updated > 0 && updated % 25 == 0)
-    {
-#ifdef SLIM_STATS
-        stats->update(logOddsMap, beliefMap, robot);
-#endif
-
-        // save stats continually
-        stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/stats_real3d_"
-                          + std::to_string(updated) + ".bag");
-#ifdef SLIM_STATS
-        stats->reset();
-#endif
-    }
-#endif
-    ++updated;
-
-#if defined(FAKE_2D) || defined(FAKE_3D)
-    trueMap.publish();
-    robot.publish();
-    gaussianProcessMap.publish();
-    if (!ros::ok())
-        robot.stop();
-#endif
-}
+//#endif
+//
+//#ifdef REAL_3D
+//    if (updated > 0 && updated % 25 == 0)
+//    {
+//#ifdef SLIM_STATS
+//        stats->update(logOddsMap, beliefMap, robot);
+//#endif
+//
+//        // save stats continually
+//        stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/stats_real3d_"
+//                          + std::to_string(updated) + ".bag");
+//#ifdef SLIM_STATS
+//        stats->reset();
+//#endif
+//    }
+//#endif
+//    ++updated;
+//
+//#if defined(FAKE_2D) || defined(FAKE_3D)
+//    trueMap.publish();
+//    robot.publish();
+//    gaussianProcessMap.publish();
+//    if (!ros::ok())
+//        robot.stop();
+//#endif
+//}
 
 int main(int argc, char **argv)
 {
@@ -147,82 +137,111 @@ int main(int argc, char **argv)
     double u0 = K(0, 2);
     double v0 = K(1, 2);
 
-    ICLNUIMTrajectory traj;
-    std::string trajFilename = homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/livingroom1-traj.txt";
-    traj.loadFromFile(trajFilename);
+    ICLNUIMLoader loader;
+//    std::string trajFilename = homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/traj0/livingRoom0n.gt.sim";
+//    traj.loadFromFile(trajFilename);
+
+    ROS_INFO("Loading ...");
+    bool result = loader.load(homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/traj0", 10); //1510);
+    ROS_INFO("Loaded traj0 successfully? %i", (int)result);
 
     auto *visualizer = new Visualizer;
+//    cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);
 
+    Parameters::xMin = -2.7;
+    Parameters::yMin = -0.1;
+    Parameters::zMin = -4.8;
+    Parameters::xMax = 2.8;
+    Parameters::yMax = 2.9;
+    Parameters::zMax = 4.2;
+    Parameters::voxelSize = 0.0625; //0.125;
 
-    for (int step = 0; step < traj.data.size(); ++ step)
+    std::string plyFilename = homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/living-room.ply";
+    trueMap = TrueMap::generateFromPointCloud(plyFilename);
+    for (int i = 0; i < 400; ++i)
     {
-        cv::Mat image;
-        std::string filename = homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/depth/" + std::to_string(step) + ".png";
-        image = cv::imread(filename, CV_LOAD_IMAGE_GRAYSCALE);
-
-        if (!image.data)                              // Check for invalid input
-        {
-            std::cout << "Could not open or find the image" << std::endl;
-            return -1;
-        }
-
-        allObservations.clear();
-        srand(1234);
-        for (int i = 0; i < 20; ++i)
-        {
-            // pixels to query
-            int u = i % 5 * 640/5; //rand() % 640;
-            int v = i / 5 * 480 /5; //rand() % 480;
-
-            unsigned char c = image.at<unsigned char>(v, u);
-            std::cout << "Pixel (" << u << "," << v << "): " << (int) c << std::endl;
-//            image.at<unsigned char>(v, u) = 255;
-
-            endianSwap(&c);
-            auto z = (double) c;
-            if ((int) c == 255)
-            {
-                std::cerr << "Skipping depth of 255 (infinity)." << std::endl;
-                continue;
-            }
-            double depth = z / 255.;
-            std::cout << "Depth: " << z << std::endl;
-
-            double u_u0_by_fx = (u - u0) / fx;
-            double v_v0_by_fy = (v - v0) / fy;
-
-            z = z / std::sqrt(std::pow(u_u0_by_fx, 2.) + std::pow(v_v0_by_fy, 2.) + 1);
-
-            double x = ((u - u0) / fx) * z;
-            double y = ((v - v0) / fy) * z;
-
-            Eigen::Vector3d cameraPosition = traj.data[step].transformation.block(0, 3, 3, 1);
-            //TODO what about camera rotation?
-            Eigen::Matrix3d cameraRotation = traj.data[step].transformation.block(0, 0, 3, 3);
-            Eigen::Vector3d orientation(3);
-            orientation << x, y, z;
-//            orientation = cameraRotation * orientation;
-
-            SensorRay ray(Parameters::Vec3Type(0,0,0), //cameraPosition[0], cameraPosition[1], cameraPosition[2]),
-                          Parameters::Vec3Type(orientation[0], orientation[1], orientation[2]),
-                          depth);
-            Measurement m = Measurement::voxel(ray, depth);
-            allObservations.append(m);
-        }
-
-        for (int i = 0; i < 10; ++i)
-            visualizer->publishObservation(&allObservations);
-
-        visualizer->sleep(100);
+        visualizer->publishTrueMap(&trueMap);
+        visualizer->publishObservation(&loader.observation);
     }
+
+//    for (int step = 0; step < traj.poses.size(); ++ step)
+//    {
+//        cv::Mat image;
+//        std::string filename = homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/traj0/depth/" + std::to_string(step) + ".png";
+//        image = cv::imread(filename, CV_LOAD_IMAGE_GRAYSCALE);
+//
+//        if (!image.data)                              // Check for invalid input
+//        {
+//            std::cout << "Could not open or find the image" << std::endl;
+//            return -1;
+//        }
+//
+//        allObservations.clear();
+//        srand(1234);
+//        for (int i = 0; i < 20; ++i)
+//        {
+//            // pixels to query
+//            int v = i % 5 * 640/5; //rand() % 640;
+//            int u = i / 5 * 480/5; //rand() % 480;
+//
+//            unsigned char c = image.at<unsigned char>(u, v);
+//            std::cout << "Pixel (" << u << "," << v << "): " << (int) c << std::endl;
+//            image.at<unsigned char>(u, v) = 255;
+//
+//            endianSwap(&c);
+//            auto z = (double) c;
+//            if ((int) c == 255)
+//            {
+//                std::cerr << "Skipping depth of 255 (infinity)." << std::endl;
+//                continue;
+//            }
+//            double depth = z / 255.;
+//            z /= 255.;
+//
+//            double u_u0_by_fx = (u - u0) / fx;
+//            double v_v0_by_fy = (v - v0) / fy;
+//
+//            z = z / std::sqrt(std::pow(u_u0_by_fx, 2.) + std::pow(v_v0_by_fy, 2.) + 1);
+//
+//            double x = ((u - u0) / fx) * z;
+//            double y = ((v - v0) / fy) * z;
+//
+//            std::cout << "z: " << z << std::endl;
+//
+//            Eigen::Vector3d cameraPosition = traj.poses[step].block(0, 3, 3, 1);
+//            //TODO what about camera rotation?
+//            Eigen::Matrix3d cameraRotation = traj.poses[step].block(0, 0, 3, 3);
+//            Eigen::Vector3d orientation(3);
+//            orientation << x, y, z;
+//            orientation = cameraRotation * orientation;
+//
+//            SensorRay ray(Parameters::Vec3Type(cameraPosition[0], cameraPosition[1], cameraPosition[2]),
+//                          Parameters::Vec3Type(orientation[0], orientation[1], orientation[2]),
+//                          depth);
+//            Measurement m = Measurement::voxel(ray, depth);
+//            allObservations.append(m);
+//
+//            beliefMap.update(m, trueMap);
+//
+//            imshow("Display window", image);
+//            cv::waitKey(1);
+//        }
+//
+//        for (int i = 0; i < 10; ++i)
+//            visualizer->publishObservation(&allObservations);
+//
+//        visualizer->publishBeliefMap(&beliefMap);
+//
+//        visualizer->sleep(100);
+//    }
 
 //    cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);// Create a window for display.
 //    imshow("Display window", image);                   // Show our image inside it.
 
 //    visualizer->render();
 
-    cv::waitKey(0);                                          // Wait for a keystroke in the window
-    return 0;
+//    cv::waitKey(0);                                          // Wait for a keystroke in the window
+    return EXIT_SUCCESS;
 
 //    std::vector<unsigned char> image;
 //    unsigned width;

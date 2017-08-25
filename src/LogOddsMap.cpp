@@ -1,6 +1,6 @@
 #include "../include/LogOddsMap.h"
 #include "../include/Sensor.h"
-#include "../include/Parameters.hpp"
+#include "../include/Parameters.h"
 
 #include <set>
 

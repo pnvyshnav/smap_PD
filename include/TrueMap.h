@@ -1,7 +1,7 @@
 #pragma once
 
 #include <octomap/OcTree.h>
-#include "Parameters.hpp"
+#include "Parameters.h"
 #include "QVoxel.hpp"
 #include "Observable.hpp"
 #include "Box.hpp"
@@ -13,10 +13,12 @@ class TrueMap
           public Observable
 {
 public:
-    static TrueMap generate(unsigned int seed = (unsigned int) time(NULL));
+    TrueMap();
+
+    static TrueMap generate(unsigned int seed = (unsigned int) time(nullptr));
     static TrueMap generateFromPointCloud(std::string filename);
     static TrueMap generateFromCarmen(std::string filename, std::string messageName = "FLASER",
-                                      bool oldFormat = true, const unsigned int everyNth = 1);
+                                      bool oldFormat = true, unsigned int everyNth = 1);
     static TrueMap generateCorridor();
 
     /**
@@ -46,9 +48,15 @@ public:
     static octomap::OcTreeKey coordToKey(const octomap::point3d &position);
     static octomap::point3d keyToCoord(octomap::OcTreeKey key);
 
-private:
-    TrueMap();
+    TrueMap &operator=(const TrueMap &map);
 
+    inline bool empty() const
+    {
+        return _empty;
+    }
+
+private:
     static TrueMap _generateFromObstacles(const std::vector<Box> &obstacles);
+    bool _empty;
 };
 

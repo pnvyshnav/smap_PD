@@ -2,7 +2,7 @@
 
 #include <valarray>
 #include <octomap/OcTree.h>
-#include "Parameters.hpp"
+#include "Parameters.h"
 #include "StatisticsMap.hpp"
 #include "Observable.hpp"
 #include "Observation.hpp"

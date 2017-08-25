@@ -1,7 +1,7 @@
 #pragma once
 
 #include <sstream>
-#include "Parameters.hpp"
+#include "Parameters.h"
 
 
 struct Box

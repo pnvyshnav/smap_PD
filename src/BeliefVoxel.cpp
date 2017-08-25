@@ -2,7 +2,7 @@
 #include <sstream>
 
 #include "../include/BeliefVoxel.h"
-#include "../include/Parameters.hpp"
+#include "../include/Parameters.h"
 
 
 BeliefDistribution::Particles generateParticles()

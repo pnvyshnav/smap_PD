@@ -15,11 +15,11 @@ BeliefMap::BeliefMap() : octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractO
 
     init();
 
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
             {
                 octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
                                        Parameters::yMin + y * Parameters::voxelSize,
@@ -40,11 +40,11 @@ BeliefMap::BeliefMap(const BeliefMap &map) :
         octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractOcTree>(Parameters::voxelSize),
         StatisticsMap(this)
 {
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
             {
                 octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
                                        Parameters::yMin + y * Parameters::voxelSize,
@@ -69,11 +69,11 @@ BeliefMap *BeliefMap::create() const
 BeliefMap BeliefMap::copy() const
 {
     BeliefMap map;
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
             {
                 octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
                                        Parameters::yMin + y * Parameters::voxelSize,
@@ -93,11 +93,11 @@ BeliefMap BeliefMap::copy() const
 
 BeliefMap &BeliefMap::operator=(const BeliefMap &map)
 {
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
             {
                 octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
                                        Parameters::yMin + y * Parameters::voxelSize,
@@ -346,11 +346,11 @@ BeliefVoxel *BeliefMap::_createNodeChild(BeliefVoxel *node, unsigned int childId
 
 void BeliefMap::reset()
 {
-    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
-        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
         {
-            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ; ++z)
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
             {
                 octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
                                        Parameters::yMin + y * Parameters::voxelSize,
