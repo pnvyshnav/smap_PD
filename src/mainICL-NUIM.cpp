@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 //    traj.loadFromFile(trajFilename);
 
     ROS_INFO("Loading ...");
-    bool result = loader.load(homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/traj0", 400); //1510);
+    bool result = loader.load(homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/traj0", 10); //1510);
     ROS_INFO("Loaded traj0 successfully? %i", (int)result);
 
     auto *visualizer = new Visualizer;
@@ -156,12 +156,12 @@ int main(int argc, char **argv)
     Parameters::zMax = 4.2;
     Parameters::voxelSize = 0.0625; //0.125;
 
-    std::string plyFilename = homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/living-room.ply";
-    trueMap = TrueMap::generateFromPointCloud(plyFilename);
-    for (int i = 0; i < 4; ++i)
+//    std::string plyFilename = homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/living-room.ply";
+//    trueMap = TrueMap::generateFromPointCloud(plyFilename);
+    for (int i = 0; i < 10; ++i)
     {
-        visualizer->publishTrueMap(&trueMap);
-        visualizer->publishObservation(&loader.observation);
+//        visualizer->publishTrueMap(&trueMap);
+        visualizer->publishObservation(&loader.observation, true, true);
     }
 
 //    for (int step = 0; step < traj.poses.size(); ++ step)

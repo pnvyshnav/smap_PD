@@ -993,7 +993,8 @@ void Visualizer::publishGaussianProcessMapFull(const Observable *visualizable, b
     ros::spinOnce();
 }
 
-void Visualizer::publishGaussianProcessInconsistencyMapFull(const Observable *visualizable, TrueMap &trueMap, double k)
+void Visualizer::publishGaussianProcessInconsistencyMapFull(const Observable *visualizable,
+                                                            TrueMap &trueMap, double k)
 {
     if (!visualizable)
         return;
@@ -1120,7 +1121,7 @@ void Visualizer::publishTrajectory(const Observable *visualizable)
     ros::spinOnce();
 }
 
-void Visualizer::publishObservation(const Observable *visualizable)
+void Visualizer::publishObservation(const Observable *visualizable, bool visualizeRays, bool removeOld)
 {
     if (!visualizable)
         return;
@@ -1133,10 +1134,13 @@ void Visualizer::publishObservation(const Observable *visualizable)
     int id = 123177;
 
     visualization_msgs::MarkerArray markers;
-    visualization_msgs::Marker clearMarker;
-    clearMarker.action = 3; // clear all
-    clearMarker.header.frame_id = "map";
-    markers.markers.push_back(clearMarker);
+    if (removeOld)
+    {
+        visualization_msgs::Marker clearMarker;
+        clearMarker.action = 3; // clear all
+        clearMarker.header.frame_id = "map";
+        markers.markers.push_back(clearMarker);
+    }
     for (auto &measurement: observation->measurements())
     {
         auto _x = measurement.sensor.position.x();
@@ -1147,26 +1151,28 @@ void Visualizer::publishObservation(const Observable *visualizable)
 #endif
         Parameters::Vec3Type pos(_x, _y, _z);
 
-//        visualization_msgs::Marker arrow;
-//        arrow.id = id ++; //(int) QVoxel::computeHash(TrueMap::coordToKey(pos));
-//        arrow.action = 0;
-//        arrow.type = visualization_msgs::Marker::ARROW;
-//        arrow.header.frame_id = "map";
-//        arrow.scale.x = measurement.sensor.range;
-//        arrow.scale.y = Parameters::voxelSize * .1;
-//        arrow.scale.z = Parameters::voxelSize * .1;
-//        arrow.color.a = 1;
-//        arrow.color.r = 1;
-//        arrow.color.g = 1;
-//        arrow.color.b = 0;
-//        arrow.pose.position.x = _x;
-//        arrow.pose.position.y = _y;
-//        arrow.pose.position.z = _z;
-//        arrow.pose.orientation.x = measurement.sensor.orientation.x();
-//        arrow.pose.orientation.y = measurement.sensor.orientation.y();
-//        arrow.pose.orientation.z = measurement.sensor.orientation.z();
-//        markers.markers.push_back(arrow);
-
+        if (visualizeRays)
+        {
+            visualization_msgs::Marker arrow;
+            arrow.id = id++; //(int) QVoxel::computeHash(TrueMap::coordToKey(pos));
+            arrow.action = 0;
+            arrow.type = visualization_msgs::Marker::ARROW;
+            arrow.header.frame_id = "map";
+            arrow.scale.x = measurement.sensor.range;
+            arrow.scale.y = Parameters::voxelSize * .1;
+            arrow.scale.z = Parameters::voxelSize * .1;
+            arrow.color.a = 1;
+            arrow.color.r = 1;
+            arrow.color.g = 1;
+            arrow.color.b = 0;
+            arrow.pose.position.x = _x;
+            arrow.pose.position.y = _y;
+            arrow.pose.position.z = _z;
+            arrow.pose.orientation.x = measurement.sensor.orientation.x();
+            arrow.pose.orientation.y = measurement.sensor.orientation.y();
+            arrow.pose.orientation.z = measurement.sensor.orientation.z();
+            markers.markers.push_back(arrow);
+        }
 
         auto point = measurement.sensor.endPoint();
 //        for (auto &point : measurement.sensor.discretized(measurement.value))

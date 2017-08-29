@@ -25,7 +25,7 @@ struct ICLNUIMLoader
         _foldername = foldername;
         observation.clear();
 
-        for (int i = 0; i < numberOfSamples; ++i)
+        for (int i = 0; i < numberOfSamples*10; i += 10)
         {
             if (!_readDepth(i, 0, depth_array))
                 return false;
@@ -34,29 +34,39 @@ struct ICLNUIMLoader
             Eigen::Vector3f zAxis(0.f, 0.f, 1.f);
             Eigen::Vector3f orientation;
 
-            for (int v = 0; v < img_height; v+=100) // TODO note skipping
+            for (int v = 0; v < img_height; v += 100) // TODO note skipping
             {
-                for (int u = 0; u < img_width; u+=100) // TODO note skipping
+                for (int u = 0; u < img_width; u += 100) // TODO note skipping
                 {
                     float u_u0_by_fx = (u - u0) / focal_x;
                     float v_v0_by_fy = (v - v0) / focal_y;
 
                     float depth = depth_array[u + v * img_width];
-                    float z = depth / std::sqrt(u_u0_by_fx * u_u0_by_fx + v_v0_by_fy * v_v0_by_fy + 1);
+                    float z = depth / std::sqrt(u_u0_by_fx * u_u0_by_fx +
+                                                v_v0_by_fy * v_v0_by_fy + 1);
 
-                    Eigen::Vector3f target;
+                    Eigen::Vector4f target, endpoint;
                     target[0] = (u_u0_by_fx) * (z);
                     target[1] = (v_v0_by_fy) * (z);
                     target[2] = z;
-                    orientation = pose.block(0, 0, 3, 3) * target;
-                    orientation.normalize();
+                    target[3] = 1;
+//                    orientation = target;
+                    endpoint = pose * target;
 
+                    std::cout << "Orientation: " << target.transpose() << std::endl;
+                    std::cout << "Position:    " << pose.block(0, 3, 3, 1).transpose() << std::endl;
+
+//                    SensorRay sensor(
+//                            Parameters::Vec3Type(pose(0, 3), pose(1, 3), pose(2, 3)),
+//                            Parameters::Vec3Type(orientation[0], orientation[1], orientation[2]),
+//                            depth);
                     SensorRay sensor(
-                            Parameters::Vec3Type(pose(0, 3), pose(1, 3), pose(2, 3)),
-                            Parameters::Vec3Type(orientation[0], orientation[1], orientation[2]),
+                            Parameters::Vec3Type(endpoint[0], endpoint[1], endpoint[2]),
+                            Parameters::Vec3Type(1, 1, 0),
                             depth);
                     observation.append(Measurement::voxel(sensor, depth));
                 }
+                std::cout << std::endl;
             }
         }
         return true;
@@ -218,12 +228,12 @@ private:
         transformation.block(0, 0, 3, 3) = R;
         transformation.block(0, 3, 3, 1) = posvector;
         transformation.block(3, 0, 1, 4) << 0, 0, 0, 1;
-        std::cout << std::endl << "R:" << std::endl;
-        std::cout << R << std::endl;
-        std::cout << std::endl << "upvector:" << std::endl;
-        std::cout << upvector << std::endl;
-        std::cout << std::endl << "direction:" << std::endl;
-        std::cout << direction << std::endl;
+//        std::cout << std::endl << "R:" << std::endl;
+//        std::cout << R << std::endl;
+//        std::cout << std::endl << "upvector:" << std::endl;
+//        std::cout << upvector << std::endl;
+//        std::cout << std::endl << "direction:" << std::endl;
+//        std::cout << direction << std::endl;
         std::cout << std::endl << "POSE:" << std::endl;
         std::cout << transformation << std::endl;
         return transformation; //TooN::SE3<>(R, posvector);
