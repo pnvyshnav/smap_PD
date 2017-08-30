@@ -1174,7 +1174,7 @@ void Visualizer::publishObservation(const Observable *visualizable, bool visuali
             markers.markers.push_back(arrow);
         }
 
-        auto point = measurement.sensor.endPoint();
+        auto point = measurement.sensor.endPoint(); // sensor.position; //
 //        for (auto &point : measurement.sensor.discretized(measurement.value))
         {
 //            _x = point.position.x();
@@ -1196,15 +1196,15 @@ void Visualizer::publishObservation(const Observable *visualizable, bool visuali
             dot.action = 0;
             dot.type = visualization_msgs::Marker::SPHERE;
             dot.header.frame_id = "map";
-            dot.scale.x = Parameters::voxelSize * .1;
-            dot.scale.y = Parameters::voxelSize * .1;
-            dot.scale.z = Parameters::voxelSize * .1;
+            dot.scale.x = Parameters::voxelSize;// * .1;
+            dot.scale.y = Parameters::voxelSize;// * .1;
+            dot.scale.z = Parameters::voxelSize;// * .1;
             dot.color.a = 1;
 //            if (point.occupied)
             {
-                dot.color.r = .1;
-                dot.color.g = .2;
-                dot.color.b = 0.2;
+                dot.color.r = .2;
+                dot.color.g = .6;
+                dot.color.b = 0.7;
             }
 //            else
 //            {

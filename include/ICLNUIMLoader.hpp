@@ -3,6 +3,7 @@
 #include <vector>
 #include <fstream>
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 
 
 struct ICLNUIMLoader
@@ -25,18 +26,41 @@ struct ICLNUIMLoader
         _foldername = foldername;
         observation.clear();
 
-        for (int i = 0; i < numberOfSamples*10; i += 10)
+        std::vector<Eigen::Vector3f> positions;
+        std::vector<Eigen::Quaternionf> orientations;
+        _readTrajectory(foldername + "/livingRoom0.gt.freiburg.txt", positions, orientations);
+
+        for (int i = 0; i < numberOfSamples*15; i += 15)
         {
             if (!_readDepth(i, 0, depth_array))
                 return false;
+//
+//            auto pose = _readPose(i, 0);
+//            Eigen::Vector3f zAxis(0.f, 0.f, 1.f);
+//            Eigen::Vector3f orientation;
 
-            auto pose = _readPose(i, 0);
-            Eigen::Vector3f zAxis(0.f, 0.f, 1.f);
-            Eigen::Vector3f orientation;
+            auto position = positions[i];
+            auto orientation = orientations[i];
 
-            for (int v = 0; v < img_height; v += 100) // TODO note skipping
+//            auto target = orientation * Eigen::Vector3f(-1,0,-1);
+//
+//            SensorRay sensor(
+////                            Parameters::Vec3Type(endpoint[1]-2.82, endpoint[0]+0.23, endpoint[2]),
+//                    Parameters::Vec3Type(position[0], position[1]+1.51739, -position[2]),
+//                    Parameters::Vec3Type(target[0], target[1], -target[2]),
+//                    1);
+//            observation.append(Measurement::voxel(sensor, 1));
+            std::cout << "position: " << position.transpose() << std::endl;
+//            std::cout << "target:   " << target.transpose() << std::endl;
+            std::cout << "orientation: "
+                      << orientation.x() << " "
+                      << orientation.y() << " "
+                      << orientation.z() << " "
+                      << orientation.w() << std::endl << std::endl;
+
+            for (int v = 0; v < img_height; v += 80) // TODO note skipping
             {
-                for (int u = 0; u < img_width; u += 100) // TODO note skipping
+                for (int u = 0; u < img_width; u += 80) // TODO note skipping
                 {
                     float u_u0_by_fx = (u - u0) / focal_x;
                     float v_v0_by_fy = (v - v0) / focal_y;
@@ -45,24 +69,38 @@ struct ICLNUIMLoader
                     float z = depth / std::sqrt(u_u0_by_fx * u_u0_by_fx +
                                                 v_v0_by_fy * v_v0_by_fy + 1);
 
-                    Eigen::Vector4f target, endpoint;
-                    target[0] = (u_u0_by_fx) * (z);
+                    Eigen::Vector3f target;
+                    target[0] = -(u_u0_by_fx) * (z);
                     target[1] = (v_v0_by_fy) * (z);
-                    target[2] = z;
-                    target[3] = 1;
+                    target[2] = -z;
+//                    target[3] = 1;
+                    target = orientation * target;
 //                    orientation = target;
-                    endpoint = pose * target;
 
-                    std::cout << "Orientation: " << target.transpose() << std::endl;
-                    std::cout << "Position:    " << pose.block(0, 3, 3, 1).transpose() << std::endl;
+//                    Eigen::Matrix3f rotation = pose.block(0, 0, 3, 3);
+//                    Eigen::Vector3f translation = pose.block(0, 3, 3, 1);
+
+//                    Eigen::Vector3f endpoint;
+////                    endpoint = rotation * target + translation;
+//                    endpoint = (pose * target).block(0,0,3,1);
+//                    Eigen::Vector3f orientation = rotation * target.block(0,0,3,1);
+
+//                    std::cout << "Orientation: " << target.transpose() << std::endl;
+//                    std::cout << "Position:    " << pose.block(0, 3, 3, 1).transpose() << std::endl;
+//                    std::cout << "Endpoint:    " << endpoint.transpose() << std::endl;
+//
+//                    Eigen::Vector3f position = pose.block(0, 3, 3, 1).transpose();
+//                    std::swap(position[0], position[1]);
+//                    orientation = (endpoint-position).normalized();
 
 //                    SensorRay sensor(
 //                            Parameters::Vec3Type(pose(0, 3), pose(1, 3), pose(2, 3)),
 //                            Parameters::Vec3Type(orientation[0], orientation[1], orientation[2]),
 //                            depth);
                     SensorRay sensor(
-                            Parameters::Vec3Type(endpoint[0], endpoint[1], endpoint[2]),
-                            Parameters::Vec3Type(1, 1, 0),
+//                            Parameters::Vec3Type(endpoint[1]-2.82, endpoint[0]+0.23, endpoint[2]),
+                            Parameters::Vec3Type(position[0], position[1]+1.51739, position[2]),
+                            Parameters::Vec3Type(target[0], target[1], -target[2]),
                             depth);
                     observation.append(Measurement::voxel(sensor, depth));
                 }
@@ -74,6 +112,26 @@ struct ICLNUIMLoader
 
 private:
     std::string _foldername;
+
+    bool _readTrajectory(std::string filename,
+                         std::vector<Eigen::Vector3f> &positions,
+                         std::vector<Eigen::Quaternionf> &orientations)
+    {
+        std::ifstream tfile;
+        tfile.open(filename);
+        if (!tfile || tfile.bad())
+            return false;
+
+        int frame;
+        float px, py, pz, qx, qy, qz, qw;
+        while (tfile >> frame >> px >> py >> pz >> qx >> qy >> qz >> qw)
+        {
+            positions.push_back(Eigen::Vector3f(px, py, pz));
+            orientations.push_back(Eigen::Quaternionf(qw, qx, qy, qz));
+        }
+        tfile.close();
+        return true;
+    }
 
     bool _readDepth(int ref_img_no, int which_blur_sample, std::vector<float> &depth_array)
     {
@@ -105,6 +163,8 @@ private:
         }
 
         depthfile.close();
+
+        std::cout << "DEPTH from " << depthFileName << std::endl;
         return true;
     }
 
@@ -234,7 +294,7 @@ private:
 //        std::cout << upvector << std::endl;
 //        std::cout << std::endl << "direction:" << std::endl;
 //        std::cout << direction << std::endl;
-        std::cout << std::endl << "POSE:" << std::endl;
+        std::cout << std::endl << "POSE from " << text_file_name << ":" << std::endl;
         std::cout << transformation << std::endl;
         return transformation; //TooN::SE3<>(R, posvector);
     }
