@@ -1141,6 +1141,7 @@ void Visualizer::publishObservation(const Observable *visualizable, bool visuali
         clearMarker.header.frame_id = "map";
         markers.markers.push_back(clearMarker);
     }
+    int cnt = 0;
     for (auto &measurement: observation->measurements())
     {
         auto _x = measurement.sensor.position.x();
@@ -1161,10 +1162,27 @@ void Visualizer::publishObservation(const Observable *visualizable, bool visuali
             arrow.scale.x = measurement.sensor.range;
             arrow.scale.y = Parameters::voxelSize * .1;
             arrow.scale.z = Parameters::voxelSize * .1;
-            arrow.color.a = 1;
-            arrow.color.r = 1;
-            arrow.color.g = 1;
-            arrow.color.b = 0;
+            if (cnt == 0)
+            {
+                arrow.color.a = 1;
+                arrow.color.r = 1;
+                arrow.color.g = 0;
+                arrow.color.b = 0;
+            }
+            else if (cnt == 3)
+            {
+                arrow.color.a = 1;
+                arrow.color.r = 0;
+                arrow.color.g = 1;
+                arrow.color.b = 0;
+            }
+            else
+            {
+                arrow.color.a = 1;
+                arrow.color.r = 1;
+                arrow.color.g = 1;
+                arrow.color.b = 0;
+            }
             arrow.pose.position.x = _x;
             arrow.pose.position.y = _y;
             arrow.pose.position.z = _z;
@@ -1219,6 +1237,7 @@ void Visualizer::publishObservation(const Observable *visualizable, bool visuali
             dot.pose.position.z = _z;
             markers.markers.push_back(dot);
         }
+        ++cnt;
     }
 
     std::cout << "Publishing " << markers.markers.size() << " markers." << std::endl;

@@ -30,28 +30,31 @@ struct ICLNUIMLoader
         std::vector<Eigen::Quaternionf> orientations;
         _readTrajectory(foldername + "/livingRoom0.gt.freiburg.txt", positions, orientations);
 
-        for (int i = 0; i < numberOfSamples*15; i += 15)
+        auto rotate = Eigen::AngleAxisf(-0.25*M_PI, Eigen::Vector3f::UnitY());
+        for (int i = 0; i < numberOfSamples*20; i += 30)
         {
             if (!_readDepth(i, 0, depth_array))
                 return false;
 //
-//            auto pose = _readPose(i, 0);
+            auto pose = _readPose(i, 0);
 //            Eigen::Vector3f zAxis(0.f, 0.f, 1.f);
 //            Eigen::Vector3f orientation;
 
-            auto position = positions[i];
+            Eigen::Vector3f position = pose.block(0,3,3,1); //positions[i];
+//            position[1] -= 1;
             auto orientation = orientations[i];
 
-//            auto target = orientation * Eigen::Vector3f(-1,0,-1);
-//
-//            SensorRay sensor(
-////                            Parameters::Vec3Type(endpoint[1]-2.82, endpoint[0]+0.23, endpoint[2]),
-//                    Parameters::Vec3Type(position[0], position[1]+1.51739, -position[2]),
-//                    Parameters::Vec3Type(target[0], target[1], -target[2]),
-//                    1);
-//            observation.append(Measurement::voxel(sensor, 1));
+            Eigen::Vector3f target = rotate * pose.block(0,0,3,3) * Eigen::Vector3f::UnitZ();
+
+            SensorRay sensor(
+//                            Parameters::Vec3Type(endpoint[1]-2.82, endpoint[0]+0.23, endpoint[2]),
+                    Parameters::Vec3Type(-position[2], position[1], position[0]),
+                    Parameters::Vec3Type(target[0], target[1], target[2]),
+                    1);
+            observation.append(Measurement::voxel(sensor, 1));
             std::cout << "position: " << position.transpose() << std::endl;
-//            std::cout << "target:   " << target.transpose() << std::endl;
+            std::cout << "target:   " << target.transpose() << std::endl;
+            continue;
             std::cout << "orientation: "
                       << orientation.x() << " "
                       << orientation.y() << " "
@@ -60,7 +63,7 @@ struct ICLNUIMLoader
 
             for (int v = 0; v < img_height; v += 80) // TODO note skipping
             {
-                for (int u = 0; u < img_width; u += 80) // TODO note skipping
+                for (int u = 230; u < 231 /*img_width*/; u += 80) // TODO note skipping
                 {
                     float u_u0_by_fx = (u - u0) / focal_x;
                     float v_v0_by_fy = (v - v0) / focal_y;
@@ -68,11 +71,12 @@ struct ICLNUIMLoader
                     float depth = depth_array[u + v * img_width];
                     float z = depth / std::sqrt(u_u0_by_fx * u_u0_by_fx +
                                                 v_v0_by_fy * v_v0_by_fy + 1);
+//                    float z = depth;
 
                     Eigen::Vector3f target;
-                    target[0] = -(u_u0_by_fx) * (z);
+                    target[0] = (u_u0_by_fx) * (z);
                     target[1] = (v_v0_by_fy) * (z);
-                    target[2] = -z;
+                    target[2] = z;
 //                    target[3] = 1;
                     target = orientation * target;
 //                    orientation = target;
@@ -99,7 +103,7 @@ struct ICLNUIMLoader
 //                            depth);
                     SensorRay sensor(
 //                            Parameters::Vec3Type(endpoint[1]-2.82, endpoint[0]+0.23, endpoint[2]),
-                            Parameters::Vec3Type(position[0], position[1]+1.51739, position[2]),
+                            Parameters::Vec3Type(position[0], position[1]+1.51739, -position[2]),
                             Parameters::Vec3Type(target[0], target[1], -target[2]),
                             depth);
                     observation.append(Measurement::voxel(sensor, depth));
