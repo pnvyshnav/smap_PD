@@ -14,7 +14,7 @@ struct ICLNUIMLoader
     int img_height{480};
 
     float focal_x{481.2};
-    float focal_y{-480};
+    float focal_y{-640};
     float u0{319.5};
     float v0{239.5};
 
@@ -30,8 +30,12 @@ struct ICLNUIMLoader
         std::vector<Eigen::Quaternionf> orientations;
         _readTrajectory(foldername + "/livingRoom0.gt.freiburg.txt", positions, orientations);
 
-        auto rotate = Eigen::AngleAxisf(-0.25*M_PI, Eigen::Vector3f::UnitY());
-        for (int i = 0; i < numberOfSamples*20; i += 30)
+//        observation.append(Measurement::voxel(SensorRay(Eigen::Vector3f::Zero(), Eigen::Vector3f::UnitX(), 1), 1));
+//        observation.append(Measurement::voxel(SensorRay(Eigen::Vector3f::Zero(), Eigen::Vector3f::UnitY(), 1), 1));
+//        observation.append(Measurement::voxel(SensorRay(Eigen::Vector3f::Zero(), Eigen::Vector3f::UnitZ(), 1), 1));
+
+//        auto rotate = Eigen::AngleAxisf(-0.25*M_PI, Eigen::Vector3f::UnitY());
+        for (int i = 0; i < numberOfSamples; i += 10)
         {
             if (!_readDepth(i, 0, depth_array))
                 return false;
@@ -42,43 +46,54 @@ struct ICLNUIMLoader
 
             Eigen::Vector3f position = pose.block(0,3,3,1); //positions[i];
 //            position[1] -= 1;
-            auto orientation = orientations[i];
+            auto orientation = pose.block(0,0,3,3); //orientations[i];
 
-            Eigen::Vector3f target = rotate * pose.block(0,0,3,3) * Eigen::Vector3f::UnitZ();
+            Eigen::Vector3f target = pose.block(0,0,3,3) * Eigen::Vector3f::UnitZ();
 
+            // left-handed coordinate system (-x, y, z)
             SensorRay sensor(
 //                            Parameters::Vec3Type(endpoint[1]-2.82, endpoint[0]+0.23, endpoint[2]),
-                    Parameters::Vec3Type(-position[2], position[1], position[0]),
-                    Parameters::Vec3Type(target[0], target[1], target[2]),
+                    Parameters::Vec3Type(-position[0], position[1], position[2]),
+                    Parameters::Vec3Type(-target[0], target[1], target[2]),
                     1);
-            observation.append(Measurement::voxel(sensor, 1));
+//            observation.append(Measurement::voxel(sensor, 1));
             std::cout << "position: " << position.transpose() << std::endl;
             std::cout << "target:   " << target.transpose() << std::endl;
-            continue;
-            std::cout << "orientation: "
-                      << orientation.x() << " "
-                      << orientation.y() << " "
-                      << orientation.z() << " "
-                      << orientation.w() << std::endl << std::endl;
 
-            for (int v = 0; v < img_height; v += 80) // TODO note skipping
+//            continue;
+//            std::cout << "orientation: "
+//                      << orientation.x() << " "
+//                      << orientation.y() << " "
+//                      << orientation.z() << " "
+//                      << orientation.w() << std::endl << std::endl;
+
+            for (int v = 0; v < img_height; v += 10) // TODO note skipping
             {
-                for (int u = 230; u < 231 /*img_width*/; u += 80) // TODO note skipping
+                for (int u = img_width/2-30; u < img_width/2+31; u += 10) // TODO note skipping
                 {
                     float u_u0_by_fx = (u - u0) / focal_x;
                     float v_v0_by_fy = (v - v0) / focal_y;
 
-                    float depth = depth_array[u + v * img_width];
+                    float depth = depth_array[u + (img_height-v-1) * img_width];
                     float z = depth / std::sqrt(u_u0_by_fx * u_u0_by_fx +
                                                 v_v0_by_fy * v_v0_by_fy + 1);
 //                    float z = depth;
 
-                    Eigen::Vector3f target;
-                    target[0] = (u_u0_by_fx) * (z);
-                    target[1] = (v_v0_by_fy) * (z);
-                    target[2] = z;
+                    Eigen::Vector3f ltarget;
+                    ltarget[1] = (u_u0_by_fx) * (z);
+                    ltarget[0] = (v_v0_by_fy) * (z);
+                    ltarget[2] = z;
+//                    ltarget[3] = 0;
+                    ltarget.normalize();
+//                    ltarget[3] = 1;
+//                    std::cout << "ltarget:  " << ltarget.transpose() << std::endl;
 //                    target[3] = 1;
-                    target = orientation * target;
+//                    ltarget = pose * ltarget;
+                    ltarget = orientation * ltarget;
+//                    std::swap(ltarget[0], ltarget[1]);
+//                    ltarget[0] = -ltarget[0];
+//                    std::cout << "ltargeto: " << ltarget.transpose() << std::endl;
+
 //                    orientation = target;
 
 //                    Eigen::Matrix3f rotation = pose.block(0, 0, 3, 3);
@@ -101,15 +116,17 @@ struct ICLNUIMLoader
 //                            Parameters::Vec3Type(pose(0, 3), pose(1, 3), pose(2, 3)),
 //                            Parameters::Vec3Type(orientation[0], orientation[1], orientation[2]),
 //                            depth);
-                    SensorRay sensor(
+                    SensorRay lsensor(
 //                            Parameters::Vec3Type(endpoint[1]-2.82, endpoint[0]+0.23, endpoint[2]),
-                            Parameters::Vec3Type(position[0], position[1]+1.51739, -position[2]),
-                            Parameters::Vec3Type(target[0], target[1], -target[2]),
+                            Parameters::Vec3Type(-position[0], position[1], position[2]),
+                            Parameters::Vec3Type(-ltarget[0], ltarget[1], ltarget[2]),
                             depth);
-                    observation.append(Measurement::voxel(sensor, depth));
+                    observation.append(Measurement::voxel(lsensor, depth));
                 }
-                std::cout << std::endl;
             }
+            std::cout << std::endl;
+
+//            return true; // todo remove
         }
         return true;
     }

@@ -1152,16 +1152,33 @@ void Visualizer::publishObservation(const Observable *visualizable, bool visuali
 #endif
         Parameters::Vec3Type pos(_x, _y, _z);
 
-        if (visualizeRays)
+        if (visualizeRays && cnt%16==0)
         {
             visualization_msgs::Marker arrow;
             arrow.id = id++; //(int) QVoxel::computeHash(TrueMap::coordToKey(pos));
             arrow.action = 0;
             arrow.type = visualization_msgs::Marker::ARROW;
             arrow.header.frame_id = "map";
-            arrow.scale.x = measurement.sensor.range;
+            geometry_msgs::Point source, target;
+            source.x = _x;
+            source.y = _y;
+            source.z = _z;
+            auto ep = measurement.sensor.endPoint();
+            target.x = ep.x();
+            target.y = ep.y();
+            target.z = ep.z();
+            arrow.points.push_back(source);
+            arrow.points.push_back(target);
+            // orient along z-axis
+            arrow.scale.x = Parameters::voxelSize * .1; //measurement.sensor.range;
             arrow.scale.y = Parameters::voxelSize * .1;
-            arrow.scale.z = Parameters::voxelSize * .1;
+            arrow.scale.z = Parameters::voxelSize;
+//            arrow.pose.orientation.x = measurement.sensor.orientation.x();
+//            arrow.pose.orientation.y = measurement.sensor.orientation.y();
+//            arrow.pose.orientation.z = measurement.sensor.orientation.z();
+//            arrow.pose.position.x = _x;
+//            arrow.pose.position.y = _y;
+//            arrow.pose.position.z = _z;
             if (cnt == 0)
             {
                 arrow.color.a = 1;
@@ -1180,15 +1197,9 @@ void Visualizer::publishObservation(const Observable *visualizable, bool visuali
             {
                 arrow.color.a = 1;
                 arrow.color.r = 1;
-                arrow.color.g = 1;
+                arrow.color.g = std::max(0.f, 1-(float)cnt/1500.f);
                 arrow.color.b = 0;
             }
-            arrow.pose.position.x = _x;
-            arrow.pose.position.y = _y;
-            arrow.pose.position.z = _z;
-            arrow.pose.orientation.x = measurement.sensor.orientation.x();
-            arrow.pose.orientation.y = measurement.sensor.orientation.y();
-            arrow.pose.orientation.z = measurement.sensor.orientation.z();
             markers.markers.push_back(arrow);
         }
 
@@ -1204,9 +1215,9 @@ void Visualizer::publishObservation(const Observable *visualizable, bool visuali
 #if DIMENSIONS == 2
             _z += Parameters::voxelSize;
 #endif
-            _x += (rand() * 1. / RAND_MAX - .5) * Parameters::voxelSize;
-            _y += (rand() * 1. / RAND_MAX - .5) * Parameters::voxelSize;
-            _z += (rand() * 1. / RAND_MAX - .5) * Parameters::voxelSize;
+//            _x += (rand() * 1. / RAND_MAX - .5) * Parameters::voxelSize;
+//            _y += (rand() * 1. / RAND_MAX - .5) * Parameters::voxelSize;
+//            _z += (rand() * 1. / RAND_MAX - .5) * Parameters::voxelSize;
             pos = Parameters::Vec3Type(_x, _y, _z);
 
             visualization_msgs::Marker dot;
@@ -1214,9 +1225,9 @@ void Visualizer::publishObservation(const Observable *visualizable, bool visuali
             dot.action = 0;
             dot.type = visualization_msgs::Marker::SPHERE;
             dot.header.frame_id = "map";
-            dot.scale.x = Parameters::voxelSize;// * .1;
-            dot.scale.y = Parameters::voxelSize;// * .1;
-            dot.scale.z = Parameters::voxelSize;// * .1;
+            dot.scale.x = Parameters::voxelSize*0.5;// * .1;
+            dot.scale.y = Parameters::voxelSize*0.5;// * .1;
+            dot.scale.z = Parameters::voxelSize*0.5;// * .1;
             dot.color.a = 1;
 //            if (point.occupied)
             {

@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 //    traj.loadFromFile(trajFilename);
 
     ROS_INFO("Loading ...");
-    bool result = loader.load(homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/traj0", 50); //1510);
+    bool result = loader.load(homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/traj1", 1500); //1510);
     ROS_INFO("Loaded traj0 successfully? %i", (int)result);
 
     auto *visualizer = new Visualizer;

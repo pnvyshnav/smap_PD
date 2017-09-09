@@ -2,6 +2,8 @@
 
 #include "Parameters.h"
 
+#include <Eigen/Core>
+
 struct SensorRayPoint
 {
     Parameters::Vec3Type position;
@@ -26,6 +28,12 @@ struct SensorRay
 
     SensorRay(Parameters::Vec3Type position, Parameters::Vec3Type orientation, Parameters::NumType range)
             : position(position), orientation(orientation), range(range)
+    {}
+
+    SensorRay(Eigen::Vector3f position, Eigen::Vector3f orientation, Parameters::NumType range)
+            : position(position[0], position[1], position[2]),
+              orientation(orientation[0], orientation[1], orientation[2]),
+              range(range)
     {}
 
     Parameters::Vec3Type endPoint() const
