@@ -290,7 +290,7 @@ class TrajOpt : public Observable
 {
     friend class TrajOptObjective<TRAJ, SENSOR, COST>;
 public:
-    TrajOpt(const TRAJ &trajectory, TrueMap &trueMap, BeliefMap &beliefMap)
+    TrajOpt(const TRAJ &trajectory, TrueMap *trueMap, BeliefMap *beliefMap)
         : _trajectory(trajectory), _trueMap(trueMap), _beliefMap(beliefMap),
           _objective(this), _data(_trajectory), _replanningIterations(0)
     {
@@ -380,8 +380,8 @@ public:
     }
 
 private:
-    TrueMap &_trueMap;
-    BeliefMap &_beliefMap;
+    TrueMap *_trueMap;
+    BeliefMap *_beliefMap;
     BeliefMap _imaginaryMap;
     FakeRobot<SENSOR> *_simulationBot;
 
@@ -400,7 +400,7 @@ private:
     void _handleObservation(const Observation &observation)
     {
 //        ROS_INFO("SimulationBot position: %f %f %f", _simulationBot->position().x(), _simulationBot->position().y(), _simulationBot->position().z());
-        _imaginaryMap.update(observation, _trueMap);
+        _imaginaryMap.update(observation, *_trueMap);
 
         Point p = Point(_simulationBot->position().x(), _simulationBot->position().y()
 #if (DIMENSIONS == 3)
@@ -410,9 +410,9 @@ private:
         _data.positions.push_back(p);
 
 #if (DIMENSIONS == 3)
-        _data.reachabilities.push_back(_beliefMap.filteredReachability(p.x, p.y, p.z));
+        _data.reachabilities.push_back(_beliefMap->filteredReachability(p.x, p.y, p.z));
 #else
-        _data.reachabilities.push_back(_beliefMap.filteredReachability(p.x, p.y, Parameters::voxelSize/2.));
+        _data.reachabilities.push_back(_beliefMap->filteredReachability(p.x, p.y, Parameters::voxelSize/2.));
 #endif
 #if (DIMENSIONS == 3)
         _data.variances.push_back(_imaginaryMap.filteredVariance(p.x, p.y, p.z));
@@ -435,18 +435,18 @@ private:
 
     const BeliefMap& _constructImaginaryMap()
     {
-        _imaginaryMap = BeliefMap(_beliefMap);
-        auto obstacle1 = std::vector<double> {
-                -1, -1, // left bottom
-                -.1, -.3 // right top
-        };
-        auto obstacle2 = std::vector<double> {
-                -1, .3, // left bottom
-                -.1, 1 // right top
-        };
-        double smoothness = 1.9 * Parameters::voxelSize;
-        double certainty = 0.7;
-        double prior = 0.5;
+        _imaginaryMap = BeliefMap(*_beliefMap);
+//        auto obstacle1 = std::vector<double> {
+//                -1, -1, // left bottom
+//                -.1, -.3 // right top
+//        };
+//        auto obstacle2 = std::vector<double> {
+//                -1, .3, // left bottom
+//                -.1, 1 // right top
+//        };
+//        double smoothness = 1.9 * Parameters::voxelSize;
+//        double certainty = 0.7;
+//        double prior = 0.5;
         for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
         {
             for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
@@ -514,7 +514,7 @@ private:
         if (_optimizationStep % 10 == 0)
             updateSubscribers();
 
-        _imaginaryMap = BeliefMap(_beliefMap);
+        _imaginaryMap = BeliefMap(*_beliefMap);
         _constructImaginaryMap();
 
 //        auto further = candidate.evaluate(0.4);
@@ -530,7 +530,7 @@ private:
                                                                     (float)_candidate.start().y,
                                                                     0.05),
                                                Parameters::Vec3Type(0, 1, 0),
-                                               _trueMap, _imaginaryMap);
+                                               *_trueMap, _imaginaryMap);
         _simulationBot->setObservationMode(OBSERVE_BOTH);
         _simulationBot->registerObserver(std::bind(&TrajOpt::_handleObservation,
                                                    this,
