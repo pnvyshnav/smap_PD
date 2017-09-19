@@ -18,20 +18,23 @@
 
 TrueMap trueMap = TrueMap::generateCorridor(); // use a fixed seed value
 
+constexpr double shift = Parameters::voxelSize / 2.;
 BeliefMap beliefMap;
-LogOddsMap logOddsMap;
+//LogOddsMap logOddsMap;
 FakeRobot<> robot(
-        Parameters::Vec3Type(Parameters::xCenter,
-                             Parameters::yCenter,
+//        Parameters::Vec3Type(0.0 + shift, -0.9 + shift,
+//                             Parameters::zCenter),
+        Parameters::Vec3Type(0.35, -0.95,
                              Parameters::zCenter),
 #if defined(FAKE_2D)
-        Parameters::Vec3Type(1, 0, 0),
+        Parameters::Vec3Type(0, 1, 0),
 #else
         Parameters::Vec3Type(0, 1, 0),
 #endif
         trueMap,
         beliefMap);
 
+Visualizer *visualizer;
 
 //Statistics<> *stats;
 
@@ -43,11 +46,17 @@ void handleObservation(const Observation &observation)
 //    stats->update(logOddsMap, beliefMap, robot);
     ++updated;
 
+    beliefMap.update(observation, trueMap);
+    ROS_INFO("Updated BeliefMap with %i measurements.",
+             (int)observation.measurements().size());
+
     trueMap.publish();
     beliefMap.publish();
     robot.publish();
+
     if (!ros::ok())
         robot.stop();
+//    visualizer->sleep();
 }
 
 int main(int argc, char **argv)
@@ -58,18 +67,14 @@ int main(int argc, char **argv)
 //    std::cout << p.str() << "  p(2) = " << p.evaluate(2) << std::endl;
 //    std::cout << p.derivative().str() << "  p'(2) = " << p.derivative().evaluate(2) << std::endl;
 //    std::cout << p.derivative().derivative().str() << "  p''(2) = " << p.derivative().derivative().evaluate(2) << std::endl;
-//
-//    return 0;
-//    PointCloud cloud;
-//    cloud.loadPly("/home/eric/catkin_ws/src/smap/dataset/V1_01_easy/groundtruth_pcl.ply");
-//    cloud.visualize();
+
 
     ros::init(argc, argv, "SMAP");
     ros::Time::init();
 
-//    stats = new Statistics<>(trueMap);
+    visualizer = new Visualizer;
 
-    auto *visualizer = new Visualizer;
+//    stats = new Statistics<>(trueMap);
 
 
 //#ifdef ENABLE_VISUALIZATION
@@ -90,11 +95,6 @@ int main(int argc, char **argv)
     trueMap.subscribe(std::bind(&Visualizer::publishTrueMap, visualizer, std::placeholders::_1));
 
 
-    for (int i = 0; i < 20; ++i)
-    {
-        trueMap.publish();
-        beliefMap.publish();
-    }
 //
 //    visualizer->render();
 //    return 0;
@@ -111,23 +111,32 @@ int main(int argc, char **argv)
     robot.sensor().subscribe(std::bind(&Visualizer::publishStereoCameraSensor, visualizer, std::placeholders::_1));
 //#endif
 
-    constexpr double shift = Parameters::voxelSize / 2.;
-    const MinSnapTrajectory trajectory(Point(0.0 + shift, -0.9 + shift), Point(-0.9 + shift, 0.0 + shift));
-//    MinSnapTrajectory trajectory(Point(0.35, -0.95), Point(0.35, 0.95), Point(), Point(), Point(), Point(), 4, 6);
+//    const MinSnapTrajectory trajectory(Point(0.0 + shift, -0.9 + shift), Point(-0.9 + shift, 0.0 + shift));
+    MinSnapTrajectory trajectory(Point(0.35, -0.95), Point(0.35, 0.95)); //, Point(), Point(), Point(), Point(), 4, 6);
 //    Point velocity = trajectory.velocity(0);
 //    ROS_INFO("Initial velocity: %f %f", velocity.x, velocity.y);
 //    return 0;
 //    trajectory.parameterize(Eigen::VectorXd::Random(trajectory.dof()));
-    ROS_INFO("Min Snap DOF: %d", (int)trajectory.dof());
+//    ROS_INFO("Min Snap DOF: %d", (int)trajectory.dof());
     TrajectoryPlanner *planner;
+
 
 //    const std::vector<double> kappas({0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.});
 
     robot.registerObserver(&handleObservation);
 
+
+
     // make initial observations
     for (int i = 0; i < 3; ++i)
         beliefMap.update(robot.observe(), trueMap);
+    for (int i = 0; i < 20; ++i)
+    {
+        trueMap.publish();
+        beliefMap.publish();
+    }
+//    robot.setTrajectory(trajectory);
+//    robot.run();
 
 //#if defined(FAKE_2D)
 //    #if defined(PLANNER_2D_TEST)
@@ -152,20 +161,20 @@ int main(int argc, char **argv)
 //            robot.setTrajectory(planner.replan(Point(0.05, -0.95), Point(-0.95, 0.05), 0.0));
 //            robot.setTrajectory(TrajectoryPlanner::generateInitialDirectTrajectory(Point(0.05, -0.95), Point(-0.95, 0.05)));
 //            robot.run();
-//            stats->saveToFile("replanning/replanning.bag");
-//        #else
+////            stats->saveToFile("replanning/replanning.bag");
+////        #else
             auto optimized = planner->optimize();
 //            planner->replan(Point(0.0 + shift, -0.9 + shift), Point(-0.9 + shift, 0.0 + shift), Point(1,4));
             robot.setTrajectory(optimized);
             robot.run();
-
-//            stats->registerReplanningIterations(planner->replanningIterations());
-//            stats->saveToFile(
-//                    "/home/wal/catkin_ws/src/smap/stats/replanning_tunnel/lcb_"
-//                    + std::to_string(kappa) + "_" + std::to_string(round) + ".bag");
-//            stats->reset();
-            beliefMap.reset();
-            delete planner;
+//
+////            stats->registerReplanningIterations(planner->replanningIterations());
+////            stats->saveToFile(
+////                    "/home/wal/catkin_ws/src/smap/stats/replanning_tunnel/lcb_"
+////                    + std::to_string(kappa) + "_" + std::to_string(round) + ".bag");
+////            stats->reset();
+//            beliefMap.reset();
+//            delete planner;
 //        }
 //    }
 
@@ -194,7 +203,7 @@ int main(int argc, char **argv)
 //            }
 //        #endif
 //    #else
-        robot.run();
+//        robot.run();
 //    #endif
 //#elif defined(FAKE_3D)
 //    #ifdef ENABLE_VISUALIZATION
@@ -257,7 +266,7 @@ int main(int argc, char **argv)
 
 //    delete stats;
 
-    delete planner;
+//    delete planner;
 
 //#ifdef ENABLE_VISUALIZATION
     visualizer->render();

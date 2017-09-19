@@ -68,7 +68,7 @@ void Visualizer::publishTrueMap(const Observable *visualizable)
                 auto _y = Parameters::yMin + y * Parameters::voxelSize;
                 auto _z = Parameters::zMin + (z + 0.5) * Parameters::voxelSize;
                 QTrueVoxel voxel = trueMap->query(_x, _y, _z);
-                if (!voxel.node())
+                if (!voxel.node() || trueMap->getVoxelMean(voxel) < 0.5)
                     continue;
 
                 visualization_msgs::Marker cell;
@@ -304,6 +304,7 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
     octomap::OcTreeKey::KeyHash hasher;
 
     visualization_msgs::MarkerArray cells;
+    unsigned int i = 0;
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
     {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
@@ -315,9 +316,11 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
                 auto _z = Parameters::zMin + z * Parameters::voxelSize;
                 Parameters::Vec3Type pos(_x, _y, _z);
                 QBeliefVoxel voxel = beliefMap->query(_x, _y, _z);
+                if (voxel.type != GEOMETRY_VOXEL)
+                    continue;
 
                 visualization_msgs::Marker cell;
-                cell.id = 1379 + (int) hasher(octomap::OcTreeKey(x, y, z));
+                cell.id = 137991 + i++; //(int) hasher(octomap::OcTreeKey(x, y, z));
 #ifndef FAKE_2D
                 if (beliefMap->getVoxelMean(voxel) < 0.49 && pos.norm() < 1.5 || pos.norm() < 0.6)
                     // remove voxel
@@ -331,11 +334,12 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
                 cell.scale.y = Parameters::voxelSize;
                 cell.scale.z = Parameters::voxelSize;
                 cell.color.a = 1.0;
-                cell.lifetime = ros::Duration(1000, 1000);
-                float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
+//                cell.lifetime = ros::Duration(1000, 1000);
+                float intensity = (float)(1. - beliefMap->getVoxelMean(voxel) * .5);
                 cell.color.r = intensity;
                 cell.color.g = intensity;
                 cell.color.b = intensity;
+//                ROS_INFO_STREAM("VI = " << i << " " << intensity);
                 cell.pose.position.x = voxel.position.x();
                 cell.pose.position.y = voxel.position.y();
                 cell.pose.position.z = voxel.position.z();
@@ -344,7 +348,9 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
         }
     }
 
-//    ROS_INFO("Publishing %i Belief cells.", (int)cells.markers.size());
+    beliefMapPublisher.publish(cells);
+
+    ROS_INFO("Publishing %i Belief cells.", (int)cells.markers.size());
 
     // Clear ICM's ray voxels
 //    visualization_msgs::MarkerArray rayVoxels;
@@ -751,5 +757,12 @@ void Visualizer::publishTrajectoryPlanner(const Observable *visualizable)
     }
     markers.markers.push_back(wayPoints);
     evaluationPublisher.publish(markers);
+    ros::spinOnce();
+}
+
+void Visualizer::sleep(double seconds)
+{
+    ros::Rate wait(1/seconds);
+    wait.sleep();
     ros::spinOnce();
 }

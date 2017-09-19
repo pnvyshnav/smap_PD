@@ -107,11 +107,11 @@ public:
 //#endif
         ecl::StopWatch stopWatch;
 
-        std::vector<Parameters::Vec3Type> positions = std::vector<Parameters::Vec3Type> {
-                Parameters::Vec3Type( 0.05,  0.95, 0.05),
-                Parameters::Vec3Type(-0.25,  0.05, 0.05),
-                Parameters::Vec3Type(-0.95, -0.25, 0.05)
-        };
+//        std::vector<Parameters::Vec3Type> positions = std::vector<Parameters::Vec3Type> {
+//                Parameters::Vec3Type( 0.05,  0.95, 0.05),
+//                Parameters::Vec3Type(-0.25,  0.05, 0.05),
+//                Parameters::Vec3Type(-0.95, -0.25, 0.05)
+//        };
 
         double lastTime = 0;
         unsigned int stepLimit;
@@ -191,7 +191,7 @@ public:
             std::vector<Point> futurePositions;
 
                 for (unsigned int futureStep = _step + 1;
-                     futureStep < std::min(_totalSteps, _step + 17); // TODO change back to + 11
+                     futureStep < std::min(_totalSteps, _step + 11); // TODO change back to + 11
                      ++futureStep)
                 {
                     TrajectoryEvaluationResult fresult;

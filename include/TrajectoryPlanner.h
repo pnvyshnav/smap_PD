@@ -322,7 +322,7 @@ public:
 
         const double xtol_rel      = 1e-3; // 1e-5;
         const double xtol_abs      = 1e-2; // 1e-3;
-        const unsigned int maxeval = 150; // 300;
+        const unsigned int maxeval = 350; // 300;
 
         opt.set_xtol_rel(xtol_rel);
         // deactivate relative tolerance stopping criterion
@@ -357,7 +357,7 @@ public:
         ++_replanningIterations;
         int times = 6; //std::max(4, std::min(10, (int)std::round(xStart.dist(xEnd) * 6.)));
         int degree = 7; //std::max(4, std::min(7, (int)std::round(xStart.dist(xEnd) * 6.)));
-        double absLimit = 500; //std::max(350., std::min(400., xStart.dist(xEnd) * 400.));
+        double absLimit = 600; //std::max(350., std::min(400., xStart.dist(xEnd) * 400.));
         ROS_INFO("REPLANNING with a %i time, %i degree piece polynomial. xStart.dist(xEnd): %f",
                  times, degree, xStart.dist(xEnd));
         // TODO implement this not only for Min Snap
