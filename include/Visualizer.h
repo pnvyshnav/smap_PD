@@ -28,6 +28,8 @@ public:
     void publishFakeRobot(const Observable *visualizable, const TrueMap *trueMap);
     void publishTrajectoryPlanner(const Observable *visualizable);
 
+    void sleep(double seconds = 1.);
+
     static const int PaintRate = 2000;
 
 private:

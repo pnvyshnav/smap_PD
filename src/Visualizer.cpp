@@ -72,16 +72,16 @@ void Visualizer::publishTrueMap(const Observable *visualizable)
                     continue;
 
                 visualization_msgs::Marker cell;
-#ifdef REAL_3D
-                if (trueMap->getVoxelMean(voxel) < 0.3)
+//#ifdef REAL_3D
+                if (trueMap->getVoxelMean(voxel) < 0.4)
                     continue;
-#else
+//#else
 //                if (z > 12 && (trueMap->getVoxelMean(voxel) < 0.5 && voxel.position.norm() < 1.5 || voxel.position.norm() < 0.6))
 //                // remove voxel
 //                    continue;
 //                else
                     cell.action = 0;
-#endif
+//#endif
 
                 cell.id = (int) voxel.hash;
                 cell.type = visualization_msgs::Marker::CUBE;
@@ -304,6 +304,7 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
     octomap::OcTreeKey::KeyHash hasher;
 
     visualization_msgs::MarkerArray cells;
+    int id = 0;
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX; ++x)
     {
         for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY; ++y)
@@ -317,13 +318,12 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
                 QBeliefVoxel voxel = beliefMap->query(_x, _y, _z);
 
                 visualization_msgs::Marker cell;
-                cell.id = 1379 + (int) hasher(octomap::OcTreeKey(x, y, z));
-#ifndef FAKE_2D
-                if (beliefMap->getVoxelMean(voxel) < 0.49 && pos.norm() < 1.5 || pos.norm() < 0.6)
+                cell.id = 17913 + id++; //(int) hasher(octomap::OcTreeKey(x, y, z));
+                if (voxel.type != GEOMETRY_VOXEL) // || beliefMap->getVoxelMean(voxel) < 0.49 && pos.norm() < 1.5 || pos.norm() < 0.6)
+                    continue;
                     // remove voxel
-                    cell.action = 2;
+//                    cell.action = 2;
                 else
-#endif
                     cell.action = 0;
                 cell.type = visualization_msgs::Marker::CUBE;
                 cell.header.frame_id = "map";
@@ -331,8 +331,8 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
                 cell.scale.y = Parameters::voxelSize;
                 cell.scale.z = Parameters::voxelSize;
                 cell.color.a = 1.0;
-                cell.lifetime = ros::Duration(1000, 1000);
-                float intensity = (float) (1.0 - voxel.node()->getValue()->mean());
+//                cell.lifetime = ros::Duration(1000, 1000);
+                float intensity = (float) (1.0 - beliefMap->getVoxelMean(voxel));
                 cell.color.r = intensity;
                 cell.color.g = intensity;
                 cell.color.b = intensity;
@@ -354,14 +354,14 @@ void Visualizer::publishBeliefMapFull(const Observable *visualizable)
 //    rayVoxels.markers.push_back(clearVoxel);
 //    rayVoxelPublisher.publish(rayVoxels);
 
-    ros::spinOnce();
-//    for (int i = 0 ; i < 20; ++i)
-//    {
-//        beliefMapPublisher.publish(cells);
-//        ros::spinOnce();
-//        ros::Rate loop_rate(PaintRate);
-//        loop_rate.sleep();
-//    }
+//    ros::spinOnce();
+    for (int i = 0 ; i < 20; ++i)
+    {
+        beliefMapPublisher.publish(cells);
+        ros::spinOnce();
+        ros::Rate loop_rate(PaintRate);
+        loop_rate.sleep();
+    }
 }
 
 void Visualizer::publishLogOddsMapFull(const Observable *visualizable)
@@ -739,6 +739,7 @@ void Visualizer::publishTrajectoryPlanner(const Observable *visualizable)
     wayPoints.color.r = 0.4f;
     wayPoints.color.g = 0.8f;
     wayPoints.color.b = 0.0f;
+    wayPoints.lifetime = ros::Duration(0.5); // .5 seconds
 
     for (double x = 0; x <= 1.01; x += 0.02)
     {
@@ -752,4 +753,10 @@ void Visualizer::publishTrajectoryPlanner(const Observable *visualizable)
     markers.markers.push_back(wayPoints);
     evaluationPublisher.publish(markers);
     ros::spinOnce();
+}
+
+void Visualizer::sleep(double seconds)
+{
+    ros::Rate sleep_rate(1./seconds);
+    sleep_rate.sleep();
 }
