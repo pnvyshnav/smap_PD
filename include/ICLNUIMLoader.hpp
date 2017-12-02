@@ -8,80 +8,102 @@
 
 struct ICLNUIMLoader
 {
-    Observation observation{Observation()};
+    Observation allObservations()
+    {
+        Observation obs;
+        for (auto &frame : frames)
+            obs.append(frame);
+        return obs;
+    }
+
+    std::vector<Observation> frames;
 
     int img_width{640};
     int img_height{480};
 
-    float focal_x{481.2};
-    float focal_y{-640};
+    float focal_x{-640}; //{481.2};
+    float focal_y{481.2}; //{-640};
     float u0{319.5};
     float v0{239.5};
 
     ICLNUIMLoader() = default;
 
-    bool load(const std::string &foldername, size_t numberOfSamples)
+    bool load(const std::string &foldername, int trajectory, size_t numberOfSamples,
+              int sampleSparsification = 10, int pixelSparsification = 10)
     {
         std::vector<float> depth_array(img_width*img_height, 0);
         _foldername = foldername;
-        observation.clear();
+        frames.clear();
+
+        Eigen::Matrix4f postTransformation;
+        // post transformation matrices come from
+        // https://github.com/mp3guy/SurfReg/blob/master/src/SurfReg.cpp
+        if (trajectory == 0)
+        {
+            postTransformation << 0.999759, -0.000287637, 0.0219655, 0, /*-1.36022,*/
+                    0.000160294, 0.999983, 0.00579897, 0, /*1.48382,*/
+                    0.0219668, 0.00579404, -0.999742, 0, /*1.44256,*/
+                    0, 0, 0, 1;
+            _foldername += "/traj0";
+        }
+        else if (trajectory == 1)
+        {
+            postTransformation << 0.99975, -0.00789018, 0.0209474, 0.0133734,
+                    0.00789931, 0.999969, -0.000353282, 0, /*1.27618,*/
+                    0.0209439, -0.000518671, -0.999781, 0.0376324,
+                    0, 0, 0, 1;
+            _foldername += "/traj1";
+        }
+        else if (trajectory == 2)
+        {
+            postTransformation << 0.999822, 0.0034419, 0.0185526, 0, /*-0.786316,*/
+                    -0.00350915, 0.999987, 0.00359374, 0, /*1.28433,*/
+                    0.01854, 0.00365819, -0.999821, 0, /*1.45583,*/
+                    0, 0, 0, 1;
+            _foldername += "/traj2";
+        }
+        else if (trajectory == 3)
+        {
+            postTransformation << 0.999778, -0.000715914, 0.0210893, 0, /*-1.13311,*/
+                    0.000583688, 0.99998, 0.0062754, 0, /*1.26825,*/
+                    0.0210934, 0.0062617, -0.999758, 0, /*0.901866,*/
+                    0, 0, 0, 1;
+            _foldername += "/traj3";
+        }
+
+        std::string filename = foldername + "/livingRoom0.gt.freiburg.txt";
+        std::cout << "Loading trajectory " << trajectory << " from " << filename << "..." << std::endl;
 
         std::vector<Eigen::Vector3f> positions;
         std::vector<Eigen::Quaternionf> orientations;
-        _readTrajectory(foldername + "/livingRoom0.gt.freiburg.txt", positions, orientations);
-
-//        observation.append(Measurement::voxel(SensorRay(Eigen::Vector3f::Zero(), Eigen::Vector3f::UnitX(), 1), 1));
-//        observation.append(Measurement::voxel(SensorRay(Eigen::Vector3f::Zero(), Eigen::Vector3f::UnitY(), 1), 1));
-//        observation.append(Measurement::voxel(SensorRay(Eigen::Vector3f::Zero(), Eigen::Vector3f::UnitZ(), 1), 1));
-
-//        auto rotate = Eigen::AngleAxisf(-0.25*M_PI, Eigen::Vector3f::UnitY());
-        for (int i = 0; i < numberOfSamples; i += 10)
+        _readTrajectory(filename, positions, orientations);
+        for (int i = 0; i < numberOfSamples; i += sampleSparsification)
         {
             if (!_readDepth(i, 0, depth_array))
-                return false;
-//
-            auto pose = _readPose(i, 0);
-//            Eigen::Vector3f zAxis(0.f, 0.f, 1.f);
-//            Eigen::Vector3f orientation;
+                return !frames.empty();
 
-            Eigen::Vector3f position = pose.block(0,3,3,1); //positions[i];
-//            position[1] -= 1;
-            auto orientation = pose.block(0,0,3,3); //orientations[i];
+            Eigen::Matrix4f pose = postTransformation * _readPose(i, 0);
 
-            Eigen::Vector3f target = pose.block(0,0,3,3) * Eigen::Vector3f::UnitZ();
+            Eigen::Vector3f position = pose.block(0,3,3,1); //(postTransformation * pose.block(0,3,4,1)).block(0,0,3,1); //pose.block(0,3,3,1) + postTransformation.block(0,3,3,1);
+            Eigen::Matrix3f orientation = pose.block(0,0,3,3); //postTransformation.block(0,0,3,3) * pose.block(0,0,3,3);
 
-            // left-handed coordinate system (-x, y, z)
-            SensorRay sensor(
-//                            Parameters::Vec3Type(endpoint[1]-2.82, endpoint[0]+0.23, endpoint[2]),
-                    Parameters::Vec3Type(-position[0], position[1], position[2]),
-                    Parameters::Vec3Type(-target[0], target[1], target[2]),
-                    1);
-//            observation.append(Measurement::voxel(sensor, 1));
-            std::cout << "position: " << position.transpose() << std::endl;
-            std::cout << "target:   " << target.transpose() << std::endl;
+            Eigen::Vector3f target = orientation * Eigen::Vector3f::UnitZ();
 
-//            continue;
-//            std::cout << "orientation: "
-//                      << orientation.x() << " "
-//                      << orientation.y() << " "
-//                      << orientation.z() << " "
-//                      << orientation.w() << std::endl << std::endl;
-
-            for (int v = 0; v < img_height; v += 10) // TODO note skipping
+            Observation frame;
+            for (int v = 0; v < img_height; v += pixelSparsification)
             {
-                for (int u = img_width/2-30; u < img_width/2+31; u += 10) // TODO note skipping
+                for (int u = img_width/2-100; u < img_width/2+100; u += pixelSparsification)
                 {
-                    float u_u0_by_fx = (u - u0) / focal_x;
+                    float u_u0_by_fx = (-u + u0) / focal_x;
                     float v_v0_by_fy = (v - v0) / focal_y;
 
                     float depth = depth_array[u + (img_height-v-1) * img_width];
                     float z = depth / std::sqrt(u_u0_by_fx * u_u0_by_fx +
                                                 v_v0_by_fy * v_v0_by_fy + 1);
-//                    float z = depth;
 
                     Eigen::Vector3f ltarget;
-                    ltarget[1] = (u_u0_by_fx) * (z);
-                    ltarget[0] = (v_v0_by_fy) * (z);
+                    ltarget[0] = (u_u0_by_fx) * (z);
+                    ltarget[1] = (v_v0_by_fy) * (z);
                     ltarget[2] = z;
 //                    ltarget[3] = 0;
                     ltarget.normalize();
@@ -112,22 +134,27 @@ struct ICLNUIMLoader
 //                    std::swap(position[0], position[1]);
 //                    orientation = (endpoint-position).normalized();
 
+//                    position += postTransformation.block(0, 3, 3, 1);
+//                    ltarget = (postTransformation.block(0, 0, 3, 3) * ltarget);
+
 //                    SensorRay sensor(
 //                            Parameters::Vec3Type(pose(0, 3), pose(1, 3), pose(2, 3)),
 //                            Parameters::Vec3Type(orientation[0], orientation[1], orientation[2]),
 //                            depth);
                     SensorRay lsensor(
 //                            Parameters::Vec3Type(endpoint[1]-2.82, endpoint[0]+0.23, endpoint[2]),
-                            Parameters::Vec3Type(-position[0], position[1], position[2]),
-                            Parameters::Vec3Type(-ltarget[0], ltarget[1], ltarget[2]),
+                            Parameters::Vec3Type(-position[0], position[1], -position[2]),
+                            Parameters::Vec3Type(-ltarget[0], ltarget[1], -ltarget[2]),
                             depth);
-                    observation.append(Measurement::voxel(lsensor, depth));
+                    frame.append(Measurement::voxel(lsensor, depth));
                 }
             }
-            std::cout << std::endl;
-
-//            return true; // todo remove
+            frames.push_back(frame);
+            if (frames.size() % 20 == 0)
+                std::cout << ".";
+            std::flush(std::cout);
         }
+        std::cout << std::endl;
         return true;
     }
 
@@ -185,7 +212,7 @@ private:
 
         depthfile.close();
 
-        std::cout << "DEPTH from " << depthFileName << std::endl;
+//        std::cout << "DEPTH from " << depthFileName << std::endl;
         return true;
     }
 
@@ -202,8 +229,8 @@ private:
 
         char readlinedata[300];
 
-        Eigen::Vector4f direction(4);
-        Eigen::Vector4f upvector(4);
+        Eigen::Vector3f direction(3);
+        Eigen::Vector3f upvector(3);
         Eigen::Vector3f posvector(3);
 
         while (true)
@@ -230,8 +257,7 @@ private:
                 iss >> direction[2];
                 iss.ignore(1, ',');
                 //cout << direction[0]<< ", "<< direction[1] << ", "<< direction[2] << endl;
-                direction[3] = 0.0f;
-
+//                direction[3] = 0.0f;
             }
 
             if (strstr(readlinedata, "cam_up") != nullptr)
@@ -249,8 +275,7 @@ private:
                 iss.ignore(1, ',');
                 iss >> upvector[2];
                 iss.ignore(1, ',');
-                upvector[3] = 0.0f;
-
+//                upvector[3] = 0.0f;
             }
 
             if (strstr(readlinedata, "cam_pos") != nullptr)
@@ -267,7 +292,6 @@ private:
                 iss.ignore(1, ',');
                 iss >> posvector[2];
                 iss.ignore(1, ',');
-
             }
 
         }
@@ -280,17 +304,11 @@ private:
         z.normalize();
 
         /// x = cross(cam_up, z)
-        Eigen::Vector3f x = Eigen::VectorXf::Zero(3);
-        x[0] = upvector[0] * z[2] - upvector[0] * z[1];
-        x[1] = upvector[1] * z[0] - upvector[1] * z[2];
-        x[2] = upvector[2] * z[1] - upvector[2] * z[0];
+        Eigen::Vector3f x = upvector.cross(z);
         x.normalize();
 
         /// y = cross(z,x)
-        Eigen::Vector3f y = Eigen::VectorXf::Zero(3);
-        y[0] = z[1] * x[2] - z[2] * x[1];
-        y[1] = z[2] * x[0] - z[0] * x[2];
-        y[2] = z[0] * x[1] - z[1] * x[0];
+        Eigen::Vector3f y = z.cross(x);
 
         Eigen::Matrix3f R = Eigen::MatrixXf::Zero(3, 3);
         R(0,0) = x[0];
@@ -309,14 +327,8 @@ private:
         transformation.block(0, 0, 3, 3) = R;
         transformation.block(0, 3, 3, 1) = posvector;
         transformation.block(3, 0, 1, 4) << 0, 0, 0, 1;
-//        std::cout << std::endl << "R:" << std::endl;
-//        std::cout << R << std::endl;
-//        std::cout << std::endl << "upvector:" << std::endl;
-//        std::cout << upvector << std::endl;
-//        std::cout << std::endl << "direction:" << std::endl;
-//        std::cout << direction << std::endl;
-        std::cout << std::endl << "POSE from " << text_file_name << ":" << std::endl;
-        std::cout << transformation << std::endl;
-        return transformation; //TooN::SE3<>(R, posvector);
+//        std::cout << std::endl << "POSE from " << text_file_name << ":" << std::endl;
+//        std::cout << transformation << std::endl;
+        return transformation;
     }
 };

@@ -115,30 +115,30 @@ public:
 
 #if !defined(MANY_STEPS) || defined(COMPUTE_UPDATED_EVOLUTION)
         // append current errors to complete error vectors
-        _msg.errorCompleteLogOdds.insert(_msg.errorCompleteLogOdds.end(),
-                                         _msg.errorLogOdds.begin(),
-                                         _msg.errorLogOdds.end());
-        _msg.errorCompleteBelief.insert(_msg.errorCompleteBelief.end(),
-                                        _msg.errorBelief.begin(),
-                                        _msg.errorBelief.end());
+//        _msg.errorCompleteLogOdds.insert(_msg.errorCompleteLogOdds.end(),
+//                                         _msg.errorLogOdds.begin(),
+//                                         _msg.errorLogOdds.end());
+//        _msg.errorCompleteBelief.insert(_msg.errorCompleteBelief.end(),
+//                                        _msg.errorBelief.begin(),
+//                                        _msg.errorBelief.end());
 
         // append current std devs to complete std dev vectors
-        _msg.stdCompleteLogOdds.insert(_msg.stdCompleteLogOdds.end(),
-                                       _msg.stdLogOdds.begin(),
-                                       _msg.stdLogOdds.end());
-        _msg.stdCompleteBelief.insert(_msg.stdCompleteBelief.end(),
-                                      _msg.stdBelief.begin(),
-                                      _msg.stdBelief.end());
+//        _msg.stdCompleteLogOdds.insert(_msg.stdCompleteLogOdds.end(),
+//                                       _msg.stdLogOdds.begin(),
+//                                       _msg.stdLogOdds.end());
+//        _msg.stdCompleteBelief.insert(_msg.stdCompleteBelief.end(),
+//                                      _msg.stdBelief.begin(),
+//                                      _msg.stdBelief.end());
 #endif
 
 #ifndef MANY_STEPS
         // append current errors of updated voxels to complete updated error vectors
         _msg.errorCompleteUpdatedLogOdds.insert(_msg.errorCompleteUpdatedLogOdds.end(),
-                                                absErrorUpdatedLogOdds.begin(),
-                                                absErrorUpdatedLogOdds.end());
+                                                errorUpdatedLogOdds.begin(),
+                                                errorUpdatedLogOdds.end());
         _msg.errorCompleteUpdatedBelief.insert(_msg.errorCompleteUpdatedBelief.end(),
-                                               absErrorUpdatedBelief.begin(),
-                                               absErrorUpdatedBelief.end());
+                                               errorUpdatedBelief.begin(),
+                                               errorUpdatedBelief.end());
 
         // append current std devs of updated voxels to complete updated error vectors
         _msg.stdCompleteUpdatedBelief.insert(_msg.stdCompleteUpdatedBelief.end(),
@@ -202,12 +202,12 @@ public:
 
 #ifndef MANY_STEPS
         // append current std devs to complete std dev vectors
-        _msg.stdCompleteLogOdds.insert(_msg.stdCompleteLogOdds.end(),
-                                       _msg.stdLogOdds.begin(),
-                                       _msg.stdLogOdds.end());
-        _msg.stdCompleteBelief.insert(_msg.stdCompleteBelief.end(),
-                                      _msg.stdBelief.begin(),
-                                      _msg.stdBelief.end());
+//        _msg.stdCompleteLogOdds.insert(_msg.stdCompleteLogOdds.end(),
+//                                       _msg.stdLogOdds.begin(),
+//                                       _msg.stdLogOdds.end());
+//        _msg.stdCompleteBelief.insert(_msg.stdCompleteBelief.end(),
+//                                      _msg.stdBelief.begin(),
+//                                      _msg.stdBelief.end());
 #endif
 
 #ifdef PLANNER_2D_TEST

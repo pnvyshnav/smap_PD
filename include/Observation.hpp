@@ -135,6 +135,30 @@ public:
         return points;
     }
 
+    void translate(Parameters::NumType dx, Parameters::NumType dy, Parameters::NumType dz)
+    {
+        for (auto &measurement : _measurements)
+        {
+            if (measurement.geometry == GEOMETRY_VOXEL)
+            {
+                measurement.sensor.position += Parameters::Vec3Type(dx, dy, dz);
+            }
+        }
+    }
+
+    void scale(Parameters::NumType dx, Parameters::NumType dy, Parameters::NumType dz)
+    {
+        for (auto &measurement : _measurements)
+        {
+            if (measurement.geometry == GEOMETRY_VOXEL)
+            {
+                measurement.sensor.orientation.x() *= dx;
+                measurement.sensor.orientation.y() *= dy;
+                measurement.sensor.orientation.z() *= dz;
+            }
+        }
+    }
+
 private:
     std::vector<Measurement> _measurements;
 };

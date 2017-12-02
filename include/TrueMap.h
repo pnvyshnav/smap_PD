@@ -20,6 +20,7 @@ public:
     static TrueMap generateFromCarmen(std::string filename, std::string messageName = "FLASER",
                                       bool oldFormat = true, unsigned int everyNth = 1);
     static TrueMap generateCorridor();
+    static TrueMap generateFromObstacles(const std::vector<Box> &obstacles);
 
     /**
      * Alters the map with a new random map.
@@ -55,8 +56,8 @@ public:
         return _empty;
     }
 
+
 private:
-    static TrueMap _generateFromObstacles(const std::vector<Box> &obstacles);
     bool _empty;
 };
 

@@ -142,6 +142,7 @@ TrueMap TrueMap::generateFromPointCloud(std::string filename)
 
     // initialize all cells to be free
     ROS_INFO("Setting all TrueMap cells to free.");
+    ROS_INFO("Voxels per dimension Z: %i", Parameters::voxelsPerDimensionZ());
     auto center = Parameters::center();
     // XXX note the <= instead of < here compared to LogOddsMap and BeliefMap
     for (unsigned int x = 0; x <= Parameters::voxelsPerDimensionX(); ++x)
@@ -224,10 +225,10 @@ TrueMap TrueMap::generateCorridor()
     obstacles.push_back(Box(0.60, 0.01, 0.06, 0.06));
     obstacles.push_back(Box(0.10, -0.05, 0.06, 0.48));
     obstacles.push_back(Box(0.16, 0.37, 0.16, 0.06));
-    return _generateFromObstacles(obstacles);
+    return generateFromObstacles(obstacles);
 }
 
-TrueMap TrueMap::_generateFromObstacles(const std::vector<Box> &obstacles)
+TrueMap TrueMap::generateFromObstacles(const std::vector<Box> &obstacles)
 {
     TrueMap map;
     map._empty = false;

@@ -7,6 +7,8 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#undef MANY_STEPS
+
 #include "../include/BeliefVoxel.h"
 #include "../include/BeliefMap.h"
 #include "../include/LogOddsMap.h"
@@ -18,43 +20,15 @@
 #include "../include/PointCloud.h"
 #include "../include/Trajectory.hpp"
 #include "../include/ICLNUIMLoader.hpp"
-//#include "../lodepng/lodepng.h"
-
-#include <algorithm>
-
-template <class T>
-void endianSwap(T *objp)
-{
-    unsigned char *memp = reinterpret_cast<unsigned char*>(objp);
-    std::reverse(memp, memp + sizeof(T));
-}
-
-std::string homedir = getenv("HOME");
-
-TrueMap trueMap;
-BeliefMap beliefMap;
-LogOddsMap logOddsMap;
-GaussianProcessMap gaussianProcessMap;
-FakeRobot<> robot(
-        Parameters::Vec3Type(Parameters::xCenter(),
-                             Parameters::yCenter(),
-                             Parameters::zCenter()),
-#if defined(FAKE_2D)
-        Parameters::Vec3Type(1, 0, 0),
-#else
-        Parameters::Vec3Type(0, 1, 0),
-#endif
-        trueMap,
-        beliefMap);
 
 
-Statistics<> *stats;
 
-ecl::StopWatch stopWatch;
 
-Observation allObservations;
 
-int updated = 0;
+//
+//Observation allObservations;
+//
+//int updated = 0;
 //void handleObservation(const Observation &observation)
 //{
 //    allObservations.append(observation);
@@ -88,32 +62,32 @@ int updated = 0;
 //    logOddsMap.update(observation, trueMap);
 //    gaussianProcessMap.update(observation);
 //#endif
-//
-//#ifdef REAL_3D
-//    if (updated > 0 && updated % 25 == 0)
-//    {
-//#ifdef SLIM_STATS
-//        stats->update(logOddsMap, beliefMap, robot);
-//#endif
-//
-//        // save stats continually
-//        stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/stats_real3d_"
-//                          + std::to_string(updated) + ".bag");
-//#ifdef SLIM_STATS
-//        stats->reset();
-//#endif
-//    }
-//#endif
-//    ++updated;
-//
-//#if defined(FAKE_2D) || defined(FAKE_3D)
-//    trueMap.publish();
-//    robot.publish();
-//    gaussianProcessMap.publish();
-//    if (!ros::ok())
-//        robot.stop();
-//#endif
-//}
+////
+////#ifdef REAL_3D
+////    if (updated > 0 && updated % 25 == 0)
+////    {
+////#ifdef SLIM_STATS
+////        stats->update(logOddsMap, beliefMap, robot);
+////#endif
+////
+////        // save stats continually
+////        stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/stats_real3d_"
+////                          + std::to_string(updated) + ".bag");
+////#ifdef SLIM_STATS
+////        stats->reset();
+////#endif
+////    }
+////#endif
+////    ++updated;
+////
+////#if defined(FAKE_2D) || defined(FAKE_3D)
+////    trueMap.publish();
+////    robot.publish();
+////    gaussianProcessMap.publish();
+////    if (!ros::ok())
+////        robot.stop();
+////#endif
+////}
 
 int main(int argc, char **argv)
 {
@@ -123,8 +97,6 @@ int main(int argc, char **argv)
 
     ros::init(argc, argv, "SMAP");
     ros::Time::init();
-
-    stats = new Statistics<>(trueMap);
 
     // intrinsic matrix
     Eigen::Matrix3d K(3, 3);
@@ -141,13 +113,17 @@ int main(int argc, char **argv)
 //    std::string trajFilename = homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/traj0/livingRoom0n.gt.sim";
 //    traj.loadFromFile(trajFilename);
 
+    int trajectory = 3;
+
     ROS_INFO("Loading ...");
-    bool result = loader.load(homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/traj1", 1500); //1510);
+    bool result = loader.load("/media/eric/data/Mapping-Datasets/smap_datasets/iclnuim_livingroom1", trajectory, 1800, 3, 10); //1500); //1510);
     ROS_INFO("Loaded traj0 successfully? %i", (int)result);
+    assert(result);
 
     auto *visualizer = new Visualizer;
 //    cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);
 
+    // TODO these parameters are registered too late (helper function still refer to old coords)
     Parameters::xMin = -2.7;
     Parameters::yMin = -0.1;
     Parameters::zMin = -4.8;
@@ -156,13 +132,70 @@ int main(int argc, char **argv)
     Parameters::zMax = 4.2;
     Parameters::voxelSize = 0.0625; //0.125;
 
-    std::string plyFilename = homedir + "/catkin_ws/src/smap/dataset/iclnuim_livingroom1/living-room.ply";
-    trueMap = TrueMap::generateFromPointCloud(plyFilename);
+    std::string plyFilename = "/media/eric/data/Mapping-Datasets/smap_datasets/iclnuim_livingroom1/livingroom.ply";
+    TrueMap trueMap = TrueMap::generateFromPointCloud(plyFilename);
+    BeliefMap beliefMap;
+    LogOddsMap logOddsMap;
+    GaussianProcessMap gaussianProcessMap;
+    FakeRobot<> robot(
+            Parameters::center(),
+            Parameters::Vec3Type(0, 1, 0),
+            trueMap,
+            beliefMap);
+
+    Statistics<> *stats = new Statistics<>(trueMap);
+
+    auto allObservations = loader.allObservations();
+//    allObservations.translate(-0.06, 0, 0);
+//    allObservations.translate(0.015, 0, 0); // traj0
+//    allObservations.scale(1.03, 1.03, 1.03); // traj0
     for (int i = 0; i < 1; ++i)
     {
         visualizer->publishTrueMap(&trueMap);
-        visualizer->publishObservation(&loader.observation, true, true);
+        visualizer->publishObservation(&allObservations, false, true, 20);
+        visualizer->sleep(200);
     }
+
+    ecl::StopWatch stopWatch;
+    int cnt = 0;
+    for (auto observation : loader.frames)
+    {
+        ROS_INFO("Updating frame %i out of %i (%i measurements)...", cnt,
+                 (int)loader.frames.size(), (int)observation.measurements().size());
+//            observation.translate(0.025, 0, 0); // traj1
+//        observation.translate(0.015, 0, 0); // traj0
+//        observation.scale(1.03, 1.03, 1.03); // traj0
+        //TODO potentially dangerous if this measurement is not a voxel?
+        robot.setPosition(observation.measurements().front().sensor.position);
+//        robot.setOrientation(observation.measurements()[observation.measurements().size()/2].sensor.orientation);
+
+        stats->registerMeasurements((int)observation.measurements().size());
+        std::valarray<Parameters::NumType> rayLengths(observation.measurements().size());
+        unsigned int i = 0;
+        for (auto &measurement : observation.measurements())
+        {
+            rayLengths[i++] = measurement.value;
+        }
+        stats->registerRayStatistics(rayLengths.min(), rayLengths.max(), rayLengths.sum() / i);
+
+        stopWatch.restart();
+        beliefMap.update(observation, trueMap);
+        stats->registerStepTimeBelief(stopWatch.elapsed());
+        stopWatch.restart();
+        logOddsMap.update(observation, trueMap);
+        stats->registerStepTimeLogOdds(stopWatch.elapsed());
+
+//    stopWatch.restart();
+//    gaussianProcessMap.update(observation);
+//    stats->registerStepTimeGP(stopWatch.elapsed());
+
+        stats->update(logOddsMap, beliefMap, gaussianProcessMap, robot);
+        ++cnt;
+    }
+
+    std::string homedir = getenv("HOME");
+    stats->saveToFile(homedir + "/catkin_ws/src/smap/stats/iclnuim/stats_traj" + std::to_string(trajectory) + ".bag");
+    stats->reset();
 
 //    for (int step = 0; step < traj.poses.size(); ++ step)
 //    {

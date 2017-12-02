@@ -188,7 +188,7 @@ add_executable(smap src/main.cpp
         src/PointCloud.cpp include/PointCloud.h include/InverseCauseModel.h
         include/SensorRay.hpp src/InverseCauseModel.cpp src/GaussianProcessMap.cpp
         include/GaussianProcessMap.h
-        include/Trajectory.hpp include/Box.hpp src/Parameters.cpp)
+        include/Trajectory.hpp include/Box.hpp src/ParametersICL-NUIM.cpp)
 
 add_executable(smap_ICL-NUIM src/mainICL-NUIM.cpp
         include/Parameters.h
@@ -209,7 +209,28 @@ add_executable(smap_ICL-NUIM src/mainICL-NUIM.cpp
         include/SensorRay.hpp src/InverseCauseModel.cpp src/GaussianProcessMap.cpp
         include/GaussianProcessMap.h
         include/Trajectory.hpp include/Box.hpp
-        include/ICLNUIMLoader.hpp src/Parameters.cpp)
+        include/ICLNUIMLoader.hpp src/ParametersICL-NUIM.cpp)
+
+add_executable(smap_ParticleFilter src/main-ParticleFilter.cpp
+        include/Parameters.h
+        src/BeliefVoxel.cpp
+        src/BeliefMap.cpp
+        include/FakeRobot.hpp
+        src/PixelSensor.cpp
+        include/PixelSensor.h
+        include/TruncatedGaussianDistribution.hpp
+        include/TrueMap.h
+        src/TrueMap.cpp
+        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h
+        include/UniformDistribution.hpp include/QVoxel.hpp
+        src/Visualizer.cpp include/Visualizer.h include/Observable.hpp
+        src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp
+        include/LogOddsMap.h include/Statistics.hpp include/StatisticsMap.hpp
+        src/PointCloud.cpp include/PointCloud.h include/InverseCauseModel.h
+        include/SensorRay.hpp src/InverseCauseModel.cpp src/GaussianProcessMap.cpp
+        include/GaussianProcessMap.h
+        include/Trajectory.hpp include/Box.hpp
+        include/ICLNUIMLoader.hpp src/Parameters-ParticleFilter.cpp src/Parameters-ParticleFilter.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

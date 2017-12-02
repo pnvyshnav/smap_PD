@@ -1121,7 +1121,9 @@ void Visualizer::publishTrajectory(const Observable *visualizable)
     ros::spinOnce();
 }
 
-void Visualizer::publishObservation(const Observable *visualizable, bool visualizeRays, bool removeOld)
+void Visualizer::publishObservation(const Observable *visualizable,
+                                    bool visualizeRays, bool removeOld,
+                                    int sparsificationFactor)
 {
     if (!visualizable)
         return;
@@ -1152,7 +1154,7 @@ void Visualizer::publishObservation(const Observable *visualizable, bool visuali
 #endif
         Parameters::Vec3Type pos(_x, _y, _z);
 
-        if (visualizeRays && cnt%16==0)
+        if (visualizeRays && cnt%(sparsificationFactor*10) == 0)
         {
             visualization_msgs::Marker arrow;
             arrow.id = id++; //(int) QVoxel::computeHash(TrueMap::coordToKey(pos));
@@ -1197,11 +1199,14 @@ void Visualizer::publishObservation(const Observable *visualizable, bool visuali
             {
                 arrow.color.a = 1;
                 arrow.color.r = 1;
-                arrow.color.g = std::max(0.f, 1-(float)cnt/1500.f);
+                arrow.color.g = std::max(0.f, 1-(float)cnt/((float)observation->measurements().size()));
                 arrow.color.b = 0;
             }
             markers.markers.push_back(arrow);
         }
+
+        if (++cnt % sparsificationFactor != 0)
+            continue;
 
         auto point = measurement.sensor.endPoint(); // sensor.position; //
 //        for (auto &point : measurement.sensor.discretized(measurement.value))
@@ -1248,7 +1253,6 @@ void Visualizer::publishObservation(const Observable *visualizable, bool visuali
             dot.pose.position.z = _z;
             markers.markers.push_back(dot);
         }
-        ++cnt;
     }
 
     std::cout << "Publishing " << markers.markers.size() << " markers." << std::endl;

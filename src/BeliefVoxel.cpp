@@ -167,8 +167,8 @@ void BeliefDistribution::updateBelief(Parameters::NumType a, Parameters::NumType
     const double ps = new_pdf.sum();
     if (ps > 0.)
         pdf = new_pdf / ps;
-//    else
-//        ROS_WARN("Cannot update belief. New PDF sum (%g) would be too small.", new_pdf.sum());
+    else
+        ROS_WARN("Cannot update belief. New PDF sum (%g) would be too small.", new_pdf.sum());
 
     //assert(isBeliefValid());
     _recomputeMean = true;

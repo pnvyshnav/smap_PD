@@ -18,7 +18,7 @@
 //#define REPEATED_RUNS
 #define ISM_RUNS
 //#define GP_RUNS
-#define MANY_STEPS
+//#define MANY_STEPS
 //#define COMPUTE_UPDATED_EVOLUTION
 
 #define REAL_3D
@@ -105,23 +105,21 @@ public:
     static double StereoCameraHorizontalFOV;
     static double StereoCameraVerticalFOV;
 
-    static inline NumType xCenter() { static auto v = (const NumType) ((xMax + xMin) / 2.0); return v; }
-    static inline NumType yCenter() { static auto v = (const NumType) ((yMax + yMin) / 2.0); return v; }
-    static inline NumType zCenter() { static auto v = (const NumType) ((zMax + zMin) / 2.0); return v; }
+    static inline NumType xCenter() { return (const NumType) ((xMax + xMin) / 2.0); }
+    static inline NumType yCenter() { return (const NumType) ((yMax + yMin) / 2.0); }
+    static inline NumType zCenter() { return (const NumType) ((zMax + zMin) / 2.0); }
     static inline Vec3Type center()
     {
-        static auto v = Vec3Type(xCenter(), yCenter(), zCenter());
-        return v;
+        return Vec3Type(xCenter(), yCenter(), zCenter());
     }
 
-    static unsigned int voxelsPerDimensionX() { static auto v = (unsigned int) ((xMax - xMin) / voxelSize); return v; }
-    static unsigned int voxelsPerDimensionY() { static auto v = (unsigned int) ((yMax - yMin) / voxelSize); return v; }
-    static unsigned int voxelsPerDimensionZ() { static auto v = (unsigned int) ((zMax - zMin) / voxelSize); return v; }
+    static unsigned int voxelsPerDimensionX() { return (unsigned int) ((xMax - xMin) / voxelSize); }
+    static unsigned int voxelsPerDimensionY() { return (unsigned int) ((yMax - yMin) / voxelSize); }
+    static unsigned int voxelsPerDimensionZ() { return (unsigned int) ((zMax - zMin) / voxelSize); }
 
     static unsigned int voxelsTotal()
     {
-        static unsigned int v = voxelsPerDimensionX() * voxelsPerDimensionY() * voxelsPerDimensionZ();
-        return v;
+        return voxelsPerDimensionX() * voxelsPerDimensionY() * voxelsPerDimensionZ();
     }
 
     static constexpr NumType spuriousMeasurementProbability = 0; //TODO cannot be > 0 for now

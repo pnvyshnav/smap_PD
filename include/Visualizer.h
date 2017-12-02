@@ -29,7 +29,8 @@ public:
     void publishFakeRobot(const Observable *visualizable, const TrueMap *trueMap);
     void publishGaussianProcessMapFull(const Observable *visualizable, bool visualizeStd = true);
     void publishTrajectory(const Observable *visualizable);
-    void publishObservation(const Observable *observation, bool visualizeRays = true, bool removeOld = true);
+    void publishObservation(const Observable *observation, bool visualizeRays = true,
+                            bool removeOld = true, int sparsificationFactor = 1);
 
     void publishBeliefInconsistencyMapFull(const Observable *visualizable, TrueMap &trueMap, double k);
     void publishLogOddsInconsistencyMapFull(const Observable *visualizable, TrueMap &trueMap, double k);
