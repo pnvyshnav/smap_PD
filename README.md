@@ -1,6 +1,8 @@
-# Confidence Aware Occupancy Grid Mapping
-ROS package implementing 3D mapping using octomap.
+# Confidence-rich Occupancy Grid Mapping
+ROS package implementing 3D mapping based on octomap with a novel, confidence aware mapping algorithm.
+![Belief Update Algorithm](beliefUpdate.gif)
 
+## Comparison with Log-Odds Maps
 ![Octomap](https://github.com/Lolu28/smap/raw/octomap/error_plot.png)
 
 Evolution of error from SMAP and Log-Odds-based mapping over 500 iterations. The voxels of size 0.125 are aligned in a 32 x 32 x 32 occupancy grid.
