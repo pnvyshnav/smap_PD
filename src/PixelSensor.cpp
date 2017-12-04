@@ -129,7 +129,7 @@ Measurement PixelSensor::_observationGivenCause(QVoxel causeVoxel, bool determin
     Parameters::NumType deterministicRange = (Parameters::NumType) causeVoxel.position.distance(_position);
     if (deterministic)
         return Measurement::voxel(ray(), deterministicRange);
-    auto tg = TruncatedGaussianDistribution(deterministicRange, Parameters::sensorNoiseStd * deterministicRange, // noise is range-dependent
+    auto tg = TruncatedGaussianDistribution(deterministicRange, Parameters::sensorNoiseStd, // * deterministicRange, // noise is range-dependent
                                             0, Parameters::sensorRange);
     return Measurement::voxel(ray(), tg.sample());
 }

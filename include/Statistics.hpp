@@ -14,7 +14,8 @@
 #include "FakeRobot.hpp"
 
 
-template<class ROBOT=FakeRobot<> >
+// TODO revert to Stereo Camera sensor!
+template<class ROBOT=FakeRobot<PixelSensor> >
 class Statistics
 {
 public:
@@ -199,6 +200,17 @@ public:
             evolutionBelief += std::abs(std);
         evolutionBelief /= _msg.stdBelief.size();
         _msg.stdEvolutionBelief.push_back(evolutionBelief);
+
+#ifdef STATS_PARTICLES
+        auto particles = beliefMap.particles();
+        _msg.particles.insert(_msg.particles.end(), particles.begin(), particles.end());
+        auto beliefMeans = VoxelStatistics::selectMean(beliefCompleteStats);
+        _msg.beliefMeans.insert(_msg.beliefMeans.end(), beliefMeans.begin(), beliefMeans.end());
+        auto trueMeans = VoxelStatistics::selectTrueMean(beliefCompleteStats);
+        _msg.trueMeans.insert(_msg.trueMeans.end(), trueMeans.begin(), trueMeans.end());
+        auto beliefStds = VoxelStatistics::selectStd(beliefCompleteStats);
+        _msg.beliefStds.insert(_msg.beliefStds.end(), beliefStds.begin(), beliefStds.end());
+#endif
 
 #ifndef MANY_STEPS
         // append current std devs to complete std dev vectors

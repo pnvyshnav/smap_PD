@@ -364,3 +364,24 @@ void BeliefMap::reset()
     _lastUpdatedVoxels.clear();
     publish();
 }
+
+std::vector<Parameters::NumType> BeliefMap::particles() const
+{
+    std::vector<Parameters::NumType> ps;
+    for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
+    {
+        for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
+        {
+            for (unsigned int z = 0; z < Parameters::voxelsPerDimensionZ(); ++z)
+            {
+                octomap::point3d point(Parameters::xMin + x * Parameters::voxelSize,
+                                       Parameters::yMin + y * Parameters::voxelSize,
+                                       Parameters::zMin + z * Parameters::voxelSize);
+                auto belief = search(point)->getValue();
+                auto voxel_particles = belief.particles();
+                ps.insert(ps.end(), voxel_particles.begin(), voxel_particles.end());
+            }
+        }
+    }
+    return ps;
+}

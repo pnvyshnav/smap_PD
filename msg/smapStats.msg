@@ -9,6 +9,12 @@ uint32 maxStep
 # number of voxels
 uint64 voxels
 
+# particle values
+float32[] particles
+float32[] beliefMeans
+float32[] beliefStds
+bool[] trueMeans
+
 # computation time of single step
 float64[] timeBelief
 float64[] timeLogOdds

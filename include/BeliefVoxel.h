@@ -60,6 +60,8 @@ public:
      */
     const std::string str() const;
 
+    std::vector<Parameters::NumType> particles() const;
+
     void reset();
 
 private:

@@ -17,13 +17,13 @@ BeliefDistribution::Particles generateParticles()
     return particles;
 }
 
-BeliefDistribution::Particles particles = generateParticles();
+BeliefDistribution::Particles initialParticles = generateParticles();
 
 BeliefDistribution::BeliefDistribution(bool empty) : _recomputeMean(true), _recomputeVariance(true),
                              _useStored(false), _meanLocked(false), _empty(empty)
 {
-    if (particles.size() == 0)
-        particles = generateParticles();
+    if (initialParticles.size() == 0)
+        initialParticles = generateParticles();
 
     double n = Parameters::numParticles;
     //TODO bugfix: take (1-prior) such that mean matches priorMean
@@ -42,7 +42,7 @@ BeliefDistribution::BeliefDistribution(bool empty) : _recomputeMean(true), _reco
     // only defining mean (linear formulation)
     double a = 6. * (1. - n - 2*Parameters::priorMean + 2*n*Parameters::priorMean)/(n * (1 + n));
     double b = (-2. * (1. - 2. * n - 3*Parameters::priorMean + 3*n*Parameters::priorMean))/(n * (1 + n));
-    pdf = b + a * particles;
+    pdf = b + a * initialParticles;
 //
 //    pdf = {
 //            5.42912966e-02,   5.00027027e-02,   4.59304519e-02,   4.20679897e-02,
@@ -114,7 +114,7 @@ Parameters::NumType BeliefDistribution::mean()
         return _mean;
     if (_recomputeMean)
     {
-        _mean = (particles * pdf).sum();
+        _mean = (initialParticles * pdf).sum();
         _recomputeMean = false;
     }
     return _mean;
@@ -129,7 +129,7 @@ Parameters::NumType BeliefDistribution::variance()
         Parameters::NumType exp = 0;
         for (unsigned int i = 0; i < Parameters::numParticles; ++i)
         {
-            exp += std::pow(particles[i], 2.) * pdf[i];
+            exp += std::pow(initialParticles[i], 2.) * pdf[i];
         }
         _variance = exp - std::pow(mean(), 2.);
         _recomputeVariance = false;
@@ -161,7 +161,7 @@ bool BeliefDistribution::isBeliefValid() const
 
 void BeliefDistribution::updateBelief(Parameters::NumType a, Parameters::NumType b)
 {
-    const std::valarray<Parameters::NumType> new_pdf = (a * particles + b) * pdf;
+    const std::valarray<Parameters::NumType> new_pdf = (a * initialParticles + b) * pdf;
 
     // normalize
     const double ps = new_pdf.sum();
@@ -190,12 +190,19 @@ const std::string BeliefDistribution::str() const
     return ss.str();
 }
 
+std::vector<Parameters::NumType> BeliefDistribution::particles() const
+{
+    std::vector<Parameters::NumType> ps;
+    ps.assign(std::begin(pdf), std::end(pdf));
+    return ps;
+}
+
 void BeliefDistribution::reset()
 {
     double n = Parameters::numParticles;
     double a = 6. * (1. - n - 2*Parameters::priorMean + 2*n*Parameters::priorMean)/(n * (1 + n));
     double b = (-2. * (1. - 2. * n - 3*Parameters::priorMean + 3*n*Parameters::priorMean))/(n * (1 + n));
-    pdf = b + a * particles;
+    pdf = b + a * initialParticles;
     _recomputeMean = true;
     _recomputeVariance = true;
 }
@@ -204,7 +211,7 @@ Parameters::NumType BeliefDistribution::_constMean() const
 {
     if (_useStored || _meanLocked)
         return _mean;
-    return (particles * pdf).sum();
+    return (initialParticles * pdf).sum();
 }
 
 Parameters::NumType BeliefDistribution::_constVariance() const
@@ -214,7 +221,7 @@ Parameters::NumType BeliefDistribution::_constVariance() const
     Parameters::NumType exp = 0;
     for (unsigned int i = 0; i < Parameters::numParticles; ++i)
     {
-        exp += std::pow(particles[i], 2.) * pdf[i];
+        exp += std::pow(initialParticles[i], 2.) * pdf[i];
     }
     return exp - std::pow(_constMean(), 2.);
 }

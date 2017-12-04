@@ -8,7 +8,7 @@
 
 #include <octomap/OcTree.h>
 
-#define DIMENSIONS 2
+#define DIMENSIONS 3
 //#define FAKE_2D
 //#define PLANNER_2D_TEST
 //#define SIMULATE_TIME
@@ -20,6 +20,7 @@
 //#define GP_RUNS
 //#define MANY_STEPS
 //#define COMPUTE_UPDATED_EVOLUTION
+#define STATS_PARTICLES // store value of EVERY particle in the stats bag file
 
 #define REAL_3D
 //#define REAL_2D

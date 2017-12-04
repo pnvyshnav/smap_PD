@@ -88,6 +88,13 @@ public:
         return _sensor;
     }
 
+    // TODO rename it to run()
+    void runOnce()
+    {
+        Robot::publishObservation(observe());
+    }
+
+    // TODO rename it to runCycle()...
     void run()
     {
 //        ROS_INFO("FakeRobot is running...");

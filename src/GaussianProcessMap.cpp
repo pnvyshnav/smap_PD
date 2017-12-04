@@ -79,12 +79,14 @@ std::vector<VoxelStatistics> GaussianProcessMap::stats(const TrueMap &trueMap)
                 Belief *gpBelief = new Belief(belief(pos));
 
                 QTrueVoxel trueVoxel = trueMap.query(pos);
-                double error = (trueMap.getVoxelMean(trueVoxel) - gpBelief->mean());
+                double trueMean = trueMap.getVoxelMean(trueVoxel);
+                double mean = gpBelief->mean();
+                double error = (trueMean - mean);
 
                 QPlainBeliefVoxel beliefVoxel = QPlainBeliefVoxel::voxel(gpBelief, pos, TrueMap::coordToKey(pos));
                 _voxels.push_back(beliefVoxel);
 //                std::cout << "GP Raw Std: " << std::sqrt(gpBelief->variance()) << std::endl;
-                stats.push_back(VoxelStatistics(error, std::sqrt(gpBelief->variance()) * StdDevScalingFactor, &_voxels.back()));
+                stats.push_back(VoxelStatistics(trueMean > 0.5, mean, error, std::sqrt(gpBelief->variance()) * StdDevScalingFactor, &_voxels.back()));
             }
         }
     }

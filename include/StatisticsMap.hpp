@@ -5,12 +5,32 @@
 
 struct VoxelStatistics
 {
+    double mean;
+    bool trueMean;
     double error;
     double stdDev;
     const QVoxel *voxel;
-    VoxelStatistics(double error, double stdDev, const QVoxel *voxel)
-            : error(error), stdDev(stdDev), voxel(voxel)
+    VoxelStatistics(bool trueMean, double mean, double error, double stdDev, const QVoxel *voxel)
+            : trueMean(trueMean), mean(mean), error(error), stdDev(stdDev), voxel(voxel)
     {}
+
+    static std::vector<double> selectTrueMean(const std::vector<VoxelStatistics> &stats)
+    {
+        std::vector<double> vs(stats.size());
+        unsigned int i = 0;
+        for (auto &stat : stats)
+            vs[i++] = (int)stat.trueMean;
+        return vs;
+    }
+
+    static std::vector<double> selectMean(const std::vector<VoxelStatistics> &stats)
+    {
+        std::vector<double> vs(stats.size());
+        unsigned int i = 0;
+        for (auto &stat : stats)
+            vs[i++] = stat.mean;
+        return vs;
+    }
 
     static std::vector<double> selectError(const std::vector<VoxelStatistics> &stats)
     {
@@ -49,17 +69,20 @@ public:
         std::vector<VoxelStatistics> stats;
         for (auto &voxel : this->voxels())
         {
+            QTrueVoxel trueVoxel = trueMap.query(voxel.key);
+            double trueMean = trueMap.getVoxelMean(trueVoxel);
             if (voxel.type != GEOMETRY_VOXEL)
             {
 //                ROS_WARN_STREAM("Skipped stats computation for a voxel in "
 //                                        << mapType() << " at position: " << voxel.position);
                 double bernoulliStd = std::sqrt(Parameters::priorMean * (1. - Parameters::priorMean));
-                stats.push_back(VoxelStatistics(Parameters::priorMean, bernoulliStd, &voxel));
+                stats.push_back(VoxelStatistics(trueMean > 0.5, Parameters::priorMean,
+                                                Parameters::priorMean, bernoulliStd, &voxel));
                 continue;
             }
-            QTrueVoxel trueVoxel = trueMap.query(voxel.key);
-            double error = (trueMap.getVoxelMean(trueVoxel) - this->getVoxelMean(voxel));
-            stats.push_back(VoxelStatistics(error, this->getVoxelStd(voxel), &voxel));
+            double mean = this->getVoxelMean(voxel);
+            double error = (trueMean - mean);
+            stats.push_back(VoxelStatistics(trueMean > 0.5, mean, error, this->getVoxelStd(voxel), &voxel));
         }
         return stats;
     }
@@ -69,16 +92,20 @@ public:
         std::vector<VoxelStatistics> stats;
         for (auto &voxel : this->voxels(keys))
         {
+            QTrueVoxel trueVoxel = trueMap.query(voxel.key);
+            double trueMean = trueMap.getVoxelMean(trueVoxel);
             if (voxel.type != GEOMETRY_VOXEL)
             {
-                //ROS_WARN_STREAM("Skipped keyed stats computation for a voxel in " << mapType());
+//                ROS_WARN_STREAM("Skipped stats computation for a voxel in "
+//                                        << mapType() << " at position: " << voxel.position);
                 double bernoulliStd = std::sqrt(Parameters::priorMean * (1. - Parameters::priorMean));
-                stats.push_back(VoxelStatistics(Parameters::priorMean, bernoulliStd, &voxel));
+                stats.push_back(VoxelStatistics(trueMean > 0.5, Parameters::priorMean,
+                                                Parameters::priorMean, bernoulliStd, &voxel));
                 continue;
             }
-            QTrueVoxel trueVoxel = trueMap.query(voxel.key);
-            double error = (trueMap.getVoxelMean(trueVoxel) - this->getVoxelMean(voxel));
-            stats.push_back(VoxelStatistics(error, this->getVoxelStd(voxel), &voxel));
+            double mean = this->getVoxelMean(voxel);
+            double error = (trueMean - mean);
+            stats.push_back(VoxelStatistics(trueMean > 0.5, mean, error, this->getVoxelStd(voxel), &voxel));
         }
         return stats;
     }
@@ -89,16 +116,20 @@ public:
         for (auto &position : positions)
         {
             auto voxel = this->query(position);
+            QTrueVoxel trueVoxel = trueMap.query(voxel.key);
+            double trueMean = trueMap.getVoxelMean(trueVoxel);
             if (voxel.type != GEOMETRY_VOXEL)
             {
-                ROS_WARN_STREAM("Skipped keyed stats computation for a voxel in " << mapType());
+//                ROS_WARN_STREAM("Skipped stats computation for a voxel in "
+//                                        << mapType() << " at position: " << voxel.position);
                 double bernoulliStd = std::sqrt(Parameters::priorMean * (1. - Parameters::priorMean));
-                stats.push_back(VoxelStatistics(Parameters::priorMean, bernoulliStd, &voxel));
+                stats.push_back(VoxelStatistics(trueMean > 0.5, Parameters::priorMean,
+                                                Parameters::priorMean, bernoulliStd, &voxel));
                 continue;
             }
-            QTrueVoxel trueVoxel = trueMap.query(voxel.key);
-            double error = (trueMap.getVoxelMean(trueVoxel) - this->getVoxelMean(voxel));
-            stats.push_back(VoxelStatistics(error, this->getVoxelStd(voxel), &voxel));
+            double mean = this->getVoxelMean(voxel);
+            double error = (trueMean - mean);
+            stats.push_back(VoxelStatistics(trueMean > 0.5, mean, error, this->getVoxelStd(voxel), &voxel));
         }
         return stats;
     }
@@ -108,21 +139,26 @@ public:
         std::vector<VoxelStatistics> stats;
         for (auto &voxel : updatedVoxels())
         {
+            QTrueVoxel trueVoxel = trueMap.query(voxel.key);
+            double trueMean = trueMap.getVoxelMean(trueVoxel);
             if (voxel.type != GEOMETRY_VOXEL)
             {
-                //ROS_WARN(("Skipped updated stats computation for a voxel in " + mapType()).c_str());
+//                ROS_WARN_STREAM("Skipped stats computation for a voxel in "
+//                                        << mapType() << " at position: " << voxel.position);
                 double bernoulliStd = std::sqrt(Parameters::priorMean * (1. - Parameters::priorMean));
-                stats.push_back(VoxelStatistics(Parameters::priorMean, bernoulliStd, &voxel));
+                stats.push_back(VoxelStatistics(trueMean > 0.5, Parameters::priorMean,
+                                                Parameters::priorMean, bernoulliStd, &voxel));
                 continue;
             }
-            QTrueVoxel trueVoxel = trueMap.query(voxel.key);
-            double error = (trueMap.getVoxelMean(trueVoxel) - this->getVoxelMean(voxel));
-            stats.push_back(VoxelStatistics(error, this->getVoxelStd(voxel), &voxel));
+            double mean = this->getVoxelMean(voxel);
+            double error = (trueMean - mean);
+            stats.push_back(VoxelStatistics(trueMean > 0.5, mean, error, this->getVoxelStd(voxel), &voxel));
         }
         return stats;
     }
 
     virtual std::vector<QTypedVoxel<NODE> > updatedVoxels() const = 0;
+
     std::vector<octomap::OcTreeKey> updatedKeys() const
     {
         std::vector<octomap::OcTreeKey> keys;

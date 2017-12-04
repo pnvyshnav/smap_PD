@@ -78,6 +78,8 @@ public:
         return _icm;
     }
 
+    std::vector<Parameters::NumType> particles() const;
+
     // TODO std scaling such that initial std equals defined prior std (0.5)
     static constexpr double StdDevScalingFactor = Parameters::priorStd / std::sqrt(0.085);
 

@@ -251,6 +251,13 @@ target_link_libraries(smap_ICL-NUIM
         ${OpenCV_LIBS}
         gp)
 
+target_link_libraries(smap_ParticleFilter
+        ${catkin_LIBRARIES}
+        ${PCL_LIBRARIES}
+        ${OCTOMAP_LIBRARIES}
+        ${OpenCV_LIBS}
+        gp)
+
 #############
 ## Install ##
 #############
