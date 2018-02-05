@@ -15,7 +15,7 @@
 
 
 // TODO revert to Stereo Camera sensor!
-template<class ROBOT=FakeRobot<PixelSensor> >
+template<class ROBOT=FakeRobot<StereoCameraSensor> >
 class Statistics
 {
 public:

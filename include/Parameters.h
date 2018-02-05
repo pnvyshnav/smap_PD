@@ -18,9 +18,9 @@
 //#define REPEATED_RUNS
 #define ISM_RUNS
 //#define GP_RUNS
-//#define MANY_STEPS
+#define MANY_STEPS
 //#define COMPUTE_UPDATED_EVOLUTION
-#define STATS_PARTICLES // store value of EVERY particle in the stats bag file
+//#define STATS_PARTICLES // store value of EVERY particle in the stats bag file
 
 #define REAL_3D
 //#define REAL_2D

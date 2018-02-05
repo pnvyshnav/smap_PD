@@ -13,7 +13,7 @@ Parameters::NumType Parameters::zMax = 1;
 
 bool Parameters::sensorTruncatedGaussianNoise = false;
 Parameters::NumType Parameters::sensorRange = 10;
-Parameters::NumType Parameters::sensorNoiseStd = (const Parameters::NumType) (1. * voxelSize);
+Parameters::NumType Parameters::sensorNoiseStd = (const Parameters::NumType) (3. * voxelSize);
 
 Parameters::NumType Parameters::freeRadiusAroundCenter = 0; // irrelevant
 // IRRELEVANT:

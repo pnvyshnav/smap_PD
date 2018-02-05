@@ -4,9 +4,6 @@
 
 #include <ecl/time/stopwatch.hpp>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
 #undef MANY_STEPS
 
 #include "../include/BeliefVoxel.h"

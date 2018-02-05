@@ -12,8 +12,6 @@ find_package(octomap REQUIRED)
 include_directories(${OCTOMAP_INCLUDE_DIRS})
 link_libraries(${OCTOMAP_LIBRARIES})
 
-find_package(OpenCV REQUIRED)
-
 find_package(OpenMP)
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -211,26 +209,26 @@ add_executable(smap_ICL-NUIM src/mainICL-NUIM.cpp
         include/Trajectory.hpp include/Box.hpp
         include/ICLNUIMLoader.hpp src/ParametersICL-NUIM.cpp)
 
-add_executable(smap_ParticleFilter src/main-ParticleFilter.cpp
-        include/Parameters.h
-        src/BeliefVoxel.cpp
-        src/BeliefMap.cpp
-        include/FakeRobot.hpp
-        src/PixelSensor.cpp
-        include/PixelSensor.h
-        include/TruncatedGaussianDistribution.hpp
-        include/TrueMap.h
-        src/TrueMap.cpp
-        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h
-        include/UniformDistribution.hpp include/QVoxel.hpp
-        src/Visualizer.cpp include/Visualizer.h include/Observable.hpp
-        src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp
-        include/LogOddsMap.h include/Statistics.hpp include/StatisticsMap.hpp
-        src/PointCloud.cpp include/PointCloud.h include/InverseCauseModel.h
-        include/SensorRay.hpp src/InverseCauseModel.cpp src/GaussianProcessMap.cpp
-        include/GaussianProcessMap.h
-        include/Trajectory.hpp include/Box.hpp
-        include/ICLNUIMLoader.hpp src/Parameters-ParticleFilter.cpp src/Parameters-ParticleFilter.cpp)
+#add_executable(smap_ParticleFilter src/main-ParticleFilter.cpp
+#        include/Parameters.h
+#        src/BeliefVoxel.cpp
+#        src/BeliefMap.cpp
+#        include/FakeRobot.hpp
+#        src/PixelSensor.cpp
+#        include/PixelSensor.h
+#        include/TruncatedGaussianDistribution.hpp
+#        include/TrueMap.h
+#        src/TrueMap.cpp
+#        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h
+#        include/UniformDistribution.hpp include/QVoxel.hpp
+#        src/Visualizer.cpp include/Visualizer.h include/Observable.hpp
+#        src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp
+#        include/LogOddsMap.h include/Statistics.hpp include/StatisticsMap.hpp
+#        src/PointCloud.cpp include/PointCloud.h include/InverseCauseModel.h
+#        include/SensorRay.hpp src/InverseCauseModel.cpp src/GaussianProcessMap.cpp
+#        include/GaussianProcessMap.h
+#        include/Trajectory.hpp include/Box.hpp
+#        include/ICLNUIMLoader.hpp src/Parameters-ParticleFilter.cpp src/Parameters-ParticleFilter.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -241,22 +239,19 @@ target_link_libraries(smap
         ${catkin_LIBRARIES}
         ${PCL_LIBRARIES}
         ${OCTOMAP_LIBRARIES}
-        ${OpenCV_LIBS}
         gp)
 
 target_link_libraries(smap_ICL-NUIM
         ${catkin_LIBRARIES}
         ${PCL_LIBRARIES}
         ${OCTOMAP_LIBRARIES}
-        ${OpenCV_LIBS}
         gp)
 
-target_link_libraries(smap_ParticleFilter
-        ${catkin_LIBRARIES}
-        ${PCL_LIBRARIES}
-        ${OCTOMAP_LIBRARIES}
-        ${OpenCV_LIBS}
-        gp)
+#target_link_libraries(smap_ParticleFilter
+#        ${catkin_LIBRARIES}
+#        ${PCL_LIBRARIES}
+#        ${OCTOMAP_LIBRARIES}
+#        gp)
 
 #############
 ## Install ##
