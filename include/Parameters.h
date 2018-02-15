@@ -63,7 +63,7 @@ public:
 
     static constexpr NumType equalityThreshold = 1e-8;
 
-    static const unsigned int numParticles = 101;
+    static unsigned int numParticles;
     //
     // Fake sensor measurements
     //

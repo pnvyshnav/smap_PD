@@ -209,6 +209,26 @@ add_executable(smap_ICL-NUIM src/mainICL-NUIM.cpp
         include/Trajectory.hpp include/Box.hpp
         include/ICLNUIMLoader.hpp src/ParametersICL-NUIM.cpp)
 
+add_executable(smap_PDscan src/mainPDscan.cpp
+        include/Parameters.h
+        src/BeliefVoxel.cpp
+        src/BeliefMap.cpp
+        include/FakeRobot.hpp
+        src/PixelSensor.cpp
+        include/PixelSensor.h
+        include/TruncatedGaussianDistribution.hpp
+        include/TrueMap.h
+        src/TrueMap.cpp
+        src/StereoCameraSensor.cpp src/Sensor.cpp include/Sensor.h
+        include/UniformDistribution.hpp include/QVoxel.hpp
+        src/Visualizer.cpp include/Visualizer.h include/Observable.hpp
+        src/Drone.cpp include/Drone.h include/Robot.hpp src/LogOddsMap.cpp
+        include/LogOddsMap.h include/Statistics.hpp include/StatisticsMap.hpp
+        src/PointCloud.cpp include/PointCloud.h include/InverseCauseModel.h
+        include/SensorRay.hpp src/InverseCauseModel.cpp src/GaussianProcessMap.cpp
+        include/GaussianProcessMap.h
+        include/Trajectory.hpp include/Box.hpp src/ParametersICL-NUIM.cpp)
+
 #add_executable(smap_ParticleFilter src/main-ParticleFilter.cpp
 #        include/Parameters.h
 #        src/BeliefVoxel.cpp
@@ -242,6 +262,12 @@ target_link_libraries(smap
         gp)
 
 target_link_libraries(smap_ICL-NUIM
+        ${catkin_LIBRARIES}
+        ${PCL_LIBRARIES}
+        ${OCTOMAP_LIBRARIES}
+        gp)
+
+target_link_libraries(smap_PDscan
         ${catkin_LIBRARIES}
         ${PCL_LIBRARIES}
         ${OCTOMAP_LIBRARIES}

@@ -1,5 +1,8 @@
 #include "../include/Parameters.h"
 
+
+unsigned int Parameters::numParticles = 101;
+
 #if defined(FAKE_2D)
     float Parameters::voxelSize = 0.1; //0.015; //0.08; // was 0.05
     float Parameters::xMin = -8; //-1.1 + voxelSize * 0.5;

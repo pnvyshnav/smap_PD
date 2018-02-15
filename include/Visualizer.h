@@ -21,7 +21,7 @@ public:
     void publishTrueMap2dSlice(const Observable *visualizable, unsigned int z = 0);
     void publishLogOddsMap(const Observable *visualizable);
     void publishLogOddsMapFull(const Observable *visualizable, bool visualizeStd = false);
-    void publishBeliefMap(const Observable *visualizable);
+    void publishBeliefMap(const Observable *visualizable, double threshold = 0.52);
     void publishBeliefMapFull(const Observable *visualizable, bool visualizeStd = false);
     void publishSensor(const Observable *visualizable);
     void publishStereoCameraSensor(const Observable *visualizable);

@@ -64,8 +64,24 @@ public:
 
     void reset();
 
-private:
+    friend std::ostream& operator<<(std::ostream &os, const BeliefDistribution &belief)
+    {
+        for (auto &p : belief.pdf)
+            os << p;
+        return os;
+    }
+
+    friend std::istream& operator>>(std::istream &is, BeliefDistribution &belief)
+    {
+        for (unsigned int i = 0; i < Parameters::numParticles; ++i)
+            is >> belief.pdf[i];
+        return is;
+    }
+
+protected:
     Particles pdf;
+
+private:
     bool _recomputeMean, _recomputeVariance;
     bool _useStored;
     bool _meanLocked;

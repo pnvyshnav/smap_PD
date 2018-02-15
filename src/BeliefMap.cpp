@@ -5,15 +5,14 @@
 
 #include <cassert>
 #include <memory>
+#include <fstream>
 
 class registerTreeType;
 
 BeliefMap::BeliefMap() : octomap::OcTreeBaseImpl<BeliefVoxel, octomap::AbstractOcTree>(Parameters::voxelSize),
                          StatisticsMap(this)
 {
-    octomap::AbstractOcTree::registerTreeType(this);
-
-    init();
+    _initialize();
 
     for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
     {
@@ -222,7 +221,7 @@ bool BeliefMap::update(const Observation &observation, const TrueMap &trueMap)
                      meanAfter);
 #endif
 
-            if (!obstacleReached)
+//            if (!obstacleReached)
                 _lastUpdatedVoxels.push_back(qBeliefVoxel);
 
             // TODO for evaluation purposes, only take voxels that lie in front of an obstacle
@@ -384,4 +383,15 @@ std::vector<Parameters::NumType> BeliefMap::particles() const
         }
     }
     return ps;
+}
+
+void BeliefMap::_initialize()
+{
+    init();
+    octomap::AbstractOcTree::registerTreeType(this);
+}
+
+void BeliefMap::_calcMinMax()
+{
+    calcMinMax();
 }

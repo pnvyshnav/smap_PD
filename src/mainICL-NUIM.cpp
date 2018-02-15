@@ -113,7 +113,7 @@ int main(int argc, char **argv)
     int trajectory = 3;
 
     ROS_INFO("Loading ...");
-    bool result = loader.load("/media/eric/data/Mapping-Datasets/smap_datasets/iclnuim_livingroom1", trajectory, 1800, 3, 10); //1500); //1510);
+    bool result = loader.load("/home/wal/catkin_ws/src/smap/iclnuim_livingroom1", trajectory, 1800, 3, 10); //1500); //1510);
     ROS_INFO("Loaded traj0 successfully? %i", (int)result);
     assert(result);
 
@@ -129,7 +129,7 @@ int main(int argc, char **argv)
     Parameters::zMax = 4.2;
     Parameters::voxelSize = 0.0625; //0.125;
 
-    std::string plyFilename = "/media/eric/data/Mapping-Datasets/smap_datasets/iclnuim_livingroom1/livingroom.ply";
+    std::string plyFilename = "/home/wal/catkin_ws/src/smap/iclnuim_livingroom1/livingroom.ply";
     TrueMap trueMap = TrueMap::generateFromPointCloud(plyFilename);
     BeliefMap beliefMap;
     LogOddsMap logOddsMap;

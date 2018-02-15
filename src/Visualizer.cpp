@@ -217,7 +217,7 @@ void Visualizer::publishLogOddsMap(const Observable *visualizable)
     logOddsMapPublisher.publish(cells);
 }
 
-void Visualizer::publishBeliefMap(const Observable *visualizable)
+void Visualizer::publishBeliefMap(const Observable *visualizable, double threshold)
 {
     if (!visualizable)
         return;
@@ -245,21 +245,26 @@ void Visualizer::publishBeliefMap(const Observable *visualizable)
 //        else
 //#endif
         {
-            cell.action = 0;
             cell.id = (int) voxel.hash;
-            cell.type = visualization_msgs::Marker::CUBE;
-            cell.header.frame_id = "map";
-            cell.scale.x = Parameters::voxelSize;
-            cell.scale.y = Parameters::voxelSize;
-            cell.scale.z = Parameters::voxelSize;
-            cell.color.a = 1;
-            float intensity = (float) (1.0 - voxel.node()->getValue().mean());
-            cell.color.r = intensity;
-            cell.color.g = intensity;
-            cell.color.b = intensity;
-            cell.pose.position.x = voxel.position.x();
-            cell.pose.position.y = voxel.position.y();
-            cell.pose.position.z = voxel.position.z();
+            if (voxel.node()->getValue().mean() < threshold)
+                cell.action = 2;
+            else
+            {
+                cell.action = 0;
+                cell.type = visualization_msgs::Marker::CUBE;
+                cell.header.frame_id = "map";
+                cell.scale.x = Parameters::voxelSize;
+                cell.scale.y = Parameters::voxelSize;
+                cell.scale.z = Parameters::voxelSize;
+                cell.color.a = 1;
+                float intensity = (float) (1.0 - voxel.node()->getValue().mean());
+                cell.color.r = intensity;
+                cell.color.g = intensity;
+                cell.color.b = intensity;
+                cell.pose.position.x = voxel.position.x();
+                cell.pose.position.y = voxel.position.y();
+                cell.pose.position.z = voxel.position.z();
+            }
         }
 
         cells.markers.push_back(cell);
