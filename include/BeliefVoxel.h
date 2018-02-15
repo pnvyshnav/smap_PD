@@ -66,6 +66,7 @@ public:
 
     friend std::ostream& operator<<(std::ostream &os, const BeliefDistribution &belief)
     {
+        os << belief._mean;
         for (auto &p : belief.pdf)
             os << p;
         return os;
@@ -73,6 +74,7 @@ public:
 
     friend std::istream& operator>>(std::istream &is, BeliefDistribution &belief)
     {
+        is >> belief._mean;
         for (unsigned int i = 0; i < Parameters::numParticles; ++i)
             is >> belief.pdf[i];
         return is;
