@@ -64,11 +64,14 @@ public:
 
     void reset();
 
-    friend std::ostream& operator<<(std::ostream &os, const BeliefDistribution &belief)
+    friend std::ostream& operator<<(std::ostream &os, BeliefDistribution &belief)
     {
-        os << belief._mean;
+        belief.mean();
+        if (belief._mean > 0.51)
+            std::cout << belief._mean << std::endl;
+        os.write(reinterpret_cast<const char *>(&belief._mean), sizeof(belief._mean));
         for (auto &p : belief.pdf)
-            os << p;
+            os.write(reinterpret_cast<const char *>(&p), sizeof(p));
         return os;
     }
 

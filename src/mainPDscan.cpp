@@ -112,6 +112,8 @@ int main(int argc, char **argv)
             // update CRM
             beliefMap.update(observation, trueMap);
             msgCounter++;
+            if (msgCounter > 10)
+                break;
         }
     }
 
@@ -120,6 +122,8 @@ int main(int argc, char **argv)
     // save as binary file
     // TODO test BeliefMap::load
     beliefMap.save(SAVE_MAP_FILENAME);
+
+    beliefMap.loadFromFile(SAVE_MAP_FILENAME);
 
     return EXIT_SUCCESS;
 }

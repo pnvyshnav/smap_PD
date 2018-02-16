@@ -85,14 +85,16 @@ public:
 
     friend std::ostream& operator<<(std::ostream &os, const BeliefMap &map)
     {
-        os << Parameters::voxelSize << std::endl;
-        os << Parameters::xMin << std::endl;
-        os << Parameters::xMax << std::endl;
-        os << Parameters::yMin << std::endl;
-        os << Parameters::yMax << std::endl;
-        os << Parameters::zMin << std::endl;
-        os << Parameters::zMax << std::endl;
-        os << Parameters::numParticles << std::endl;
+        double params[7] = { Parameters::voxelSize,
+                             Parameters::xMin,
+                             Parameters::xMax,
+                             Parameters::yMin,
+                             Parameters::yMax,
+                             Parameters::zMin,
+                             Parameters::zMax };
+        os.write((char *) &params, sizeof params);
+        os.write(reinterpret_cast<const char *>(&Parameters::numParticles), sizeof(Parameters::numParticles));
+
         for (unsigned int x = 0; x < Parameters::voxelsPerDimensionX(); ++x)
         {
             for (unsigned int y = 0; y < Parameters::voxelsPerDimensionY(); ++y)
@@ -103,16 +105,27 @@ public:
                                            Parameters::yMin + y * Parameters::voxelSize,
                                            Parameters::zMin + z * Parameters::voxelSize);
                     auto belief = map.search(point)->getValue();
-                    os << belief << std::endl;
+                    os << belief;
                 }
             }
         }
-        os << std::endl;
+
         return os;
     }
 
     friend std::istream& operator>>(std::istream &is, BeliefMap &map)
     {
+        std::cout << Parameters::voxelSize << std::endl;
+        std::cout << Parameters::xMin << std::endl;
+        std::cout << Parameters::xMax << std::endl;
+        std::cout << Parameters::yMin << std::endl;
+        std::cout << Parameters::yMax << std::endl;
+        std::cout << Parameters::zMin << std::endl;
+        std::cout << Parameters::zMax << std::endl;
+        std::cout << Parameters::numParticles << std::endl;
+
+        std::cout << std::endl;
+
         is >> Parameters::voxelSize;
         is >> Parameters::xMin;
         is >> Parameters::xMax;
@@ -121,6 +134,15 @@ public:
         is >> Parameters::zMin;
         is >> Parameters::zMax;
         is >> Parameters::numParticles;
+
+        std::cout << Parameters::voxelSize << std::endl;
+        std::cout << Parameters::xMin << std::endl;
+        std::cout << Parameters::xMax << std::endl;
+        std::cout << Parameters::yMin << std::endl;
+        std::cout << Parameters::yMax << std::endl;
+        std::cout << Parameters::zMin << std::endl;
+        std::cout << Parameters::zMax << std::endl;
+        std::cout << Parameters::numParticles << std::endl;
 
         map._initialize();
 
